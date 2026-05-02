@@ -1,0 +1,309 @@
+.hoteles-page {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  padding-bottom: 3rem;
+}
+
+/* Dollar Bar - Glassmorphism & Gradient */
+.dollar-info-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.25rem 2rem;
+  background: linear-gradient(135deg, #1F3A4D 0%, #2c536e 100%);
+  color: white;
+  border-radius: 20px;
+  box-shadow: 0 10px 30px rgba(31, 58, 77, 0.2);
+  position: relative;
+  overflow: hidden;
+}
+
+.dollar-info-bar::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -20%;
+  width: 60%;
+  height: 200%;
+  background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+  transform: rotate(30deg);
+}
+
+.dollar-rate {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+  position: relative;
+  z-index: 2;
+}
+
+.rate-item {
+  display: flex;
+  flex-direction: column;
+}
+
+.rate-item .label {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  opacity: 0.7;
+  letter-spacing: 0.1em;
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+.rate-item .value {
+  font-size: 1.5rem;
+  font-weight: 800;
+  font-family: var(--font-serif);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Folder Grid - Premium Cards */
+.folders-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 2rem;
+}
+
+.folder-card {
+  padding: 2.5rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.25rem;
+  cursor: pointer;
+  transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+  border: 1px solid rgba(31, 58, 77, 0.08);
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: 24px;
+  position: relative;
+}
+
+.folder-card:hover {
+  background: white;
+  transform: translateY(-8px);
+}
+
+.folder-icon-wrapper {
+  color: #E9DFD2;
+  transition: transform 0.3s ease;
+}
+
+.folder-card:hover .folder-icon-wrapper {
+  transform: scale(1.1) rotate(-5deg);
+  color: var(--color-accent);
+}
+
+.folder-name {
+  font-family: var(--font-main);
+  font-weight: 700;
+  color: var(--color-primary);
+  font-size: 1.4rem;
+  margin: 0;
+}
+
+/* Folder Detail View */
+.folder-detail-container {
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  gap: 2rem;
+  align-items: start;
+}
+
+.hotel-item {
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 1rem;
+  border-radius: 20px;
+  border: 1px solid rgba(0,0,0,0.05);
+  position: relative;
+  transition: transform 0.2s;
+  background: white;
+}
+
+.hotel-item:hover {
+  transform: translateX(5px);
+  border-color: var(--color-accent);
+}
+
+.hotel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.hotel-title {
+  font-family: var(--font-main);
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--color-primary);
+  margin: 0;
+}
+
+.hotel-costs {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background: rgba(16, 185, 129, 0.05);
+  padding: 0.5rem 1rem;
+  border-radius: 12px;
+  border: 1px solid rgba(16, 185, 129, 0.1);
+}
+
+.cost-usd {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #10b981;
+  line-height: 1;
+}
+
+.cost-ars {
+  font-size: 0.75rem;
+  color: #065f46;
+  font-weight: 700;
+  opacity: 0.8;
+}
+
+.hotel-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.hotel-link {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.6rem 1rem;
+  background: #f8f9fa;
+  border: 1px solid rgba(0,0,0,0.05);
+  border-radius: 12px;
+  color: var(--color-primary);
+  text-decoration: none;
+  font-size: 0.9rem;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+
+.hotel-link:hover {
+  background: var(--color-primary);
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(31, 58, 77, 0.1);
+}
+
+.info-box {
+  background: #fbfbfb;
+  padding: 0.75rem 1rem;
+  border-radius: 12px;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  color: #4a5568;
+  border: 1px solid rgba(0,0,0,0.02);
+  margin-top: 0.5rem;
+}
+
+.stat-value.highlight {
+  color: #10b981;
+}
+
+.empty-state-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 5rem 2rem;
+  background: rgba(255,255,255,0.4);
+  border-radius: 30px;
+  border: 2px dashed rgba(31, 58, 77, 0.1);
+  color: var(--color-secondary);
+}
+
+.btn-delete-folder,
+.btn-delete-hotel,
+.btn-edit-hotel {
+  background: rgba(239, 68, 68, 0.05);
+  border: 1px solid rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+  padding: 0.5rem;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-edit-hotel {
+  background: rgba(31, 58, 77, 0.05);
+  border: 1px solid rgba(31, 58, 77, 0.1);
+  color: var(--color-primary);
+}
+
+.btn-delete-folder:hover,
+.btn-delete-hotel:hover {
+  background: #ef4444;
+  color: white;
+}
+
+.btn-edit-hotel:hover {
+  background: var(--color-primary);
+  color: white;
+}
+
+.meal-plan-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.meal-tag {
+  background: rgba(200, 155, 90, 0.1);
+  color: #8b6b3e;
+  padding: 0.4rem 0.8rem;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  border: 1px solid rgba(200, 155, 90, 0.2);
+}
+
+/* Modal Scrollable Body */
+.modal-body-scrollable {
+  max-height: 55vh;
+  overflow-y: auto;
+  padding-right: 12px;
+  margin-right: -12px; /* Pull scrollbar to the edge */
+}
+
+/* Custom Scrollbar */
+.modal-body-scrollable::-webkit-scrollbar {
+  width: 6px;
+}
+
+.modal-body-scrollable::-webkit-scrollbar-track {
+  background: rgba(233, 223, 210, 0.3);
+  border-radius: 10px;
+}
+
+.modal-body-scrollable::-webkit-scrollbar-thumb {
+  background: var(--color-accent);
+  border-radius: 10px;
+}
+
+.modal-body-scrollable::-webkit-scrollbar-thumb:hover {
+  background: var(--color-primary);
+}
+
+.modal-footer {
+  border-top: 1px solid rgba(31, 58, 77, 0.05);
+}
+
+

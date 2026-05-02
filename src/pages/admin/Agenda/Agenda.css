@@ -1,0 +1,177 @@
+.agenda-page {
+  width: 100%;
+}
+
+.agenda-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 2rem;
+}
+
+.agenda-page .page-header-centered {
+  margin-bottom: 2rem;
+}
+
+.agenda-grid-2-col {
+  display: grid;
+  grid-template-columns: 350px 1fr;
+  gap: 2rem;
+  align-items: start;
+}
+
+.calendar-wrapper {
+  display: flex;
+  justify-content: center;
+}
+
+.reservations-panel {
+  min-height: 500px;
+}
+
+.reservations-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.reservation-item {
+  border: 1px solid var(--color-tertiary);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  transition: transform 0.2s ease;
+}
+
+.reservation-item:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-sm);
+}
+
+.res-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  background-color: var(--color-bg);
+  border-bottom: 1px solid var(--color-tertiary);
+}
+
+.res-time {
+  font-weight: 600;
+  color: var(--color-primary);
+}
+
+.res-status {
+  font-size: 0.7rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: var(--radius-full);
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.res-status.confirmed {
+  background-color: rgba(16, 185, 129, 0.1);
+  color: #10b981;
+}
+
+.res-status.cancelled {
+  background-color: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+}
+
+.cancelled-item {
+  opacity: 0.6;
+}
+
+.res-body {
+  padding: 1rem;
+  background-color: white;
+}
+
+.res-body h4 {
+  margin: 0 0 0.25rem 0;
+  color: var(--color-primary);
+}
+
+/* Modal Enhancements moved to index.css */
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.modal-header h3 {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-size: 1.75rem;
+  color: var(--color-primary);
+}
+
+.close-modal-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s;
+  color: var(--color-secondary);
+}
+
+.close-modal-btn:hover {
+  background-color: var(--color-bg);
+  color: var(--color-primary);
+}
+
+.modal-icon-wrapper {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background-color: rgba(200, 155, 90, 0.1);
+  color: var(--color-accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.res-info-box {
+  background-color: var(--color-bg);
+  padding: 1.25rem;
+  border-radius: var(--radius-md);
+  margin-bottom: 2rem;
+  border: 1px solid var(--color-tertiary);
+}
+
+.res-info-box h4 {
+  margin: 0.5rem 0 0 0;
+}
+
+.modal-form-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.modal-actions-grid {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 1rem;
+}
+
+.btn-danger {
+  background-color: transparent;
+  border: 1px solid #ef4444;
+  color: #ef4444;
+}
+
+.btn-danger:hover {
+  background-color: #ef4444;
+  color: white;
+}
+
+@media (max-width: 1024px) {
+  .agenda-grid-2-col {
+    grid-template-columns: 1fr;
+  }
+}

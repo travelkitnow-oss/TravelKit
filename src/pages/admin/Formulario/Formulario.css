@@ -1,0 +1,238 @@
+.form-builder-container {
+  padding-bottom: 2rem;
+}
+
+.builder-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  align-items: start;
+}
+
+@media (max-width: 1024px) {
+  .builder-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.card-header h3 {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.25rem;
+}
+
+.questions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 2rem;
+}
+
+.question-item {
+  display: flex;
+  align-items: center;
+  background-color: var(--color-white);
+  border: 1px solid var(--color-tertiary);
+  border-radius: var(--radius-md);
+  padding: 0.75rem;
+  transition: all var(--transition-fast);
+}
+
+.question-item:hover {
+  border-color: var(--color-secondary);
+}
+
+.question-item.base-question {
+  background-color: rgba(233, 223, 210, 0.3);
+  border-color: transparent;
+}
+
+.drag-handle {
+  cursor: grab;
+  padding-right: 0.5rem;
+  display: flex;
+  align-items: center;
+}
+
+.question-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.question-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.question-number {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--color-white);
+  background-color: var(--color-primary);
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.question-text {
+  font-weight: 500;
+  color: var(--color-primary);
+}
+
+.required-badge {
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  background-color: rgba(245, 158, 11, 0.15);
+  color: #d97706;
+  padding: 0.15rem 0.5rem;
+  border-radius: var(--radius-full);
+}
+
+.base-badge {
+  font-size: 0.7rem;
+  color: var(--color-secondary);
+  font-style: italic;
+  padding-left: 2rem;
+}
+
+.question-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.action-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.25rem;
+  color: var(--color-tertiary);
+}
+
+.toggle-required.active {
+  color: #f59e0b;
+}
+
+.add-question-form {
+  background-color: rgba(255, 255, 255, 0.5);
+  padding: 1.5rem;
+  border-radius: var(--radius-md);
+  border: 1px dashed var(--color-secondary);
+}
+
+.add-question-form h4 {
+  margin-bottom: 1rem;
+  color: var(--color-primary);
+  font-size: 1rem;
+}
+
+.add-form-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 1rem;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  color: var(--color-secondary);
+  cursor: pointer;
+}
+
+/* PREVIEW STYLES */
+.preview-body {
+  background-color: #f8f9fa;
+  border-radius: var(--radius-md);
+  padding: 2rem !important;
+}
+
+.preview-form {
+  background-color: var(--color-white);
+  padding: 2.5rem;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  border-top: 6px solid var(--color-accent);
+}
+
+.preview-header {
+  margin-bottom: 2rem;
+}
+
+.preview-header h3 {
+  font-size: 1.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.preview-header p {
+  color: var(--color-secondary);
+  font-size: 0.9rem;
+}
+
+.preview-field {
+  margin-bottom: 1.5rem;
+}
+
+.preview-field label {
+  display: block;
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+  color: var(--color-primary);
+}
+
+.preview-input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--color-tertiary);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-main);
+  outline: none;
+  transition: all var(--transition-fast);
+}
+
+.preview-input.textarea {
+  resize: vertical;
+}
+
+.input-with-icon {
+  position: relative;
+}
+
+.input-with-icon svg {
+  position: absolute;
+  left: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--color-secondary);
+}
+
+.input-with-icon .preview-input {
+  padding-left: 2.75rem;
+}
+
+.email-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.preview-select {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--color-tertiary);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-main);
+  outline: none;
+  background-color: #f8f9fa;
+  color: var(--color-primary);
+  font-weight: 500;
+}
