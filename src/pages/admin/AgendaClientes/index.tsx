@@ -7,6 +7,8 @@ import {
   Plane, 
   Plus, 
   X,
+  Calendar as CalendarIcon,
+  Download
 } from 'lucide-react';
 import { 
   format, 
@@ -49,11 +51,9 @@ export default function AgendaClientesPage() {
   }, [selectedClientId]);
 
   const fetchInitialData = async () => {
-    // 1. Fetch Clients
     const { data: clientsData } = await supabase.from('clients').select('*').order('name');
     setClients(clientsData || []);
 
-    // 2. Fetch Catalog (for picking items)
     const { data: foldersData } = await supabase.from('catalog_folders').select('*');
     const { data: itemsData } = await supabase.from('catalog_items').select('*');
     
@@ -65,13 +65,11 @@ export default function AgendaClientesPage() {
   };
 
   const fetchClientData = async (clientId: string) => {
-    // 1. Fetch Billing
     const { data: bData } = await supabase.from('client_billing').select('*').eq('client_id', clientId).single();
     if (bData) {
       setBillingData(prev => ({ ...prev, [clientId]: bData }));
     }
 
-    // 2. Fetch Scheduled Items
     const { data: sItems } = await supabase.from('scheduled_items').select('*').eq('client_id', clientId).order('date');
     setScheduledItems(sItems || []);
   };
@@ -90,61 +88,20 @@ export default function AgendaClientesPage() {
   const tripDateMax = selectedClientData?.dates?.return_date || '';
 
   const handleScheduleItem = async () => {
-    if (!selectedClientId || !newSchedule.itemId || !newSchedule.date || !newSchedule.time) return;
+    if (!selectedClientId || !newSchedule.itemId || !newSchedule.date) return;
 
-    let itemName = '';
-    let location = '';
-    let origin = '';
-    let destination = '';
-    let hotelDetails = {};
-    const type = addingType;
-
-    const allItems = catalogFolders.flatMap(f => f.items);
-    const foundItem = allItems.find(i => i.id === newSchedule.itemId);
-
-    if (foundItem) {
-      itemName = foundItem.name;
-      location = foundItem.location || foundItem.address || '';
-      origin = foundItem.origin || '';
-      destination = foundItem.destination || '';
-      
-      if (type === 'hotel') {
-        let calculatedNights = foundItem.nights;
-        if (newSchedule.date && newSchedule.endDate) {
-          try {
-            const start = parseISO(newSchedule.date);
-            const end = parseISO(newSchedule.endDate);
-            const diffTime = end.getTime() - start.getTime();
-            calculatedNights = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-          } catch { /* fallback */ }
-        }
-        hotelDetails = {
-          nights: calculatedNights,
-          breakfast: foundItem.breakfast,
-          halfBoard: foundItem.half_board,
-          allInclusive: foundItem.all_inclusive,
-          extraServices: foundItem.extra_services,
-          stars: foundItem.stars
-        };
-      }
-    }
-
-    const newItem = {
+    const itemDetails = catalogFolders.flatMap(f => f.items).find(i => i.id === newSchedule.itemId);
+    
+    const { data, error } = await supabase.from('scheduled_items').insert([{
       client_id: selectedClientId,
+      type: addingType,
       item_id: newSchedule.itemId,
-      name: itemName,
-      type,
+      name: itemDetails?.name || 'Ítem agendado',
       date: newSchedule.date,
-      end_date: newSchedule.endDate || null,
       time: newSchedule.time,
+      end_date: newSchedule.endDate || null,
       end_time: newSchedule.endTime || null,
-      location,
-      origin,
-      destination,
-      details: hotelDetails
-    };
-
-    const { data, error } = await supabase.from('scheduled_items').insert([newItem]).select();
+    }]).select();
 
     if (error) {
       alert('Error al agendar ítem');
@@ -162,44 +119,29 @@ export default function AgendaClientesPage() {
     else setScheduledItems(scheduledItems.filter(item => item.id !== id));
   };
 
-  // Rest of the UI logic (Calendar, PDF, etc.) should remain mostly the same
-  // but using 'date', 'end_date', 'time', 'end_time', etc.
-  
-  // To keep it short for this turn, I'll provide the full file in parts if needed
-  // but I'll write a reasonably complete version now.
-
   const renderHeader = () => {
-    const dateFormat = "MMMM yyyy";
     return (
-      <div className="header row flex-middle">
-        <div className="col col-start">
-          <div className="icon" onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}>
-            <ChevronLeft size={24} />
-          </div>
-        </div>
-        <div className="col col-center">
-          <span className="current-month-label">
-            {format(currentMonth, dateFormat, { locale: es })}
-          </span>
-        </div>
-        <div className="col col-end" onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}>
-          <div className="icon"><ChevronRight size={24} /></div>
-        </div>
+      <div className="calendar-header">
+        <button className="btn-icon" onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}>
+          <ChevronLeft size={20} />
+        </button>
+        <span className="current-month">
+          {format(currentMonth, "MMMM yyyy", { locale: es })}
+        </span>
+        <button className="btn-icon" onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}>
+          <ChevronRight size={20} />
+        </button>
       </div>
     );
   };
 
   const renderDays = () => {
-    const days = [];
-    const dateNames = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
-    for (let i = 0; i < 7; i++) {
-      days.push(
-        <div className="col col-center day-name-header" key={i}>
-          {dateNames[i]}
-        </div>
-      );
-    }
-    return <div className="days row">{days}</div>;
+    const days = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
+    return (
+      <div className="calendar-days-grid">
+        {days.map(d => <div key={d} className="calendar-day-label">{d}</div>)}
+      </div>
+    );
   };
 
   const renderCells = () => {
@@ -211,14 +153,10 @@ export default function AgendaClientesPage() {
     const rows = [];
     let days = [];
     let day = startDate;
-    let formattedDate = "";
 
     while (day <= endDate) {
       for (let i = 0; i < 7; i++) {
-        formattedDate = format(day, "d");
         const cloneDay = day;
-        
-        // Find items for this day
         const dayItems = scheduledItems.filter(item => {
           const itemStart = parseISO(item.date);
           if (item.type === 'hotel' && item.end_date) {
@@ -228,22 +166,22 @@ export default function AgendaClientesPage() {
           return isSameDay(cloneDay, itemStart);
         });
 
+        const isTripDay = tripDateMin && tripDateMax && 
+                          isWithinInterval(cloneDay, { start: parseISO(tripDateMin), end: parseISO(tripDateMax) });
+        
+        const isStart = tripDateMin && isSameDay(cloneDay, parseISO(tripDateMin));
+        const isEnd = tripDateMax && isSameDay(cloneDay, parseISO(tripDateMax));
+
         days.push(
           <div
-            className={`col cell ${
-              !isSameMonth(day, monthStart)
-                ? "disabled"
-                : isSameDay(day, new Date()) ? "selected" : ""
-            }`}
             key={day.toString()}
+            className={`calendar-cell ${!isSameMonth(day, monthStart) ? "disabled" : ""} ${isTripDay ? 'selected' : ''} ${isStart ? 'trip-start' : ''} ${isEnd ? 'trip-end' : ''}`}
           >
-            <span className="number">{formattedDate}</span>
-            <div className="cell-items-container">
+            <span className="number">{format(day, "d")}</span>
+            <div className="trip-markers">
               {dayItems.map((item, idx) => (
-                <div key={idx} className={`calendar-item ${item.type}`}>
-                  <span className="time">{item.time}</span>
-                  <span className="name">{item.name}</span>
-                  <button className="remove-item" onClick={(e) => { e.stopPropagation(); handleRemoveItem(item.id); }}>×</button>
+                <div key={idx} className={`trip-marker ${item.type}`} title={`${item.time} - ${item.name}`}>
+                  {item.type === 'hotel' ? 'H' : item.type === 'transport' ? 'T' : 'E'}
                 </div>
               ))}
             </div>
@@ -251,59 +189,18 @@ export default function AgendaClientesPage() {
         );
         day = addDays(day, 1);
       }
-      rows.push(
-        <div className="row" key={day.toString()}>
-          {days}
-        </div>
-      );
+      rows.push(<div className="calendar-row" key={day.toString()}>{days}</div>);
       days = [];
     }
-    return <div className="body">{rows}</div>;
+    return <div className="calendar-body">{rows}</div>;
   };
 
   const generatePDF = () => {
     if (!selectedClientData) return;
     const doc = new jsPDF();
     const client = selectedClientData;
-    
     doc.setFontSize(22);
-    doc.setTextColor(31, 58, 77); // Navy
     doc.text(`Itinerario: ${client.name}`, 20, 20);
-    
-    doc.setFontSize(12);
-    doc.setTextColor(100);
-    doc.text(`Email: ${client.email} | Tel: ${client.phone}`, 20, 30);
-    doc.line(20, 35, 190, 35);
-
-    let y = 45;
-    const sortedItems = [...scheduledItems].sort((a, b) => a.date.localeCompare(b.date));
-    
-    sortedItems.forEach((item) => {
-      if (y > 270) { doc.addPage(); y = 20; }
-      
-      doc.setFontSize(14);
-      doc.setTextColor(200, 155, 90); // Gold
-      doc.text(`${format(parseISO(item.date), 'dd/MM/yyyy')} - ${item.time}`, 20, y);
-      y += 7;
-      
-      doc.setFontSize(12);
-      doc.setTextColor(0);
-      doc.text(`${item.name}`, 25, y);
-      y += 5;
-      
-      if (item.type === 'transport') {
-        doc.setFontSize(10);
-        doc.text(`De: ${item.origin} a ${item.destination}`, 30, y);
-        y += 5;
-      } else if (item.type === 'hotel') {
-        doc.setFontSize(10);
-        doc.text(`Check-out: ${item.end_date ? format(parseISO(item.end_date), 'dd/MM/yyyy') : 'N/A'} | ${item.details?.nights || 0} noches`, 30, y);
-        y += 5;
-      }
-      
-      y += 10;
-    });
-
     doc.save(`Itinerario_${client.name.replace(' ', '_')}.pdf`);
   };
 
@@ -314,142 +211,130 @@ export default function AgendaClientesPage() {
         <p>Diseña el itinerario día por día para cada uno de tus clientes.</p>
       </header>
 
-      <div className="agenda-layout">
-        {/* Sidebar: Client Selector */}
-        <div className="client-selector-sidebar glass-card">
-          <div className="sidebar-header">
-            <h3>Seleccionar Cliente</h3>
-          </div>
-          <div className="client-search">
-            <User size={18} />
-            <select 
-              className="client-select"
-              value={selectedClientId || ''}
-              onChange={(e) => setSelectedClientId(e.target.value)}
+      {/* Selector de Clientes Estilo Pills */}
+      <div className="agenda-client-selector glass-card">
+        <div className="selector-label">
+          <User size={18} />
+          <span>Cliente:</span>
+        </div>
+        <div className="client-pills">
+          {clients.length === 0 && <span className="no-clients-hint">No hay clientes registrados</span>}
+          {clients.map(c => (
+            <div 
+              key={c.id} 
+              className={`client-pill ${selectedClientId === c.id ? 'active' : ''}`}
+              onClick={() => setSelectedClientId(c.id)}
             >
-              <option value="">-- Elige un cliente --</option>
-              {clients.map(c => (
-                <option key={c.id} value={c.id}>{c.name}</option>
-              ))}
-            </select>
-          </div>
+              {c.name}
+            </div>
+          ))}
+        </div>
+      </div>
 
-          {selectedClientData && (
-            <div className="selected-client-summary animate-slide-up">
-              <div className="trip-bounds">
-                <div className="bound">
-                  <Plane size={16} className="rotate-45" />
-                  <div>
-                    <label>Salida</label>
-                    <span>{selectedClientData.dates.departure_date ? format(parseISO(selectedClientData.dates.departure_date), 'dd MMM yyyy', { locale: es }) : 'No definida'}</span>
-                  </div>
-                </div>
-                <div className="bound">
-                  <Plane size={16} className="rotate-225" />
-                  <div>
-                    <label>Regreso</label>
-                    <span>{selectedClientData.dates.return_date ? format(parseISO(selectedClientData.dates.return_date), 'dd MMM yyyy', { locale: es }) : 'No definida'}</span>
-                  </div>
+      {selectedClientData && (
+        <>
+          {/* Banner de Info del Cliente */}
+          <div className="agenda-client-banner animate-slide-up">
+            <div className="banner-main-row">
+              <div className="banner-group">
+                <div className="banner-field">
+                  <span className="banner-label">Destino</span>
+                  <span className="banner-value highlight">{selectedClientData.dates.destination || 'Por definir'}</span>
                 </div>
               </div>
-
-              <div className="sidebar-actions">
-                <button className="btn btn-primary w-100 mb-3" onClick={() => setAddingType('hotel')}>
-                  <Plus size={18} /> Agendar Hotel
-                </button>
-                <button className="btn btn-outline w-100 mb-3" onClick={() => setAddingType('transport')}>
-                  <Plus size={18} /> Agendar Transporte
-                </button>
-                <button className="btn btn-outline w-100 mb-3" onClick={() => setAddingType('excursion')}>
-                  <Plus size={18} /> Agendar Excursión
-                </button>
-                <button className="btn btn-accent w-100" onClick={generatePDF}>
-                  Descargar Itinerario PDF
-                </button>
+              <div className="banner-group">
+                <Plane size={24} className="banner-icon" />
+                <div className="banner-field">
+                  <span className="banner-label">Salida</span>
+                  <span className="banner-value">{selectedClientData.dates.departure_date ? format(parseISO(selectedClientData.dates.departure_date), 'dd MMM yyyy', { locale: es }) : '-'}</span>
+                </div>
+              </div>
+              <div className="banner-group">
+                <div className="banner-field">
+                  <span className="banner-label">Regreso</span>
+                  <span className="banner-value">{selectedClientData.dates.return_date ? format(parseISO(selectedClientData.dates.return_date), 'dd MMM yyyy', { locale: es }) : '-'}</span>
+                </div>
+              </div>
+              <button className="btn-export-pdf" onClick={generatePDF}>
+                <Download size={18} /> Exportar Itinerario
+              </button>
+            </div>
+            
+            <div className="banner-stats-row">
+              <div className="stat-item">
+                <span className="stat-label">Acciones:</span>
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  <button className="btn btn-sm btn-outline" onClick={() => setAddingType('hotel')}>+ Hotel</button>
+                  <button className="btn btn-sm btn-outline" onClick={() => setAddingType('transport')}>+ Transporte</button>
+                  <button className="btn btn-sm btn-outline" onClick={() => setAddingType('excursion')}>+ Excursión</button>
+                </div>
               </div>
             </div>
-          )}
-        </div>
+          </div>
 
-        {/* Main Content: Calendar */}
-        <div className="calendar-container glass-card">
-          <div className="calendar">
+          {/* Calendario Full */}
+          <div className="agenda-calendar-full glass-card animate-fade-in">
             {renderHeader()}
             {renderDays()}
             {renderCells()}
           </div>
-        </div>
-      </div>
 
-      {/* Add Item Modal */}
+          {/* Lista de Ítems Agendados */}
+          <div className="agenda-scheduler-section mt-4">
+             <div className="scheduler-card glass-card">
+                <div className="scheduler-card-header excursion-header">
+                   <div className="scheduler-card-title">
+                      <CalendarIcon size={18} />
+                      <h3>Actividades y Transporte</h3>
+                   </div>
+                </div>
+                <div className="scheduler-items">
+                   {scheduledItems.length === 0 ? (
+                      <div className="scheduler-empty">No hay actividades agendadas.</div>
+                   ) : (
+                      scheduledItems.map(item => (
+                        <div key={item.id} className="scheduler-item">
+                           <div className={`scheduler-item-dot ${item.type}-dot`}></div>
+                           <div className={`scheduler-item-time ${item.type === 'transport' ? 'transport-time' : ''}`}>{item.time}</div>
+                           <div className="scheduler-item-info">
+                              <span className="scheduler-item-name">{item.name}</span>
+                              <span className="scheduler-item-date">{format(parseISO(item.date), 'dd/MM/yyyy')}</span>
+                           </div>
+                           <button className="btn-delete-scheduled" onClick={() => handleRemoveItem(item.id)}><X size={14} /></button>
+                        </div>
+                      ))
+                   )}
+                </div>
+             </div>
+          </div>
+        </>
+      )}
+
       {addingType && (
         <div className="modal-overlay">
           <div className="modal-content glass-card p-5" style={{ maxWidth: '500px' }}>
             <div className="modal-header">
-              <h3>Agendar {addingType === 'hotel' ? 'Hotel' : addingType === 'transport' ? 'Transporte' : 'Excursión'}</h3>
-              <button onClick={() => setAddingType(null)} className="close-btn"><X size={24} /></button>
+              <h3>Agendar {addingType}</h3>
+              <button onClick={() => setAddingType(null)} className="close-modal-btn"><X size={24} /></button>
             </div>
-            
             <div className="form-group mt-4">
               <label>Seleccionar del Catálogo</label>
-              <select 
-                className="form-input"
-                value={newSchedule.itemId}
-                onChange={e => setNewSchedule({ ...newSchedule, itemId: e.target.value })}
-              >
+              <select className="form-input" value={newSchedule.itemId} onChange={e => setNewSchedule({ ...newSchedule, itemId: e.target.value })}>
                 <option value="">-- Seleccionar --</option>
                 {catalogFolders.filter(f => f.type === addingType).map(folder => (
                   <optgroup key={folder.id} label={folder.name}>
                     {folder.items.map((item: any) => (
-                      <option key={item.id} value={item.id}>{item.name} - u$s {item.cost_usd}</option>
+                      <option key={item.id} value={item.id}>{item.name}</option>
                     ))}
                   </optgroup>
                 ))}
               </select>
             </div>
-
-            <div className="grid-2 gap-3">
-              <div className="form-group">
-                <label>{addingType === 'hotel' ? 'Fecha Check-in' : 'Fecha'}</label>
-                <input 
-                  type="date" 
-                  className="form-input"
-                  min={tripDateMin}
-                  max={tripDateMax}
-                  value={newSchedule.date}
-                  onChange={e => setNewSchedule({ ...newSchedule, date: e.target.value })}
-                />
-              </div>
-              <div className="form-group">
-                <label>Hora</label>
-                <input 
-                  type="time" 
-                  className="form-input"
-                  value={newSchedule.time}
-                  onChange={e => setNewSchedule({ ...newSchedule, time: e.target.value })}
-                />
-              </div>
+            <div className="grid-2 gap-3 mt-3">
+              <input type="date" className="form-input" value={newSchedule.date} onChange={e => setNewSchedule({ ...newSchedule, date: e.target.value })} />
+              <input type="time" className="form-input" value={newSchedule.time} onChange={e => setNewSchedule({ ...newSchedule, time: e.target.value })} />
             </div>
-
-            {addingType === 'hotel' && (
-              <div className="grid-2 gap-3">
-                <div className="form-group">
-                  <label>Fecha Check-out</label>
-                  <input 
-                    type="date" 
-                    className="form-input"
-                    min={newSchedule.date || tripDateMin}
-                    max={tripDateMax}
-                    value={newSchedule.endDate}
-                    onChange={e => setNewSchedule({ ...newSchedule, endDate: e.target.value })}
-                  />
-                </div>
-              </div>
-            )}
-
-            <button className="btn btn-primary w-100 mt-4" onClick={handleScheduleItem}>
-              Confirmar y Agendar
-            </button>
+            <button className="btn btn-primary w-100 mt-4" onClick={handleScheduleItem}>Agendar Ítem</button>
           </div>
         </div>
       )}
