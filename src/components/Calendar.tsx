@@ -19,7 +19,7 @@ import {
   isAfter
 } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, X, User, Mail, Phone, Check, CheckCircle } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, X, Check, CheckCircle } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import './Calendar.css';
 
@@ -43,10 +43,9 @@ export default function Calendar({ isDashboard = false, onDateSelect, selectedDa
   const [formValues, setFormValues] = useState<Record<string, string>>({});
   const [emailPrefix, setEmailPrefix] = useState('');
   const [emailDomain, setEmailDomain] = useState('@gmail.com');
-  const [customDomain, setCustomDomain] = useState('');
+  const [customDomain] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
-  const [triedToSubmit, setTriedToSubmit] = useState(false);
 
   const selectedDate = isDashboard ? selectedDateExternal : internalSelectedDate;
 
@@ -89,7 +88,6 @@ export default function Calendar({ isDashboard = false, onDateSelect, selectedDa
   };
 
   const handleSubmitForm = async () => {
-    setTriedToSubmit(true);
     const missingFields = formQuestions.filter(q => {
       if (!q.required) return false;
       if (q.type === 'email') return !emailPrefix;
@@ -127,13 +125,7 @@ export default function Calendar({ isDashboard = false, onDateSelect, selectedDa
     setIsSubmitting(false);
   };
 
-  const formatPhoneNumber = (value: string) => {
-    const numbers = value.replace(/\D/g, '').substring(0, 10);
-    if (limited.length <= 2) return limited;
-    if (limited.length <= 6) return `${limited.slice(0, 2)} ${limited.slice(2)}`;
-    return `${limited.slice(0, 2)} ${limited.slice(2, 6)}-${limited.slice(6)}`;
-  };
-  // Fixing the bug in formatPhoneNumber (limited vs numbers)
+  // Fixing the bug in formatPhoneNumber
   const formatPhoneFixed = (val: string) => {
     const num = val.replace(/\D/g, '').substring(0, 10);
     if (num.length <= 2) return num;

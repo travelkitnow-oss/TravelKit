@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect } from 'react';
-import { Inbox as InboxIcon, User, Mail, Phone, Calendar, Trash2, CheckCircle, MessageSquare, ChevronRight, Check, X } from 'lucide-react';
+import { Inbox as InboxIcon, User, Mail, Phone, Calendar, Trash2, MessageSquare, ChevronRight, Check, X } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { supabase } from '../../../lib/supabase';

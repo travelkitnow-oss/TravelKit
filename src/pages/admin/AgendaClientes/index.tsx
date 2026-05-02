@@ -5,14 +5,8 @@ import {
   ChevronRight, 
   User, 
   Plane, 
-  MapPin, 
   Plus, 
   X,
-  Clock,
-  Check,
-  Calendar as CalendarIcon,
-  Bus,
-  Hotel as HotelIcon
 } from 'lucide-react';
 import { 
   format, 
@@ -43,7 +37,6 @@ export default function AgendaClientesPage() {
   const [billingData, setBillingData] = useState<Record<string, any>>({});
   const [scheduledItems, setScheduledItems] = useState<any[]>([]);
   const [catalogFolders, setCatalogFolders] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchInitialData();
@@ -56,7 +49,6 @@ export default function AgendaClientesPage() {
   }, [selectedClientId]);
 
   const fetchInitialData = async () => {
-    setLoading(true);
     // 1. Fetch Clients
     const { data: clientsData } = await supabase.from('clients').select('*').order('name');
     setClients(clientsData || []);
@@ -70,11 +62,9 @@ export default function AgendaClientesPage() {
       items: (itemsData || []).filter(i => i.folder_id === f.id)
     }));
     setCatalogFolders(combinedFolders);
-    setLoading(false);
   };
 
   const fetchClientData = async (clientId: string) => {
-    setLoading(true);
     // 1. Fetch Billing
     const { data: bData } = await supabase.from('client_billing').select('*').eq('client_id', clientId).single();
     if (bData) {
@@ -84,7 +74,6 @@ export default function AgendaClientesPage() {
     // 2. Fetch Scheduled Items
     const { data: sItems } = await supabase.from('scheduled_items').select('*').eq('client_id', clientId).order('date');
     setScheduledItems(sItems || []);
-    setLoading(false);
   };
 
   const selectedClientData = useMemo(() => {
