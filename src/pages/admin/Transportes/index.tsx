@@ -109,6 +109,8 @@ export default function TransportesPage() {
         id: `tr-${Date.now()}`,
         name: newTransport.name || '',
         costUsd: Number(newTransport.costUsd) || 0,
+        origin: newTransport.origin || '',
+        destination: newTransport.destination || '',
         description: newTransport.description || '',
         notes: newTransport.notes || '',
         links: newTransport.links || []
@@ -121,7 +123,7 @@ export default function TransportesPage() {
       }));
     }
 
-    setNewTransport({ name: '', costUsd: 0, description: '', notes: '', links: [] });
+    setNewTransport({ name: '', costUsd: 0, origin: '', destination: '', description: '', notes: '', links: [] });
     setEditingTransportId(null);
     setShowTransportModal(false);
   };
@@ -143,7 +145,7 @@ export default function TransportesPage() {
   };
 
   const openCreateModal = () => {
-    setNewTransport({ name: '', costUsd: 0, description: '', notes: '', links: [] });
+    setNewTransport({ name: '', costUsd: 0, origin: '', destination: '', description: '', notes: '', links: [] });
     setEditingTransportId(null);
     setShowTransportModal(true);
   };
@@ -293,7 +295,7 @@ export default function TransportesPage() {
               <div className="folder-stats">
                 <div className="stat-row">
                   <span className="stat-label">Total Transportes</span>
-                  <span className="stat-value">{selectedFolder?.transports.length}</span>
+                  <span className="stat-label">{selectedFolder?.transports.length}</span>
                 </div>
                 <div className="stat-row">
                   <span className="stat-label">Costo Promedio</span>
@@ -404,10 +406,10 @@ export default function TransportesPage() {
               <div className="form-group">
                 <label>Descripción / Detalles</label>
                 <div className="input-with-icon align-start">
-                  <Map size={16} />
+                  <Notebook size={16} />
                   <textarea
                     className="form-input"
-                    style={{ height: '100px', paddingTop: '0.875rem' }}
+                    style={{ height: '80px', paddingTop: '0.875rem' }}
                     value={newTransport.description || ''}
                     onChange={e => setNewTransport({ ...newTransport, description: e.target.value })}
                     placeholder="Tipo de vehículo, capacidad, recorrido..."

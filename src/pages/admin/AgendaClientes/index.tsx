@@ -154,7 +154,7 @@ export default function AgendaClientesPage() {
 
     setScheduledItems(prev => ({
       ...prev,
-      [selectedClientId]: [...(prev[selectedClientId] || []), newItem]
+      [selectedClientId!]: [...(prev[selectedClientId!] || []), newItem]
     }));
 
     setAddingType(null);
