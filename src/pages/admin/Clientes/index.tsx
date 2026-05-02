@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   Users, 
   Plus, 
@@ -9,7 +9,7 @@ import {
   Edit2,
   X
 } from 'lucide-react';
-import { mockReservations } from '../../../lib/data';
+import { supabase } from '../../../lib/supabase';
 import ConfirmationModal from '../../../components/ConfirmationModal/ConfirmationModal';
 import './Clientes.css';
 
@@ -19,15 +19,12 @@ interface Client {
   email: string;
   phone: string;
   source: 'agenda' | 'manual';
-  createdAt: string;
+  created_at: string;
 }
 
 export default function ClientesPage() {
-  const [manualClients, setManualClients] = useState<Client[]>(() => {
-    const saved = localStorage.getItem('travelkit_manual_clients');
-    return saved ? JSON.parse(saved) : [];
-  });
-
+  const [clients, setClients] = useState<Client[]>([]);
+  const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
   
   // Manual client form
@@ -41,219 +38,86 @@ export default function ClientesPage() {
   const [deletingClientId, setDeletingClientId] = useState<string | null>(null);
   const [isConfirmDeleteOpen, setIsConfirmDeleteOpen] = useState(false);
 
-  // Track deleted or "absorbed" automatic clients
-  const [deletedAgendaIds, setDeletedAgendaIds] = useState<string[]>(() => {
-    const saved = localStorage.getItem('travelkit_deleted_agenda_ids');
-    return saved ? JSON.parse(saved) : [];
-  });
-
-  const [processedAgendaIds, setProcessedAgendaIds] = useState<string[]>(() => {
-    const saved = localStorage.getItem('travelkit_processed_agenda_ids');
-    return saved ? JSON.parse(saved) : [];
-  });
-
   useEffect(() => {
-    localStorage.setItem('travelkit_deleted_agenda_ids', JSON.stringify(deletedAgendaIds));
-    localStorage.setItem('travelkit_processed_agenda_ids', JSON.stringify(processedAgendaIds));
-  }, [deletedAgendaIds, processedAgendaIds]);
-
-  // Auto clients from agenda
-  const agendaClients = useMemo(() => {
-    const clients: Record<string, Client> = {};
-    Object.values(mockReservations).flat().forEach(res => {
-      if (res.status === 'confirmed') {
-        const key = `${res.client}-${res.email || ''}`.toLowerCase();
-        if (!clients[key]) {
-          clients[key] = {
-            id: `agenda-${res.id}`,
-            name: res.client,
-            email: res.email || '',
-            phone: res.phone || '',
-            source: 'agenda',
-            createdAt: new Date().toISOString() // Fallback
-          };
-        }
-      }
-    });
-    return Object.values(clients);
+    fetchClients();
   }, []);
 
-  // Merge all clients with deduplication logic
-  const allClients = useMemo(() => {
-    const finalMerged: Client[] = [];
+  const fetchClients = async () => {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from('clients')
+      .select('*')
+      .order('name', { ascending: true });
+    
+    if (error) {
+      console.error('Error fetching clients:', error);
+    } else {
+      setClients(data || []);
+    }
+    setLoading(false);
+  };
 
-    // 1. Gather all manual clients first (they are our master records)
-    const rawManual = [...manualClients];
-    rawManual.forEach(current => {
-      const existingIndex = finalMerged.findIndex(f => 
-        f.name.toLowerCase() === current.name.toLowerCase() && 
-        (
-          current.email.toLowerCase().split(' y ').some(e => e.trim() && f.email.toLowerCase().includes(e.trim())) || 
-          current.phone.split(' y ').some(p => p.trim() && f.phone.includes(p.trim()))
-        )
-      );
-
-      if (existingIndex > -1) {
-        const existing = finalMerged[existingIndex];
-        // Merge manual data (user might have created two manual ones)
-        const emails = new Set([
-          ...existing.email.split(' y ').map(e => e.trim()),
-          ...current.email.split(' y ').map(e => e.trim())
-        ].filter(Boolean));
-        existing.email = Array.from(emails).join(' y ');
-
-        const phones = new Set([
-          ...existing.phone.split(' y ').map(p => p.trim()),
-          ...current.phone.split(' y ').map(p => p.trim())
-        ].filter(Boolean));
-        existing.phone = Array.from(phones).join(' y ');
-      } else {
-        finalMerged.push({ ...current });
-      }
-    });
-
-    // 2. Process agenda clients
-    agendaClients.forEach(ac => {
-      if (deletedAgendaIds.includes(ac.id) || processedAgendaIds.includes(ac.id)) return;
-
-      const existingIndex = finalMerged.findIndex(f => 
-        f.name.toLowerCase() === ac.name.toLowerCase() && 
-        (
-          f.email.toLowerCase().split(' y ').some(e => e.trim() === ac.email.toLowerCase()) || 
-          f.phone.split(' y ').some(p => p.trim() === ac.phone)
-        )
-      );
-
-      if (existingIndex > -1) {
-        const existing = finalMerged[existingIndex];
-        
-        // IF EXISTING IS MANUAL, STOP POLLUTION.
-        // We don't merge agenda data into manual records.
-        if (existing.source === 'manual') return;
-
-        // If existing is also agenda, we can merge discovery data
-        const emails = new Set([...existing.email.split(' y '), ac.email].map(e => e.trim()).filter(Boolean));
-        existing.email = Array.from(emails).join(' y ');
-
-        const phones = new Set([...existing.phone.split(' y '), ac.phone].map(p => p.trim()).filter(Boolean));
-        existing.phone = Array.from(phones).join(' y ');
-      } else {
-        finalMerged.push({ ...ac });
-      }
-    });
-
-    return finalMerged.sort((a, b) => a.name.localeCompare(b.name));
-  }, [manualClients, agendaClients, deletedAgendaIds, processedAgendaIds]);
-
-  useEffect(() => {
-    localStorage.setItem('travelkit_manual_clients', JSON.stringify(manualClients));
-  }, [manualClients]);
-
-  const handleAddManualClient = () => {
+  const handleAddManualClient = async () => {
     setAttemptedSubmit(true);
     if (!newName || !newEmail || !newPhone) return;
 
-    // Validation
     if (!newEmail.includes('@')) {
       alert('El email debe contener un @');
       return;
     }
 
-    const newClient: Client = {
-      id: `manual-${Date.now()}`,
-      name: newName,
-      email: newEmail,
-      phone: newPhone,
-      source: 'manual',
-      createdAt: new Date().toISOString()
-    };
+    const { data, error } = await supabase
+      .from('clients')
+      .insert([
+        { name: newName, email: newEmail, phone: newPhone, source: 'manual' }
+      ])
+      .select();
 
-    // Find if this new manual client matches any existing agenda clients by name
-    const absorbed = agendaClients.filter(ac => 
-      ac.name.toLowerCase() === newName.toLowerCase()
-    ).map(ac => ac.id);
-
-    if (absorbed.length > 0) {
-      setProcessedAgendaIds(prev => Array.from(new Set([...prev, ...absorbed])));
+    if (error) {
+      alert('Error al guardar el cliente');
+    } else {
+      if (data) setClients([data[0], ...clients]);
+      setShowAddModal(false);
+      setAttemptedSubmit(false);
+      setNewName('');
+      setNewEmail('');
+      setNewPhone('');
     }
-
-    // Deduplicate manualClients array to prevent pollution from multiple manual entries
-    const otherManuals = manualClients.filter(c => 
-      !(c.name.toLowerCase() === newName.toLowerCase() && (c.email === newEmail || c.phone === newPhone))
-    );
-
-    setManualClients([newClient, ...otherManuals]);
-    setShowAddModal(false);
-    setAttemptedSubmit(false);
-    setNewName('');
-    setNewEmail('');
-    setNewPhone('');
   };
 
-  const handleEditClient = () => {
+  const handleEditClient = async () => {
     if (!editingClient) return;
     
-    let nextManualClients = [...manualClients];
+    const { error } = await supabase
+      .from('clients')
+      .update({
+        name: editingClient.name,
+        email: editingClient.email,
+        phone: editingClient.phone
+      })
+      .eq('id', editingClient.id);
 
-    // 1. Convert agenda to manual if needed
-    if (editingClient.id.startsWith('agenda-')) {
-      const agendaId = editingClient.id;
-      const newManual = { 
-        ...editingClient, 
-        id: `manual-${Date.now()}`,
-        source: 'manual' as const 
-      };
-      nextManualClients = [newManual, ...nextManualClients];
-      setProcessedAgendaIds(prev => Array.from(new Set([...prev, agendaId])));
+    if (error) {
+      alert('Error al actualizar el cliente');
     } else {
-      // Update existing
-      nextManualClients = nextManualClients.map(c => c.id === editingClient.id ? editingClient : c);
+      setClients(clients.map(c => c.id === editingClient.id ? editingClient : c));
+      alert('Cambios guardados correctamente.');
+      setEditingClient(null);
     }
-
-    // 2. Deep clean manualClients: Remove any OTHER manual records that match this person
-    // to prevent them from re-polluting the merged view later.
-    const finalName = editingClient.name.toLowerCase();
-
-    // Actually, a simpler way:
-    const uniqueManuals: Client[] = [];
-    const seen = new Set();
-    
-    // Process the edited one first to ensure it stays
-    const editedOne = editingClient.id.startsWith('agenda-') ? nextManualClients[0] : editingClient;
-    uniqueManuals.push(editedOne);
-    seen.add(editedOne.name.toLowerCase() + editedOne.phone);
-
-    nextManualClients.forEach(c => {
-      if (c.id === editedOne.id) return;
-      const key = c.name.toLowerCase() + c.phone;
-      if (!seen.has(key)) {
-        uniqueManuals.push(c);
-        seen.add(key);
-      }
-    });
-
-    setManualClients(uniqueManuals);
-    
-    // Also mark ALL agenda clients with this name as processed
-    const newlyAbsorbed = agendaClients.filter(ac => 
-      ac.name.toLowerCase() === finalName
-    ).map(ac => ac.id);
-
-    if (newlyAbsorbed.length > 0) {
-      setProcessedAgendaIds(prev => Array.from(new Set([...prev, ...newlyAbsorbed])));
-    }
-    
-    alert('Cambios guardados correctamente.');
-    setEditingClient(null);
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (!deletingClientId) return;
     
-    if (deletingClientId.startsWith('agenda-')) {
-      setDeletedAgendaIds([...deletedAgendaIds, deletingClientId]);
+    const { error } = await supabase
+      .from('clients')
+      .delete()
+      .eq('id', deletingClientId);
+
+    if (error) {
+      alert('Error al eliminar el cliente');
     } else {
-      setManualClients(manualClients.filter(c => c.id !== deletingClientId));
+      setClients(clients.filter(c => c.id !== deletingClientId));
     }
     setDeletingClientId(null);
   };
@@ -294,7 +158,7 @@ export default function ClientesPage() {
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
               <div className="client-count-badge">
-                {allClients.length} Clientes
+                {clients.length} Clientes
               </div>
               <button className="btn btn-primary" onClick={() => setShowAddModal(true)}>
                 <Plus size={18} />
@@ -316,7 +180,15 @@ export default function ClientesPage() {
                 </tr>
               </thead>
               <tbody>
-                {allClients.length === 0 ? (
+                {loading ? (
+                  <tr>
+                    <td colSpan={4} className="empty-table-cell">
+                      <div className="empty-state py-5">
+                        <p>Cargando clientes...</p>
+                      </div>
+                    </td>
+                  </tr>
+                ) : clients.length === 0 ? (
                   <tr>
                     <td colSpan={4} className="empty-table-cell">
                       <div className="empty-state py-5">
@@ -326,7 +198,7 @@ export default function ClientesPage() {
                     </td>
                   </tr>
                 ) : (
-                  allClients.map(client => (
+                  clients.map(client => (
                     <tr key={client.id}>
                       <td>
                         <div className="client-name-cell">
@@ -335,7 +207,7 @@ export default function ClientesPage() {
                           </div>
                           <div>
                             <div className="fw-bold">{client.name}</div>
-                            <span className="text-xs text-secondary">ID: {client.id.split('-')[1] || client.id}</span>
+                            <span className="text-xs text-secondary">ID: {client.id.split('-')[1] || client.id.substring(0,8)}</span>
                           </div>
                         </div>
                       </td>

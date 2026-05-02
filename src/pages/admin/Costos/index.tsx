@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Plus, Trash2, Edit2, X, Check } from 'lucide-react';
 import ConfirmationModal from '../../../components/ConfirmationModal/ConfirmationModal';
+import { supabase } from '../../../lib/supabase';
 import './Costos.css';
 
 interface ServiceItem {
@@ -10,16 +11,8 @@ interface ServiceItem {
 }
 
 export default function CostosPage() {
-  const [services, setServices] = useState<ServiceItem[]>(() => {
-    const saved = localStorage.getItem('travelkit_services');
-    return saved ? JSON.parse(saved) : [
-      { id: '1', name: 'Armado de itinerario personalizado', price: 50 },
-      { id: '2', name: 'Reserva de hoteles y vuelos', price: 20 },
-      { id: '3', name: 'Gestión de visas', price: 30 },
-      { id: '4', name: 'Seguro de viaje', price: 15 }
-    ];
-  });
-
+  const [services, setServices] = useState<ServiceItem[]>([]);
+  const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
   const [newName, setNewName] = useState('');
   const [newPrice, setNewPrice] = useState<string>('');
@@ -27,36 +20,62 @@ export default function CostosPage() {
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
 
   useEffect(() => {
-    localStorage.setItem('travelkit_services', JSON.stringify(services));
-  }, [services]);
+    fetchServices();
+  }, []);
 
-  const handleAddService = () => {
+  const fetchServices = async () => {
+    setLoading(true);
+    const { data, error } = await supabase.from('services').select('*').order('name');
+    if (error) {
+      console.error('Error fetching services:', error);
+    } else {
+      setServices(data || []);
+    }
+    setLoading(false);
+  };
+
+  const handleAddService = async () => {
     if (!newName || !newPrice) return;
-    const newService: ServiceItem = {
-      id: Date.now().toString(),
-      name: newName,
-      price: parseFloat(newPrice)
-    };
-    setServices([...services, newService]);
-    setNewName('');
-    setNewPrice('');
-    setShowAddModal(false);
-  };
+    const { data, error } = await supabase.from('services').insert([
+      { name: newName, price: parseFloat(newPrice) }
+    ]).select();
 
-  const handleUpdateService = () => {
-    if (!editingService) return;
-    setServices(services.map(s => s.id === editingService.id ? editingService : s));
-    setEditingService(null);
-  };
-
-  const handleDeleteService = () => {
-    if (isDeleting) {
-      setServices(services.filter(s => s.id !== isDeleting));
-      setIsDeleting(null);
+    if (error) {
+      alert('Error al guardar servicio');
+    } else if (data) {
+      setServices([...services, data[0]]);
+      setNewName('');
+      setNewPrice('');
+      setShowAddModal(false);
     }
   };
 
+  const handleUpdateService = async () => {
+    if (!editingService) return;
+    const { error } = await supabase
+      .from('services')
+      .update({ name: editingService.name, price: editingService.price })
+      .eq('id', editingService.id);
 
+    if (error) {
+      alert('Error al actualizar servicio');
+    } else {
+      setServices(services.map(s => s.id === editingService.id ? editingService : s));
+      setEditingService(null);
+    }
+  };
+
+  const handleDeleteService = async () => {
+    if (isDeleting) {
+      const { error } = await supabase.from('services').delete().eq('id', isDeleting);
+      if (error) {
+        alert('Error al eliminar servicio');
+      } else {
+        setServices(services.filter(s => s.id !== isDeleting));
+        setIsDeleting(null);
+      }
+    }
+  };
 
   return (
     <div className="costos-page animate-fade-in">
@@ -72,75 +91,83 @@ export default function CostosPage() {
             <Plus size={18} /> Nueva Tarea/Costo
           </button>
         </div>
-        <table className="costos-table">
-          <thead>
-            <tr>
-              <th>Nombre de la Tarea / Servicio</th>
-              <th>Precio</th>
-              <th style={{ textAlign: 'right' }}>Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            {services.length > 0 ? (
-              services.map(service => (
-                <tr key={service.id}>
-                  <td>
-                    {editingService?.id === service.id ? (
-                      <input 
-                        type="text" 
-                        className="form-input-sm"
-                        value={editingService.name}
-                        onChange={e => setEditingService({...editingService, name: e.target.value})}
-                      />
-                    ) : (
-                      <span className="service-name">{service.name}</span>
-                    )}
-                  </td>
-                  <td>
-                    {editingService?.id === service.id ? (
-                      <input 
-                        type="number" 
-                        className="form-input-sm price-input"
-                        style={{ width: '120px', textAlign: 'right', fontWeight: 'bold' }}
-                        value={editingService.price}
-                        onChange={e => setEditingService({...editingService, price: parseFloat(e.target.value)})}
-                      />
-                    ) : (
-                      <span className="service-price">${service.price.toLocaleString('es-AR')}</span>
-                    )}
-                  </td>
-                  <td style={{ textAlign: 'right' }}>
-                    <div className="actions-cell" style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
-                      {editingService?.id === service.id ? (
-                        <>
-                          <button className="btn btn-primary btn-xs" onClick={handleUpdateService} title="Guardar">
-                            <Check size={14} />
-                          </button>
-                          <button className="btn btn-outline btn-xs" onClick={() => setEditingService(null)} title="Cancelar">
-                            <X size={14} />
-                          </button>
-                        </>
-                      ) : (
-                        <>
-                          <button className="btn-icon-sm" onClick={() => setEditingService(service)} title="Editar">
-                            <Edit2 size={16} />
-                          </button>
-                          <button className="btn-icon-sm text-danger" onClick={() => setIsDeleting(service.id)} title="Eliminar">
-                            <Trash2 size={16} />
-                          </button>
-                        </>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))
-            ) : (
+        
+        {loading ? (
+          <div className="p-5 text-center">
+            <div className="loader-premium"></div>
+            <p className="mt-3">Cargando tarifas...</p>
+          </div>
+        ) : (
+          <table className="costos-table">
+            <thead>
               <tr>
-                <td colSpan={3} className="text-center py-4 text-secondary">No se encontraron servicios definidos.</td>
+                <th>Nombre de la Tarea / Servicio</th>
+                <th>Precio</th>
+                <th style={{ textAlign: 'right' }}>Acciones</th>
               </tr>
-            )}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {services.length > 0 ? (
+                services.map(service => (
+                  <tr key={service.id}>
+                    <td>
+                      {editingService?.id === service.id ? (
+                        <input 
+                          type="text" 
+                          className="form-input-sm"
+                          value={editingService.name}
+                          onChange={e => setEditingService({...editingService, name: e.target.value})}
+                        />
+                      ) : (
+                        <span className="service-name">{service.name}</span>
+                      )}
+                    </td>
+                    <td>
+                      {editingService?.id === service.id ? (
+                        <input 
+                          type="number" 
+                          className="form-input-sm price-input"
+                          style={{ width: '120px', textAlign: 'right', fontWeight: 'bold' }}
+                          value={editingService.price}
+                          onChange={e => setEditingService({...editingService, price: parseFloat(e.target.value)})}
+                        />
+                      ) : (
+                        <span className="service-price">${service.price.toLocaleString('es-AR')}</span>
+                      )}
+                    </td>
+                    <td style={{ textAlign: 'right' }}>
+                      <div className="actions-cell" style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+                        {editingService?.id === service.id ? (
+                          <>
+                            <button className="btn btn-primary btn-xs" onClick={handleUpdateService} title="Guardar">
+                              <Check size={14} />
+                            </button>
+                            <button className="btn btn-outline btn-xs" onClick={() => setEditingService(null)} title="Cancelar">
+                              <X size={14} />
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <button className="btn-icon-sm" onClick={() => setEditingService(service)} title="Editar">
+                              <Edit2 size={16} />
+                            </button>
+                            <button className="btn-icon-sm text-danger" onClick={() => setIsDeleting(service.id)} title="Eliminar">
+                              <Trash2 size={16} />
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={3} className="text-center py-4 text-secondary">No se encontraron servicios definidos.</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        )}
       </div>
 
       {showAddModal && (

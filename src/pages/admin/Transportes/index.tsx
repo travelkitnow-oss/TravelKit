@@ -12,6 +12,7 @@ import {
   DollarSign,
   Map
 } from 'lucide-react';
+import { supabase } from '../../../lib/supabase';
 import './Transportes.css';
 
 interface TransportLink {
@@ -21,8 +22,9 @@ interface TransportLink {
 
 interface Transport {
   id: string;
+  folder_id: string;
   name: string;
-  costUsd: number;
+  cost_usd: number;
   origin: string;
   destination: string;
   description: string;
@@ -37,11 +39,8 @@ interface TransportFolder {
 }
 
 export default function TransportesPage() {
-  const [folders, setFolders] = useState<TransportFolder[]>(() => {
-    const saved = localStorage.getItem('travelkit_transport_folders');
-    return saved ? JSON.parse(saved) : [];
-  });
-
+  const [folders, setFolders] = useState<TransportFolder[]>([]);
+  const [loading, setLoading] = useState(true);
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
   const [dollarRate, setDollarRate] = useState<number>(0);
 
@@ -53,12 +52,12 @@ export default function TransportesPage() {
   // Form States
   const [newFolderName, setNewFolderName] = useState('');
   const [newTransport, setNewTransport] = useState<Partial<Transport>>({
-    name: '', costUsd: 0, origin: '', destination: '', description: '', notes: '', links: []
+    name: '', cost_usd: 0, origin: '', destination: '', description: '', notes: '', links: []
   });
 
   useEffect(() => {
-    localStorage.setItem('travelkit_transport_folders', JSON.stringify(folders));
-  }, [folders]);
+    fetchFolders();
+  }, []);
 
   useEffect(() => {
     fetch('https://dolarapi.com/v1/dolares/blue')
@@ -67,76 +66,121 @@ export default function TransportesPage() {
       .catch(() => setDollarRate(0));
   }, []);
 
-  const selectedFolder = folders.find(f => f.id === selectedFolderId);
+  const fetchFolders = async () => {
+    setLoading(true);
+    const { data: folderData, error: folderError } = await supabase
+      .from('catalog_folders')
+      .select('*')
+      .eq('type', 'transport')
+      .order('name');
 
-  const handleAddFolder = () => {
-    if (!newFolderName.trim()) return;
-    const folder: TransportFolder = {
-      id: `folder-${Date.now()}`,
-      name: newFolderName.trim(),
-      transports: []
-    };
-    setFolders([...folders, folder]);
-    setNewFolderName('');
-    setShowFolderModal(false);
+    if (folderError) {
+      console.error('Error fetching folders:', folderError);
+      setLoading(false);
+      return;
+    }
+
+    if (folderData.length === 0) {
+      setFolders([]);
+      setLoading(false);
+      return;
+    }
+
+    const { data: itemData, error: itemError } = await supabase
+      .from('catalog_items')
+      .select('*')
+      .in('folder_id', folderData.map(f => f.id));
+
+    if (itemError) console.error('Error fetching items:', itemError);
+
+    const combined: TransportFolder[] = folderData.map(f => ({
+      id: f.id,
+      name: f.name,
+      transports: (itemData || [])
+        .filter(i => i.folder_id === f.id)
+        .map(i => ({
+          id: i.id,
+          folder_id: i.folder_id,
+          name: i.name,
+          cost_usd: i.cost_usd,
+          origin: i.origin,
+          destination: i.destination,
+          description: i.description,
+          notes: i.notes,
+          links: i.links || []
+        }))
+    }));
+
+    setFolders(combined);
+    setLoading(false);
   };
 
-  const handleDeleteFolder = (id: string, e: React.MouseEvent) => {
+  const handleAddFolder = async () => {
+    if (!newFolderName.trim()) return;
+    const { data, error } = await supabase
+      .from('catalog_folders')
+      .insert([{ name: newFolderName.trim(), type: 'transport' }])
+      .select();
+
+    if (error) {
+      alert('Error al crear carpeta');
+    } else if (data) {
+      setFolders([...folders, { id: data[0].id, name: data[0].name, transports: [] }]);
+      setNewFolderName('');
+      setShowFolderModal(false);
+    }
+  };
+
+  const handleDeleteFolder = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     if (window.confirm('¿Eliminar esta carpeta y todos sus transportes?')) {
-      setFolders(folders.filter(f => f.id !== id));
-      if (selectedFolderId === id) setSelectedFolderId(null);
+      const { error } = await supabase.from('catalog_folders').delete().eq('id', id);
+      if (!error) {
+        setFolders(folders.filter(f => f.id !== id));
+        if (selectedFolderId === id) setSelectedFolderId(null);
+      }
     }
   };
 
-  const handleAddTransport = () => {
+  const handleAddTransport = async () => {
     if (!selectedFolderId || !newTransport.name) return;
 
+    const dbData = {
+      folder_id: selectedFolderId,
+      name: newTransport.name,
+      cost_usd: Number(newTransport.cost_usd) || 0,
+      origin: newTransport.origin || '',
+      destination: newTransport.destination || '',
+      description: newTransport.description || '',
+      notes: newTransport.notes || '',
+      links: newTransport.links || []
+    };
+
     if (editingTransportId) {
-      setFolders(folders.map(f => {
-        if (f.id === selectedFolderId) {
-          return {
-            ...f,
-            transports: f.transports.map(t =>
-              t.id === editingTransportId ? { ...t, ...newTransport as Transport } : t
-            )
-          };
-        }
-        return f;
-      }));
-    } else {
-      const transport: Transport = {
-        id: `tr-${Date.now()}`,
-        name: newTransport.name || '',
-        costUsd: Number(newTransport.costUsd) || 0,
-        origin: newTransport.origin || '',
-        destination: newTransport.destination || '',
-        description: newTransport.description || '',
-        notes: newTransport.notes || '',
-        links: newTransport.links || []
-      };
-      setFolders(folders.map(f => {
-        if (f.id === selectedFolderId) {
-          return { ...f, transports: [...f.transports, transport] };
-        }
-        return f;
-      }));
-    }
-
-    setNewTransport({ name: '', costUsd: 0, origin: '', destination: '', description: '', notes: '', links: [] });
-    setEditingTransportId(null);
-    setShowTransportModal(false);
-  };
-
-  const handleDeleteTransport = (id: string) => {
-    if (!selectedFolderId) return;
-    setFolders(folders.map(f => {
-      if (f.id === selectedFolderId) {
-        return { ...f, transports: f.transports.filter(t => t.id !== id) };
+      const { error } = await supabase.from('catalog_items').update(dbData).eq('id', editingTransportId);
+      if (error) alert('Error al actualizar transporte');
+      else {
+        fetchFolders();
+        setShowTransportModal(false);
       }
-      return f;
-    }));
+    } else {
+      const { error } = await supabase.from('catalog_items').insert([dbData]);
+      if (error) alert('Error al guardar transporte');
+      else {
+        fetchFolders();
+        setShowTransportModal(false);
+      }
+    }
   };
+
+  const handleDeleteTransport = async (id: string) => {
+    if (window.confirm('¿Eliminar este transporte?')) {
+      const { error } = await supabase.from('catalog_items').delete().eq('id', id);
+      if (!error) fetchFolders();
+    }
+  };
+
+  const selectedFolder = folders.find(f => f.id === selectedFolderId);
 
   const openEditModal = (t: Transport) => {
     setNewTransport(t);
@@ -145,7 +189,7 @@ export default function TransportesPage() {
   };
 
   const openCreateModal = () => {
-    setNewTransport({ name: '', costUsd: 0, origin: '', destination: '', description: '', notes: '', links: [] });
+    setNewTransport({ name: '', cost_usd: 0, origin: '', destination: '', description: '', notes: '', links: [] });
     setEditingTransportId(null);
     setShowTransportModal(true);
   };
@@ -154,33 +198,39 @@ export default function TransportesPage() {
     <div className="transportes-page animate-fade-in">
       <header className="page-header-centered">
         <h1>Catálogo de Transportes</h1>
-        <p>Organiza las opciones de traslado por destino y consultá los precios actualizados.</p>
+        <p>Gestiona opciones de traslados, vuelos y buses por región.</p>
       </header>
 
       {/* Dollar rate banner */}
-      <div className="dollar-banner glass-card mb-4">
-        <div>
-          <div className="dollar-label">Dólar Blue (Venta)</div>
-          <div className="dollar-value">${dollarRate.toLocaleString('es-AR')}</div>
+      <div className="dollar-info-bar mb-4">
+        <div className="dollar-rate">
+          <div className="rate-item">
+            <span className="label">Dólar Blue</span>
+            <span className="value">${dollarRate.toLocaleString('es-AR')}</span>
+          </div>
         </div>
-        <span className="dollar-note">Cotización en tiempo real para conversiones ARS</span>
+        <span style={{ fontSize: '0.8rem', opacity: 0.8 }}>Conversión automática a ARS</span>
       </div>
 
       {!selectedFolderId ? (
-        // Folders Grid
         <div>
-          <div className="folders-header">
-            <h2 className="section-title">Destinos</h2>
+          <div className="folders-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+            <h2 className="section-title">Carpetas de Transporte</h2>
             <button className="btn btn-primary" onClick={() => setShowFolderModal(true)}>
               <FolderPlus size={18} />
               Nueva Carpeta
             </button>
           </div>
 
-          {folders.length === 0 ? (
+          {loading ? (
+            <div className="p-5 text-center">
+              <div className="loader-premium"></div>
+              <p className="mt-3">Cargando carpetas...</p>
+            </div>
+          ) : folders.length === 0 ? (
             <div className="empty-state-card glass-card">
               <Truck size={80} strokeWidth={1} />
-              <h3>Sin destinos aún</h3>
+              <h3>Sin carpetas aún</h3>
               <p>Crea tu primera carpeta para organizar los transportes.</p>
               <button className="btn btn-primary mt-4" onClick={() => setShowFolderModal(true)}>
                 <FolderPlus size={18} /> Crear Carpeta
@@ -198,11 +248,10 @@ export default function TransportesPage() {
                     <Folder size={64} fill="currentColor" />
                   </div>
                   <span className="folder-name">{folder.name}</span>
-                  <span className="text-xs text-secondary">{folder.transports.length} transportes</span>
+                  <span className="folder-count">{folder.transports.length} transportes</span>
                   <button
                     className="btn-delete-folder mt-2"
                     onClick={(e) => handleDeleteFolder(folder.id, e)}
-                    title="Eliminar carpeta"
                   >
                     <Trash2 size={16} />
                   </button>
@@ -212,14 +261,13 @@ export default function TransportesPage() {
           )}
         </div>
       ) : (
-        // Folder Detail
         <div>
-          <div className="folder-detail-header">
+          <div className="folder-detail-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2.5rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
-              <button className="btn-icon-sm" onClick={() => setSelectedFolderId(null)} style={{ background: 'white', boxShadow: 'var(--shadow-sm)' }}>
+              <button className="btn-icon" onClick={() => setSelectedFolderId(null)}>
                 <ChevronLeft size={20} />
               </button>
-              <h2 className="m-0" style={{ fontWeight: 700, fontSize: '2.2rem', letterSpacing: '-0.02em' }}>{selectedFolder?.name}</h2>
+              <h2 className="m-0" style={{ fontWeight: 800, fontSize: '2rem' }}>{selectedFolder?.name}</h2>
             </div>
             <button className="btn btn-primary" onClick={openCreateModal}>
               <Plus size={18} />
@@ -228,7 +276,7 @@ export default function TransportesPage() {
           </div>
 
           <div className="folder-detail-container">
-            <div className="excursions-list">
+            <div className="transports-list">
               {selectedFolder?.transports.length === 0 ? (
                 <div className="empty-state-card">
                   <Truck size={80} strokeWidth={1} />
@@ -236,76 +284,61 @@ export default function TransportesPage() {
                   <p>Agrega opciones de traslado para {selectedFolder?.name}.</p>
                 </div>
               ) : (
-                selectedFolder?.transports.map(tr => (
-                  <div key={tr.id} className="glass-card excursion-item">
-                    <div className="excursion-header">
+                selectedFolder?.transports.map(transport => (
+                  <div key={transport.id} className="transport-item glass-card">
+                    <div className="transport-header">
                       <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                        <h3 className="excursion-title">{tr.name}</h3>
-                        <div className="excursion-costs">
-                          <span className="cost-usd">u$s {tr.costUsd}</span>
-                          <span className="cost-ars">≈ ${(tr.costUsd * dollarRate).toLocaleString('es-AR')}</span>
+                        <h3 className="transport-title">{transport.name}</h3>
+                        <div className="transport-costs">
+                          <span className="cost-usd">u$s {transport.cost_usd}</span>
+                          <span className="cost-ars">≈ ${(transport.cost_usd * dollarRate).toLocaleString('es-AR')}</span>
                         </div>
                       </div>
                       <div style={{ display: 'flex', gap: '0.5rem' }}>
-                        <button className="btn-edit-excursion" onClick={() => openEditModal(tr)} title="Editar">
+                        <button className="btn-edit-transport" onClick={() => openEditModal(transport)}>
                           <Edit2 size={16} />
                         </button>
-                        <button className="btn-delete-excursion" onClick={() => handleDeleteTransport(tr.id)} title="Eliminar">
+                        <button className="btn-delete-transport" onClick={() => handleDeleteTransport(transport.id)}>
                           <Trash2 size={16} />
                         </button>
                       </div>
                     </div>
 
-                    <div className="excursion-links">
-                      {tr.links.map((link, i) => (
-                        <a key={i} href={link.url} target="_blank" rel="noopener noreferrer" className="excursion-link">
+                    <div className="transport-links">
+                      {transport.links.map((link, i) => (
+                        <a key={i} href={link.url} target="_blank" rel="noopener noreferrer" className="transport-link">
                           <LinkIcon size={12} />
                           {link.label}
                         </a>
                       ))}
                     </div>
 
-                    <div className="excursion-content-compact">
-                      {(tr.origin || tr.destination) && (
-                        <div className="itinerary-box" style={{ marginBottom: '0.5rem' }}>
-                          <span style={{ fontWeight: 700, fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--color-secondary)', marginRight: '0.5rem' }}>Recorrido:</span>
-                          {[tr.origin, tr.destination].filter(Boolean).join(' → ')}
+                    <div className="transport-content-compact">
+                      <div className="grid-2 gap-4 mb-3">
+                        <div className="info-box">
+                          <Map size={14} style={{ marginRight: '0.5rem', verticalAlign: 'middle' }} />
+                          <strong>Origen:</strong> {transport.origin || 'N/A'}
                         </div>
-                      )}
-                      <div className="itinerary-box">
-                        <span style={{ fontWeight: 700, fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--color-secondary)', marginRight: '1rem' }}>
-                          Descripción:
-                        </span>
-                        {tr.description || 'Sin descripción.'}
+                        <div className="info-box">
+                          <Map size={14} style={{ marginRight: '0.5rem', verticalAlign: 'middle' }} />
+                          <strong>Destino:</strong> {transport.destination || 'N/A'}
+                        </div>
                       </div>
 
-                      {tr.notes && (
-                        <div className="mt-2 text-sm" style={{ color: 'var(--color-secondary)', paddingLeft: '1rem' }}>
-                          <strong className="text-primary" style={{ fontSize: '0.7rem', textTransform: 'uppercase' }}>Notas:</strong> {tr.notes}
+                      <div className="info-box">
+                        <Notebook size={14} style={{ marginRight: '0.5rem', verticalAlign: 'middle' }} />
+                        <strong>Descripción:</strong> {transport.description || 'Sin descripción.'}
+                      </div>
+
+                      {transport.notes && (
+                        <div className="mt-2 text-sm" style={{ paddingLeft: '1rem', borderLeft: '2px solid var(--color-accent)' }}>
+                          <strong>Notas:</strong> {transport.notes}
                         </div>
                       )}
                     </div>
                   </div>
                 ))
               )}
-            </div>
-
-            <div className="folder-info-card glass-card">
-              <h4>Resumen de Destino</h4>
-              <div className="folder-stats">
-                <div className="stat-row">
-                  <span className="stat-label">Total Transportes</span>
-                  <span className="stat-label">{selectedFolder?.transports.length}</span>
-                </div>
-                <div className="stat-row">
-                  <span className="stat-label">Costo Promedio</span>
-                  <span className="stat-value highlight">
-                    u$s {selectedFolder?.transports.length
-                      ? Math.round(selectedFolder.transports.reduce((a, t) => a + t.costUsd, 0) / selectedFolder.transports.length)
-                      : 0}
-                  </span>
-                </div>
-              </div>
             </div>
           </div>
         </div>
@@ -315,16 +348,15 @@ export default function TransportesPage() {
       {showFolderModal && (
         <div className="modal-overlay">
           <div className="modal-content glass-card p-5" style={{ maxWidth: '450px' }}>
-            <h3 className="m-0 mb-4" style={{ fontFamily: 'var(--font-main)', fontWeight: 800 }}>Nueva Carpeta de Destino</h3>
+            <h3 className="m-0 mb-4" style={{ fontFamily: 'var(--font-main)', fontWeight: 800 }}>Nueva Carpeta</h3>
             <div className="form-group">
-              <label>Nombre del Destino</label>
+              <label>Nombre de la Carpeta</label>
               <input
                 type="text"
                 className="form-input"
                 value={newFolderName}
                 onChange={e => setNewFolderName(e.target.value)}
-                placeholder="Ej: Buenos Aires"
-                onKeyDown={e => e.key === 'Enter' && handleAddFolder()}
+                placeholder="Ej: Traslados Europa"
                 autoFocus
               />
             </div>
@@ -340,103 +372,80 @@ export default function TransportesPage() {
       {showTransportModal && (
         <div className="modal-overlay">
           <div className="modal-content glass-card p-5" style={{ maxWidth: '600px' }}>
-            <div className="modal-header-premium mb-4">
-              <h3 className="m-0" style={{ fontFamily: 'var(--font-main)', fontWeight: 800, fontSize: '1.75rem' }}>
-                {editingTransportId ? 'Editar Transporte' : 'Nuevo Transporte'}
-              </h3>
-              <span className="destination-badge">{selectedFolder?.name}</span>
-            </div>
+            <h3 className="m-0 mb-4" style={{ fontFamily: 'var(--font-main)', fontWeight: 800, fontSize: '1.75rem' }}>
+              {editingTransportId ? 'Editar Transporte' : 'Nuevo Transporte'}
+            </h3>
             <div className="modal-form">
               <div className="form-group">
-                <label>Nombre del Transporte</label>
-                <div className="input-with-icon">
-                  <Truck size={16} />
+                <label>Nombre del Transporte / Servicio</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  value={newTransport.name || ''}
+                  onChange={e => setNewTransport({ ...newTransport, name: e.target.value })}
+                  placeholder="Ej: Vuelo Madrid - París (Air France)"
+                />
+              </div>
+
+              <div className="grid-2 gap-4">
+                <div className="form-group">
+                  <label>Origen</label>
                   <input
                     type="text"
                     className="form-input"
-                    value={newTransport.name || ''}
-                    onChange={e => setNewTransport({ ...newTransport, name: e.target.value })}
-                    placeholder="Ej: Transfer aeropuerto - hotel"
+                    value={newTransport.origin || ''}
+                    onChange={e => setNewTransport({ ...newTransport, origin: e.target.value })}
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Destino</label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    value={newTransport.destination || ''}
+                    onChange={e => setNewTransport({ ...newTransport, destination: e.target.value })}
                   />
                 </div>
               </div>
 
               <div className="form-group">
-                <label>Costo en Dólares (U$S)</label>
+                <label>Costo (U$S)</label>
                 <div className="input-with-icon">
                   <DollarSign size={16} />
                   <input
                     type="number"
                     className="form-input"
-                    value={newTransport.costUsd || 0}
-                    onChange={e => setNewTransport({ ...newTransport, costUsd: parseFloat(e.target.value) })}
-                  />
-                </div>
-              </div>
-
-              <div className="grid-2 gap-3">
-                <div className="form-group">
-                  <label>Origen</label>
-                  <div className="input-with-icon">
-                    <Map size={16} />
-                    <input
-                      type="text"
-                      className="form-input"
-                      placeholder="Ej: Aeropuerto Ezeiza"
-                      value={newTransport.origin || ''}
-                      onChange={e => setNewTransport({ ...newTransport, origin: e.target.value })}
-                    />
-                  </div>
-                </div>
-                <div className="form-group">
-                  <label>Destino</label>
-                  <div className="input-with-icon">
-                    <Map size={16} />
-                    <input
-                      type="text"
-                      className="form-input"
-                      placeholder="Ej: Hotel Sheraton"
-                      value={newTransport.destination || ''}
-                      onChange={e => setNewTransport({ ...newTransport, destination: e.target.value })}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div className="form-group">
-                <label>Descripción / Detalles</label>
-                <div className="input-with-icon align-start">
-                  <Notebook size={16} />
-                  <textarea
-                    className="form-input"
-                    style={{ height: '80px', paddingTop: '0.875rem' }}
-                    value={newTransport.description || ''}
-                    onChange={e => setNewTransport({ ...newTransport, description: e.target.value })}
-                    placeholder="Tipo de vehículo, capacidad, recorrido..."
+                    value={newTransport.cost_usd || 0}
+                    onChange={e => setNewTransport({ ...newTransport, cost_usd: parseFloat(e.target.value) })}
                   />
                 </div>
               </div>
 
               <div className="form-group">
-                <label>Notas Adicionales</label>
-                <div className="input-with-icon align-start">
-                  <Notebook size={16} />
-                  <textarea
-                    className="form-input"
-                    style={{ height: '80px', paddingTop: '0.875rem' }}
-                    value={newTransport.notes || ''}
-                    onChange={e => setNewTransport({ ...newTransport, notes: e.target.value })}
-                    placeholder="Información extra, condiciones, contacto..."
-                  />
-                </div>
+                <label>Descripción</label>
+                <textarea
+                  className="form-input"
+                  style={{ height: '80px' }}
+                  value={newTransport.description || ''}
+                  onChange={e => setNewTransport({ ...newTransport, description: e.target.value })}
+                />
               </div>
 
-              <div style={{ display: 'flex', gap: '1rem', marginTop: '2rem' }}>
-                <button className="btn btn-outline w-100" onClick={() => setShowTransportModal(false)}>Cancelar</button>
-                <button className="btn btn-primary w-100" onClick={handleAddTransport}>
-                  {editingTransportId ? 'Guardar Cambios' : 'Guardar Transporte'}
-                </button>
+              <div className="form-group">
+                <label>Notas Internas</label>
+                <textarea
+                  className="form-input"
+                  style={{ height: '60px' }}
+                  value={newTransport.notes || ''}
+                  onChange={e => setNewTransport({ ...newTransport, notes: e.target.value })}
+                />
               </div>
+            </div>
+            <div style={{ display: 'flex', gap: '1rem', marginTop: '2rem' }}>
+              <button className="btn btn-outline w-100" onClick={() => setShowTransportModal(false)}>Cancelar</button>
+              <button className="btn btn-primary w-100" onClick={handleAddTransport}>
+                {editingTransportId ? 'Guardar Cambios' : 'Guardar Transporte'}
+              </button>
             </div>
           </div>
         </div>

@@ -13,6 +13,7 @@ import {
   Edit2,
   Link as LinkIcon
 } from 'lucide-react';
+import { supabase } from '../../../lib/supabase';
 import './Excursiones.css';
 
 interface ExcursionLink {
@@ -22,10 +23,11 @@ interface ExcursionLink {
 
 interface Excursion {
   id: string;
+  folder_id: string;
   name: string;
-  costUsd: number;
+  cost_usd: number;
   location: string;
-  itinerary: string;
+  description: string;
   notes: string;
   links: ExcursionLink[];
 }
@@ -37,11 +39,8 @@ interface ExcursionFolder {
 }
 
 export default function ExcursionesPage() {
-  const [folders, setFolders] = useState<ExcursionFolder[]>(() => {
-    const saved = localStorage.getItem('travelkit_excursion_folders');
-    return saved ? JSON.parse(saved) : [];
-  });
-  
+  const [folders, setFolders] = useState<ExcursionFolder[]>([]);
+  const [loading, setLoading] = useState(true);
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
   const [dollarRate, setDollarRate] = useState<number>(0);
   const [isLoadingDollar, setIsLoadingDollar] = useState(true);
@@ -54,19 +53,12 @@ export default function ExcursionesPage() {
   // Form States
   const [newFolderName, setNewFolderName] = useState('');
   const [newExcursion, setNewExcursion] = useState<Partial<Excursion>>({
-    name: '',
-    costUsd: 0,
-    location: '',
-    itinerary: '',
-    notes: '',
-    links: []
+    name: '', cost_usd: 0, location: '', description: '', notes: '', links: []
   });
 
-  const selectedFolder = folders.find(f => f.id === selectedFolderId);
-
   useEffect(() => {
-    localStorage.setItem('travelkit_excursion_folders', JSON.stringify(folders));
-  }, [folders]);
+    fetchFolders();
+  }, []);
 
   const fetchDollarRate = async () => {
     setIsLoadingDollar(true);
@@ -76,69 +68,129 @@ export default function ExcursionesPage() {
       setDollarRate(data.venta);
     } catch (error) {
       console.error("Error fetching dollar:", error);
-      setDollarRate(1000); // Fallback
+      setDollarRate(1000); 
     } finally {
       setIsLoadingDollar(false);
     }
   };
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchDollarRate();
   }, []);
 
-  const handleCreateFolder = () => {
-    if (!newFolderName.trim()) return;
-    const newFolder: ExcursionFolder = {
-      id: `folder-${Date.now()}`,
-      name: newFolderName,
-      excursions: []
-    };
-    setFolders([...folders, newFolder]);
-    setNewFolderName('');
-    setShowFolderModal(false);
-  };
+  const fetchFolders = async () => {
+    setLoading(true);
+    const { data: folderData, error: folderError } = await supabase
+      .from('catalog_folders')
+      .select('*')
+      .eq('type', 'excursion')
+      .order('name');
 
-  const handleAddExcursion = () => {
-    if (!selectedFolderId || !newExcursion.name) return;
-    
-    if (editingExcursionId) {
-      // Update existing
-      setFolders(folders.map(f => {
-        if (f.id === selectedFolderId) {
-          return {
-            ...f,
-            excursions: f.excursions.map(e => 
-              e.id === editingExcursionId ? { ...e, ...newExcursion as Excursion } : e
-            )
-          };
-        }
-        return f;
-      }));
-    } else {
-      // Create new
-      const excursion: Excursion = {
-        id: `exc-${Date.now()}`,
-        name: newExcursion.name || '',
-        costUsd: Number(newExcursion.costUsd) || 0,
-        location: newExcursion.location || '',
-        itinerary: newExcursion.itinerary || '',
-        notes: newExcursion.notes || '',
-        links: newExcursion.links || []
-      };
-
-      setFolders(folders.map(f => {
-        if (f.id === selectedFolderId) {
-          return { ...f, excursions: [...f.excursions, excursion] };
-        }
-        return f;
-      }));
+    if (folderError) {
+      console.error('Error fetching folders:', folderError);
+      setLoading(false);
+      return;
     }
 
-    setNewExcursion({ name: '', costUsd: 0, location: '', itinerary: '', notes: '', links: [] });
-    setEditingExcursionId(null);
-    setShowExcursionModal(false);
+    if (folderData.length === 0) {
+      setFolders([]);
+      setLoading(false);
+      return;
+    }
+
+    const { data: itemData, error: itemError } = await supabase
+      .from('catalog_items')
+      .select('*')
+      .in('folder_id', folderData.map(f => f.id));
+
+    if (itemError) console.error('Error fetching items:', itemError);
+
+    const combined: ExcursionFolder[] = folderData.map(f => ({
+      id: f.id,
+      name: f.name,
+      excursions: (itemData || [])
+        .filter(i => i.folder_id === f.id)
+        .map(i => ({
+          id: i.id,
+          folder_id: i.folder_id,
+          name: i.name,
+          cost_usd: i.cost_usd,
+          location: i.location,
+          description: i.description,
+          notes: i.notes,
+          links: i.links || []
+        }))
+    }));
+
+    setFolders(combined);
+    setLoading(false);
   };
+
+  const handleCreateFolder = async () => {
+    if (!newFolderName.trim()) return;
+    const { data, error } = await supabase
+      .from('catalog_folders')
+      .insert([{ name: newFolderName.trim(), type: 'excursion' }])
+      .select();
+
+    if (error) {
+      alert('Error al crear carpeta');
+    } else if (data) {
+      setFolders([...folders, { id: data[0].id, name: data[0].name, excursions: [] }]);
+      setNewFolderName('');
+      setShowFolderModal(false);
+    }
+  };
+
+  const handleDeleteFolder = async (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (window.confirm('¿Eliminar esta carpeta y todas sus excursiones?')) {
+      const { error } = await supabase.from('catalog_folders').delete().eq('id', id);
+      if (!error) {
+        setFolders(folders.filter(f => f.id !== id));
+        if (selectedFolderId === id) setSelectedFolderId(null);
+      }
+    }
+  };
+
+  const handleAddExcursion = async () => {
+    if (!selectedFolderId || !newExcursion.name) return;
+
+    const dbData = {
+      folder_id: selectedFolderId,
+      name: newExcursion.name,
+      cost_usd: Number(newExcursion.cost_usd) || 0,
+      location: newExcursion.location || '',
+      description: newExcursion.description || '',
+      notes: newExcursion.notes || '',
+      links: newExcursion.links || []
+    };
+
+    if (editingExcursionId) {
+      const { error } = await supabase.from('catalog_items').update(dbData).eq('id', editingExcursionId);
+      if (error) alert('Error al actualizar excursión');
+      else {
+        fetchFolders();
+        setShowExcursionModal(false);
+      }
+    } else {
+      const { error } = await supabase.from('catalog_items').insert([dbData]);
+      if (error) alert('Error al guardar excursión');
+      else {
+        fetchFolders();
+        setShowExcursionModal(false);
+      }
+    }
+  };
+
+  const handleDeleteExcursion = async (id: string) => {
+    if (window.confirm('¿Eliminar esta excursión?')) {
+      const { error } = await supabase.from('catalog_items').delete().eq('id', id);
+      if (!error) fetchFolders();
+    }
+  };
+
+  const selectedFolder = folders.find(f => f.id === selectedFolderId);
 
   const openEditModal = (exc: Excursion) => {
     setNewExcursion(exc);
@@ -147,95 +199,90 @@ export default function ExcursionesPage() {
   };
 
   const openCreateModal = () => {
-    setNewExcursion({ name: '', costUsd: 0, itinerary: '', notes: '', links: [] });
+    setNewExcursion({ name: '', cost_usd: 0, location: '', description: '', notes: '', links: [] });
     setEditingExcursionId(null);
     setShowExcursionModal(true);
-  };
-
-  const handleDeleteFolder = (id: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (window.confirm('¿Eliminar esta carpeta y todas sus excursiones?')) {
-      setFolders(folders.filter(f => f.id !== id));
-      if (selectedFolderId === id) setSelectedFolderId(null);
-    }
-  };
-
-  const handleDeleteExcursion = (excId: string) => {
-    if (!selectedFolderId) return;
-    setFolders(folders.map(f => {
-      if (f.id === selectedFolderId) {
-        return { ...f, excursions: f.excursions.filter(e => e.id !== excId) };
-      }
-      return f;
-    }));
   };
 
   return (
     <div className="excursiones-page animate-fade-in">
       <header className="page-header-centered">
         <h1>Catálogo de Excursiones</h1>
-        <p>Organiza actividades por destino, gestiona costos en dólares y mantén itinerarios actualizados.</p>
+        <p>Gestiona los tours y actividades disponibles para tus clientes.</p>
       </header>
 
-      {/* Dollar Bar */}
-      <div className="dollar-info-bar">
+      {/* Dollar rate banner */}
+      <div className="dollar-info-bar mb-4">
         <div className="dollar-rate">
           <div className="rate-item">
-            <span className="label">Dólar Blue (Venta)</span>
-            <div className="value">
-              {isLoadingDollar ? <RefreshCw className="animate-spin" size={18} /> : `$${dollarRate}`}
-            </div>
+            <span className="label">Dólar Blue</span>
+            <span className="value">
+              {isLoadingDollar ? '...' : `$${dollarRate.toLocaleString('es-AR')}`}
+            </span>
           </div>
-          <button className="btn-icon-sm" onClick={fetchDollarRate} title="Actualizar cotización">
-            <RefreshCw size={14} />
+          <button className="btn-refresh" onClick={fetchDollarRate} title="Actualizar cotización">
+            <RefreshCw size={14} className={isLoadingDollar ? 'animate-spin' : ''} />
           </button>
         </div>
-        <div className="text-sm opacity-80">
-          Cotización en tiempo real para conversiones ARS
-        </div>
+        <span style={{ fontSize: '0.8rem', opacity: 0.8 }}>Conversión automática a ARS</span>
       </div>
 
       {!selectedFolderId ? (
-        <div className="folders-view">
-          <div className="section-header mb-4">
-            <h3>Mis Destinos</h3>
+        <div>
+          <div className="folders-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+            <h2 className="section-title">Carpetas de Excursiones</h2>
             <button className="btn btn-primary" onClick={() => setShowFolderModal(true)}>
               <FolderPlus size={18} />
               Nueva Carpeta
             </button>
           </div>
 
-          <div className="folders-grid">
-            {folders.map(folder => (
-              <div 
-                key={folder.id} 
-                className="glass-card folder-card"
-                onClick={() => setSelectedFolderId(folder.id)}
-              >
-                <div className="folder-icon-wrapper">
-                  <Folder size={64} fill="currentColor" />
-                </div>
-                <span className="folder-name">{folder.name}</span>
-                <span className="text-xs text-secondary">{folder.excursions.length} excursiones</span>
-                <button 
-                  className="btn-delete-folder mt-2" 
-                  onClick={(e) => handleDeleteFolder(folder.id, e)}
-                  title="Eliminar carpeta"
+          {loading ? (
+            <div className="p-5 text-center">
+              <div className="loader-premium"></div>
+              <p className="mt-3">Cargando excursiones...</p>
+            </div>
+          ) : folders.length === 0 ? (
+            <div className="empty-state-card glass-card">
+              <MapPin size={80} strokeWidth={1} />
+              <h3>Sin carpetas aún</h3>
+              <p>Crea tu primera carpeta para organizar las excursiones por destino.</p>
+              <button className="btn btn-primary mt-4" onClick={() => setShowFolderModal(true)}>
+                <FolderPlus size={18} /> Crear Carpeta
+              </button>
+            </div>
+          ) : (
+            <div className="folders-grid">
+              {folders.map(folder => (
+                <div
+                  key={folder.id}
+                  className="folder-card glass-card"
+                  onClick={() => setSelectedFolderId(folder.id)}
                 >
-                  <Trash2 size={16} />
-                </button>
-              </div>
-            ))}
-          </div>
+                  <div className="folder-icon-wrapper">
+                    <Folder size={64} fill="currentColor" />
+                  </div>
+                  <span className="folder-name">{folder.name}</span>
+                  <span className="folder-count">{folder.excursions.length} excursiones</span>
+                  <button
+                    className="btn-delete-folder mt-2"
+                    onClick={(e) => handleDeleteFolder(folder.id, e)}
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       ) : (
-        <div className="folder-detail-view animate-slide-up">
-          <div className="section-header mb-4">
+        <div>
+          <div className="folder-detail-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2.5rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
-              <button className="btn-icon-sm" onClick={() => setSelectedFolderId(null)} style={{ background: 'white', boxShadow: 'var(--shadow-sm)' }}>
+              <button className="btn-icon" onClick={() => setSelectedFolderId(null)}>
                 <ChevronLeft size={20} />
               </button>
-              <h2 className="m-0" style={{ fontWeight: 700, fontSize: '2.2rem', letterSpacing: '-0.02em' }}>{selectedFolder?.name}</h2>
+              <h2 className="m-0" style={{ fontWeight: 800, fontSize: '2rem' }}>{selectedFolder?.name}</h2>
             </div>
             <button className="btn btn-primary" onClick={openCreateModal}>
               <Plus size={18} />
@@ -249,31 +296,31 @@ export default function ExcursionesPage() {
                 <div className="empty-state-card">
                   <Map size={80} strokeWidth={1} />
                   <h3>No hay excursiones</h3>
-                  <p>Comienza agregando tu primera actividad para {selectedFolder?.name}.</p>
+                  <p>Agrega tours y actividades para {selectedFolder?.name}.</p>
                 </div>
               ) : (
-                selectedFolder?.excursions.map(exc => (
-                  <div key={exc.id} className="glass-card excursion-item">
+                selectedFolder?.excursions.map(excursion => (
+                  <div key={excursion.id} className="excursion-item glass-card">
                     <div className="excursion-header">
                       <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                        <h3 className="excursion-title">{exc.name}</h3>
+                        <h3 className="excursion-title">{excursion.name}</h3>
                         <div className="excursion-costs">
-                          <span className="cost-usd">u$s {exc.costUsd}</span>
-                          <span className="cost-ars">≈ ${(exc.costUsd * dollarRate).toLocaleString('es-AR')}</span>
+                          <span className="cost-usd">u$s {excursion.cost_usd}</span>
+                          <span className="cost-ars">≈ ${(excursion.cost_usd * dollarRate).toLocaleString('es-AR')}</span>
                         </div>
                       </div>
                       <div style={{ display: 'flex', gap: '0.5rem' }}>
-                        <button className="btn-edit-excursion" onClick={() => openEditModal(exc)} title="Editar">
+                        <button className="btn-edit-excursion" onClick={() => openEditModal(excursion)}>
                           <Edit2 size={16} />
                         </button>
-                        <button className="btn-delete-excursion" onClick={() => handleDeleteExcursion(exc.id)} title="Eliminar">
+                        <button className="btn-delete-excursion" onClick={() => handleDeleteExcursion(excursion.id)}>
                           <Trash2 size={16} />
                         </button>
                       </div>
                     </div>
 
                     <div className="excursion-links">
-                      {exc.links.map((link, i) => (
+                      {excursion.links.map((link, i) => (
                         <a key={i} href={link.url} target="_blank" rel="noopener noreferrer" className="excursion-link">
                           <LinkIcon size={12} />
                           {link.label}
@@ -282,24 +329,19 @@ export default function ExcursionesPage() {
                     </div>
 
                     <div className="excursion-content-compact">
-                      {exc.location && (
-                        <div className="itinerary-box" style={{ marginBottom: '0.5rem' }}>
-                          <span style={{ fontWeight: 700, fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--color-secondary)', marginRight: '1rem' }}>
-                            Lugar:
-                          </span>
-                          {exc.location}
-                        </div>
-                      )}
-                      <div className="itinerary-box">
-                        <span style={{ fontWeight: 700, fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--color-secondary)', marginRight: '1rem' }}>
-                          Itinerario:
-                        </span>
-                        {exc.itinerary || 'Sin itinerario.'}
+                      <div className="info-box mb-3">
+                        <MapPin size={14} style={{ marginRight: '0.5rem', verticalAlign: 'middle' }} />
+                        <strong>Ubicación:</strong> {excursion.location || 'N/A'}
                       </div>
                       
-                      {exc.notes && (
-                        <div className="mt-2 text-sm" style={{ color: 'var(--color-secondary)', paddingLeft: '1rem' }}>
-                          <strong className="text-primary" style={{ fontSize: '0.7rem', textTransform: 'uppercase' }}>Notas:</strong> {exc.notes}
+                      <div className="info-box">
+                        <Notebook size={14} style={{ marginRight: '0.5rem', verticalAlign: 'middle' }} />
+                        <strong>Itinerario / Descripción:</strong> {excursion.description || 'Sin descripción.'}
+                      </div>
+
+                      {excursion.notes && (
+                        <div className="mt-2 text-sm" style={{ paddingLeft: '1rem', borderLeft: '2px solid var(--color-accent)' }}>
+                          <strong>Notas:</strong> {excursion.notes}
                         </div>
                       )}
                     </div>
@@ -307,49 +349,27 @@ export default function ExcursionesPage() {
                 ))
               )}
             </div>
-
-            <div className="folder-sidebar">
-              <div className="glass-card folder-info-card">
-                <h4>Resumen de Destino</h4>
-                <div className="folder-stats">
-                  <div className="stat-row">
-                    <span className="stat-label">Total Excursiones</span>
-                    <span className="stat-value">{selectedFolder?.excursions.length}</span>
-                  </div>
-                  <div className="stat-row">
-                    <span className="stat-label">Costo Promedio</span>
-                    <span className="stat-value highlight">
-                      u$s {selectedFolder?.excursions.length ? 
-                        (selectedFolder.excursions.reduce((a, b) => a + b.costUsd, 0) / selectedFolder.excursions.length).toFixed(0) : 0}
-                    </span>
-                  </div>
-                </div>
-                <div className="mt-4 p-3 bg-accent-light rounded text-xs text-accent-dark" style={{ border: '1px solid rgba(var(--color-accent-rgb), 0.2)', lineHeight: '1.5' }}>
-                  * Los precios en pesos se calculan automáticamente con el dólar blue del día para facilitar tus presupuestos.
-                </div>
-              </div>
-            </div>
           </div>
         </div>
       )}
 
-      {/* Modals */}
+      {/* New Folder Modal */}
       {showFolderModal && (
         <div className="modal-overlay">
-          <div className="modal-content glass-card p-4" style={{ maxWidth: '400px' }}>
-            <h3 className="mb-4">Nueva Carpeta de Destino</h3>
-            <div className="form-group mb-4">
-              <label>Nombre del Destino (ej: Brasil)</label>
-              <input 
-                type="text" 
-                className="form-input" 
+          <div className="modal-content glass-card p-5" style={{ maxWidth: '450px' }}>
+            <h3 className="m-0 mb-4" style={{ fontFamily: 'var(--font-main)', fontWeight: 800 }}>Nueva Carpeta</h3>
+            <div className="form-group">
+              <label>Nombre del Destino / Categoría</label>
+              <input
+                type="text"
+                className="form-input"
                 value={newFolderName}
                 onChange={e => setNewFolderName(e.target.value)}
-                placeholder="Nombre del país o ciudad..."
+                placeholder="Ej: Tours en Madrid"
                 autoFocus
               />
             </div>
-            <div style={{ display: 'flex', gap: '1rem' }}>
+            <div style={{ display: 'flex', gap: '1rem', marginTop: '2rem' }}>
               <button className="btn btn-outline w-100" onClick={() => setShowFolderModal(false)}>Cancelar</button>
               <button className="btn btn-primary w-100" onClick={handleCreateFolder}>Crear Carpeta</button>
             </div>
@@ -357,87 +377,69 @@ export default function ExcursionesPage() {
         </div>
       )}
 
+      {/* New/Edit Excursion Modal */}
       {showExcursionModal && (
         <div className="modal-overlay">
           <div className="modal-content glass-card p-5" style={{ maxWidth: '600px' }}>
-            <div className="modal-header-premium mb-4">
-              <h3 className="m-0" style={{ fontFamily: 'var(--font-main)', fontWeight: 800, fontSize: '1.75rem' }}>
-                {editingExcursionId ? 'Editar Excursión' : 'Nueva Excursión'}
-              </h3>
-              <span className="destination-badge">{selectedFolder?.name}</span>
-            </div>
+            <h3 className="m-0 mb-4" style={{ fontFamily: 'var(--font-main)', fontWeight: 800, fontSize: '1.75rem' }}>
+              {editingExcursionId ? 'Editar Excursión' : 'Nueva Excursión'}
+            </h3>
             <div className="modal-form">
               <div className="form-group">
                 <label>Nombre de la Excursión</label>
-                <div className="input-with-icon">
-                  <Plus size={16} />
-                  <input 
-                    type="text" 
-                    className="form-input" 
-                    value={newExcursion.name}
-                    onChange={e => setNewExcursion({...newExcursion, name: e.target.value})}
-                    placeholder="Ej: Tour por el Cristo Redentor"
-                  />
-                </div>
-              </div>
-              
-              <div className="form-group">
-                <label>Costo en Dólares (u$s)</label>
-                <div className="input-with-icon">
-                  <DollarSign size={16} />
-                  <input 
-                    type="number" 
-                    className="form-input" 
-                    value={newExcursion.costUsd}
-                    onChange={e => setNewExcursion({...newExcursion, costUsd: Number(e.target.value)})}
-                    placeholder="0.00"
-                  />
-                </div>
+                <input
+                  type="text"
+                  className="form-input"
+                  value={newExcursion.name || ''}
+                  onChange={e => setNewExcursion({ ...newExcursion, name: e.target.value })}
+                  placeholder="Ej: City Tour Madrid Histórico"
+                />
               </div>
 
-              <div className="form-group">
-                <label>Lugar de la excursión</label>
-                <div className="input-with-icon">
-                  <MapPin size={16} />
-                  <input 
-                    type="text" 
-                    className="form-input" 
+              <div className="grid-2 gap-4">
+                <div className="form-group">
+                  <label>Ubicación</label>
+                  <input
+                    type="text"
+                    className="form-input"
                     value={newExcursion.location || ''}
-                    onChange={e => setNewExcursion({...newExcursion, location: e.target.value})}
-                    placeholder="Ej: Parque Nacional Torres del Paine"
+                    onChange={e => setNewExcursion({ ...newExcursion, location: e.target.value })}
                   />
+                </div>
+                <div className="form-group">
+                  <label>Costo (U$S)</label>
+                  <div className="input-with-icon">
+                    <DollarSign size={16} />
+                    <input
+                      type="number"
+                      className="form-input"
+                      value={newExcursion.cost_usd || 0}
+                      onChange={e => setNewExcursion({ ...newExcursion, cost_usd: parseFloat(e.target.value) })}
+                    />
+                  </div>
                 </div>
               </div>
 
               <div className="form-group">
-                <label>Itinerario Base / Pasos</label>
-                <div className="input-with-icon align-start">
-                  <Map size={16} />
-                  <textarea 
-                    className="form-input" 
-                    style={{ height: '120px', paddingTop: '0.875rem' }}
-                    value={newExcursion.itinerary}
-                    onChange={e => setNewExcursion({...newExcursion, itinerary: e.target.value})}
-                    placeholder="Describe los pasos o el cronograma de la excursión..."
-                  />
-                </div>
+                <label>Descripción / Itinerario</label>
+                <textarea
+                  className="form-input"
+                  style={{ height: '80px' }}
+                  value={newExcursion.description || ''}
+                  onChange={e => setNewExcursion({ ...newExcursion, description: e.target.value })}
+                />
               </div>
 
               <div className="form-group">
-                <label>Notas Adicionales</label>
-                <div className="input-with-icon align-start">
-                  <Notebook size={16} />
-                  <textarea 
-                    className="form-input" 
-                    style={{ height: '100px', paddingTop: '0.875rem' }}
-                    value={newExcursion.notes}
-                    onChange={e => setNewExcursion({...newExcursion, notes: e.target.value})}
-                    placeholder="Información extra, recomendaciones..."
-                  />
-                </div>
+                <label>Notas Internas</label>
+                <textarea
+                  className="form-input"
+                  style={{ height: '60px' }}
+                  value={newExcursion.notes || ''}
+                  onChange={e => setNewExcursion({ ...newExcursion, notes: e.target.value })}
+                />
               </div>
             </div>
-
             <div style={{ display: 'flex', gap: '1rem', marginTop: '2rem' }}>
               <button className="btn btn-outline w-100" onClick={() => setShowExcursionModal(false)}>Cancelar</button>
               <button className="btn btn-primary w-100" onClick={handleAddExcursion}>

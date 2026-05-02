@@ -10,84 +10,31 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { mockReservations, notifyReservationsChanged, subscribeToReservations, saveReservations, type Reservation } from '../../../lib/data';
+import { supabase } from '../../../lib/supabase';
 import Calendar from '../../../components/Calendar';
 import ConfirmationModal from '../../../components/ConfirmationModal/ConfirmationModal';
 import './Agenda.css';
 
+interface Reservation {
+  id: string;
+  client: string;
+  dest: string;
+  time: string;
+  status: 'confirmed' | 'pending' | 'cancelled';
+  googleMeet?: string;
+  email?: string;
+  phone?: string;
+  date: string;
+}
+
 export default function AgendaPage() {
   const [selectedDate, setSelectedDate] = useState<Date | null>(new Date());
-  const [, setForceRender] = useState(0);
+  const [allReservations, setAllReservations] = useState<Reservation[]>([]);
+  const [loading, setLoading] = useState(true);
   
   const [postponeData, setPostponeData] = useState<{ res: Reservation, oldDate: string } | null>(null);
   const [newPostponeDate, setNewPostponeDate] = useState<string>('');
   const [newPostponeTime, setNewPostponeTime] = useState<string>('');
-
-  useEffect(() => {
-    const unsub = subscribeToReservations(() => setForceRender(prev => prev + 1));
-    return unsub;
-  }, []);
-
-  const selectedDateStr = selectedDate ? format(selectedDate, 'yyyy-MM-dd') : '';
-  const dayReservations = mockReservations[selectedDateStr] || [];
-
-  const [deleteConfirmData, setDeleteConfirmData] = useState<{ dateStr: string, resId: string, client: string } | null>(null);
-
-  const handleCancelReservation = (dateStr: string, resId: string) => {
-    const resList = mockReservations[dateStr];
-    if (resList) {
-      const res = resList.find(r => r.id === resId);
-      if (res) {
-        setDeleteConfirmData({ dateStr, resId, client: res.client });
-      }
-    }
-  };
-
-  const confirmCancel = () => {
-    if (!deleteConfirmData) return;
-    const { dateStr, resId } = deleteConfirmData;
-    const resList = mockReservations[dateStr];
-    if (resList) {
-      const res = resList.find(r => r.id === resId);
-      if (res) {
-        res.status = 'cancelled';
-        saveReservations();
-      }
-    }
-    setDeleteConfirmData(null);
-  };
-
-  const openPostponeModal = (dateStr: string, res: Reservation) => {
-    setPostponeData({ res, oldDate: dateStr });
-    setNewPostponeDate('');
-    setNewPostponeTime('');
-  };
-
-  const handleConfirmPostpone = () => {
-    setAttemptedSubmit(true);
-    if (!postponeData || !newPostponeDate || !newPostponeTime) return;
-
-    // Remove from old date
-    const oldList = mockReservations[postponeData.oldDate];
-    if (oldList) {
-      mockReservations[postponeData.oldDate] = oldList.filter(r => r.id !== postponeData.res.id);
-    }
-
-    // Add to new date
-    if (!mockReservations[newPostponeDate]) {
-      mockReservations[newPostponeDate] = [];
-    }
-    mockReservations[newPostponeDate].push({
-      ...postponeData.res,
-      time: newPostponeTime,
-      status: 'confirmed'
-    });
-
-    notifyReservationsChanged();
-    saveReservations();
-    setPostponeData(null);
-    setAttemptedSubmit(false);
-  };
 
   const [showAddModal, setShowAddModal] = useState(false);
   const [newResName, setNewResName] = useState('');
@@ -98,54 +45,104 @@ export default function AgendaPage() {
   const [newResDate, setNewResDate] = useState<string>('');
   const [attemptedSubmit, setAttemptedSubmit] = useState(false);
 
-  useEffect(() => {
-    if (showAddModal && selectedDate) {
-      setNewResDate(format(selectedDate, 'yyyy-MM-dd'));
-    }
-  }, [showAddModal, selectedDate]);
+  const [deleteConfirmData, setDeleteConfirmData] = useState<{ dateStr: string, resId: string, client: string } | null>(null);
 
-  const handleAddSession = () => {
+  useEffect(() => {
+    fetchReservations();
+  }, []);
+
+  const fetchReservations = async () => {
+    setLoading(true);
+    const { data, error } = await supabase.from('admin_meetings').select('*');
+    if (error) console.error('Error fetching meetings:', error);
+    else {
+      const mapped: Reservation[] = (data || []).map(r => ({
+        id: r.id,
+        client: r.client_name,
+        dest: r.destination,
+        time: r.meeting_time,
+        status: r.status,
+        googleMeet: r.google_meet_url,
+        email: r.email,
+        phone: r.phone,
+        date: r.meeting_date
+      }));
+      setAllReservations(mapped);
+    }
+    setLoading(false);
+  };
+
+  const selectedDateStr = selectedDate ? format(selectedDate, 'yyyy-MM-dd') : '';
+  const dayReservations = allReservations.filter(r => r.date === selectedDateStr);
+
+  const handleCancelReservation = (dateStr: string, resId: string) => {
+    const res = allReservations.find(r => r.id === resId);
+    if (res) {
+      setDeleteConfirmData({ dateStr, resId, client: res.client });
+    }
+  };
+
+  const confirmCancel = async () => {
+    if (!deleteConfirmData) return;
+    const { resId } = deleteConfirmData;
+    const { error } = await supabase.from('admin_meetings').update({ status: 'cancelled' }).eq('id', resId);
+    if (!error) fetchReservations();
+    setDeleteConfirmData(null);
+  };
+
+  const handleConfirmPostpone = async () => {
+    setAttemptedSubmit(true);
+    if (!postponeData || !newPostponeDate || !newPostponeTime) return;
+
+    const { error } = await supabase.from('admin_meetings').update({
+      meeting_date: newPostponeDate,
+      meeting_time: newPostponeTime,
+      status: 'confirmed'
+    }).eq('id', postponeData.res.id);
+
+    if (!error) fetchReservations();
+    setPostponeData(null);
+    setAttemptedSubmit(false);
+  };
+
+  const handleAddSession = async () => {
     setAttemptedSubmit(true);
     if (!newResDate || !newResName || !newResTime) return;
     
-    // Validation
     if (newResEmail && !newResEmail.includes('@')) {
       alert('El email debe contener un @');
       return;
     }
-    
-    if (!mockReservations[newResDate]) {
-      mockReservations[newResDate] = [];
-    }
 
-    mockReservations[newResDate].push({
-      id: Date.now().toString(),
-      client: newResName,
-      dest: newResDest || 'Por definir',
+    const { error } = await supabase.from('admin_meetings').insert([{
+      client_name: newResName,
+      destination: newResDest || 'Por definir',
       email: newResEmail,
       phone: newResPhone,
-      time: newResTime,
+      meeting_date: newResDate,
+      meeting_time: newResTime,
       status: 'confirmed',
-      googleMeet: 'https://meet.google.com/' + Math.random().toString(36).substring(7)
-    });
+      google_meet_url: 'https://meet.google.com/' + Math.random().toString(36).substring(7)
+    }]);
 
-    saveReservations();
-    setShowAddModal(false);
-    setAttemptedSubmit(false);
-    setNewResName('');
-    setNewResDest('');
-    setNewResEmail('');
-    setNewResPhone('');
-    setNewResTime('');
+    if (error) {
+      alert('Error al agendar sesión');
+    } else {
+      fetchReservations();
+      setShowAddModal(false);
+      setAttemptedSubmit(false);
+      setNewResName('');
+      setNewResDest('');
+      setNewResEmail('');
+      setNewResPhone('');
+      setNewResTime('');
+    }
   };
 
   const getValidationClass = (value: any, required: boolean = true) => {
     if (!attemptedSubmit) return '';
     const hasValue = typeof value === 'string' ? value.trim() !== '' : !!value;
-    if (required) {
-      return hasValue ? 'is-valid' : 'is-invalid';
-    }
-    return hasValue ? 'is-valid' : '';
+    return required ? (hasValue ? 'is-valid' : 'is-invalid') : (hasValue ? 'is-valid' : '');
   };
 
   const getEmailClass = () => {
@@ -171,6 +168,7 @@ export default function AgendaPage() {
               isDashboard={true} 
               onDateSelect={(date) => setSelectedDate(date)} 
               selectedDateExternal={selectedDate}
+              reservations={allReservations}
             />
           </div>
         </div>
@@ -191,7 +189,9 @@ export default function AgendaPage() {
             </button>
           </div>
           <div className="card-body">
-            {dayReservations.length > 0 ? (
+            {loading ? (
+              <div className="p-4 text-center"><div className="loader-premium"></div></div>
+            ) : dayReservations.length > 0 ? (
               <div className="reservations-list">
                 {dayReservations.map(res => (
                   <div key={res.id} className={`reservation-item ${res.status === 'cancelled' ? 'cancelled-item' : ''}`}>
@@ -208,7 +208,7 @@ export default function AgendaPage() {
                               className="btn btn-sm btn-outline" 
                               style={{ padding: '0.25rem' }}
                               title="Posponer"
-                              onClick={() => openPostponeModal(selectedDateStr, res)}
+                              onClick={() => setPostponeData({ res, oldDate: selectedDateStr })}
                             >
                               <CalendarClock size={16} />
                             </button>
@@ -248,7 +248,7 @@ export default function AgendaPage() {
         </div>
       </div>
 
-      {/* Modals ... (Add & Postpone) */}
+      {/* Modals: Add & Postpone (Same as before but with Supabase calls) */}
       {showAddModal && (
         <div className="modal-overlay animate-fade-in" style={{ zIndex: 1300 }}>
           <div className="modal-content glass-card animate-scale-in" style={{ maxWidth: '450px', padding: '2.5rem', borderRadius: '24px' }}>
@@ -391,12 +391,7 @@ export default function AgendaPage() {
                   <option value="">Selecciona un horario</option>
                   {Array.from({ length: 12 }, (_, i) => i + 8).map(h => {
                     const t = h.toString().padStart(2, '0') + ':00';
-                    const isBooked = newPostponeDate ? mockReservations[newPostponeDate]?.some(r => r.time === t && r.status !== 'cancelled') : false;
-                    return (
-                      <option key={t} value={t} disabled={!!isBooked}>
-                        {t} {isBooked ? '(Ocupado)' : ''}
-                      </option>
-                    );
+                    return <option key={t} value={t}>{t}</option>;
                   })}
                 </select>
               </div>
@@ -404,12 +399,7 @@ export default function AgendaPage() {
 
             <div className="modal-actions-grid mt-4">
               <button className="btn btn-outline" onClick={() => { setPostponeData(null); setAttemptedSubmit(false); }}>Cancelar</button>
-              <button 
-                className="btn btn-primary" 
-                onClick={handleConfirmPostpone}
-              >
-                Confirmar Cambio
-              </button>
+              <button className="btn btn-primary" onClick={handleConfirmPostpone}>Confirmar Cambio</button>
             </div>
           </div>
         </div>

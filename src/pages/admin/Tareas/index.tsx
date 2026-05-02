@@ -1,4 +1,5 @@
-import { useState, useEffect, useMemo } from 'react';
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { useState, useEffect } from 'react';
 import { 
   Search, 
   FileText, 
@@ -11,8 +12,10 @@ import {
   X,
   Check,
   Calendar,
-  MapPin
+  MapPin,
+  Clock
 } from 'lucide-react';
+import { supabase } from '../../../lib/supabase';
 import './Tareas.css';
 
 interface ServiceItem {
@@ -55,45 +58,125 @@ interface Client {
 }
 
 export default function TareasPage() {
-  // 1. Load Clients (to pick from)
-  const [clients] = useState<Client[]>(() => {
-    // We should ideally fetch from the same source as ClientesPage
-    // but for now let's assume manual + agenda logic is duplicated or shared via LS
-    const manual = JSON.parse(localStorage.getItem('travelkit_manual_clients') || '[]');
-    // For simplicity, we'll just use manual clients or any "discovered" clients here
-    return manual;
-  });
-
-  // 2. Load Services (the "price list")
-  const services: ServiceItem[] = useMemo(() => {
-    const saved = localStorage.getItem('travelkit_services');
-    return saved ? JSON.parse(saved) : [];
-  }, []);
-
-  // 3. Billing State (The boletas)
-  const [billingData, setBillingData] = useState<Record<string, ClientBilling>>(() => {
-    const saved = localStorage.getItem('travelkit_client_billing');
-    return saved ? JSON.parse(saved) : {};
-  });
-
+  const [clients, setClients] = useState<Client[]>([]);
+  const [loadingClients, setLoadingClients] = useState(true);
+  const [loadingBilling, setLoadingBilling] = useState(false);
+  const [billingData, setBillingData] = useState<ClientBilling | null>(null);
+  
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [isAddingTask, setIsAddingTask] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | null>(null);
+  const [services, setServices] = useState<ServiceItem[]>([]);
 
   useEffect(() => {
-    localStorage.setItem('travelkit_client_billing', JSON.stringify(billingData));
-  }, [billingData]);
+    fetchClients();
+    fetchServices();
+  }, []);
+
+  useEffect(() => {
+    if (selectedClientId) {
+      fetchBilling(selectedClientId);
+    } else {
+      setBillingData(null);
+    }
+  }, [selectedClientId]);
+
+  const fetchClients = async () => {
+    setLoadingClients(true);
+    const { data, error } = await supabase
+      .from('clients')
+      .select('id, name, email, phone')
+      .order('name', { ascending: true });
+    
+    if (error) console.error('Error fetching clients:', error);
+    else setClients(data || []);
+    setLoadingClients(false);
+  };
+
+  const fetchServices = async () => {
+    const { data, error } = await supabase.from('services').select('*').order('name');
+    if (!error) setServices(data || []);
+  };
+
+  const fetchBilling = async (clientId: string) => {
+    setLoadingBilling(true);
+    const { data, error } = await supabase
+      .from('client_billing')
+      .select('*')
+      .eq('client_id', clientId)
+      .single();
+
+    if (error && error.code !== 'PGRST116') {
+      console.error('Error fetching billing:', error);
+    } else if (data) {
+      setBillingData({
+        clientId: data.client_id,
+        tasks: (data.tasks as ClientTask[]) || [],
+        notes: data.notes || '',
+        departureDate: data.departure_date || '',
+        returnDate: data.return_date || '',
+        destination: data.destination || '',
+        origin: data.origin || '',
+        departureTime: data.departure_time || '',
+        arrivalTime: data.arrival_time || '',
+        returnDepartureTime: data.return_departure_time || '',
+        returnArrivalTime: data.return_arrival_time || '',
+        arrivalDate: data.arrival_date || '',
+        returnArrivalDate: data.return_arrival_date || '',
+        returnOrigin: data.return_origin || '',
+        returnDestination: data.return_destination || ''
+      });
+    } else {
+      setBillingData({
+        clientId: clientId,
+        tasks: [],
+        notes: '',
+        destination: '',
+        origin: ''
+      });
+    }
+    setLoadingBilling(false);
+  };
+
+  const saveBilling = async (updatedData: ClientBilling) => {
+    setSaveStatus('saving');
+    const dbData = {
+      client_id: updatedData.clientId,
+      tasks: updatedData.tasks,
+      notes: updatedData.notes,
+      departure_date: updatedData.departureDate || null,
+      return_date: updatedData.returnDate || null,
+      destination: updatedData.destination || null,
+      origin: updatedData.origin || null,
+      departure_time: updatedData.departureTime || null,
+      arrival_time: updatedData.arrivalTime || null,
+      return_departure_time: updatedData.returnDepartureTime || null,
+      return_arrival_time: updatedData.returnArrivalTime || null,
+      arrival_date: updatedData.arrivalDate || null,
+      return_arrival_date: updatedData.returnArrivalDate || null,
+      return_origin: updatedData.returnOrigin || null,
+      return_destination: updatedData.returnDestination || null
+    };
+
+    const { error } = await supabase
+      .from('client_billing')
+      .upsert(dbData, { onConflict: 'client_id' });
+
+    if (error) console.error('Error saving billing:', error);
+    else setSaveStatus('saved');
+    
+    setTimeout(() => setSaveStatus(null), 2000);
+  };
 
   const filteredClients = clients.filter(c => 
     c.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const selectedClient = clients.find(c => c.id === selectedClientId);
-  const currentBilling = selectedClientId ? billingData[selectedClientId] || { clientId: selectedClientId, tasks: [], notes: '' } : null;
 
   const handleAddTask = (service: ServiceItem) => {
-    if (!selectedClientId) return;
+    if (!selectedClientId || !billingData) return;
     
     const newTask: ClientTask = {
       serviceId: service.id,
@@ -103,65 +186,44 @@ export default function TareasPage() {
       completed: false
     };
 
-    setBillingData(prev => {
-      const current = prev[selectedClientId] || { clientId: selectedClientId, tasks: [], notes: '' };
-      return {
-        ...prev,
-        [selectedClientId]: {
-          ...current,
-          tasks: [...current.tasks, newTask]
-        }
-      };
-    });
+    const updated: ClientBilling = {
+      ...billingData,
+      tasks: [...billingData.tasks, newTask]
+    };
+    setBillingData(updated);
+    saveBilling(updated);
     setIsAddingTask(false);
   };
 
   const handleToggleComplete = (index: number) => {
-    if (!selectedClientId) return;
-    setBillingData(prev => {
-      const current = prev[selectedClientId];
-      const newTasks = [...current.tasks];
-      newTasks[index] = { ...newTasks[index], completed: !newTasks[index].completed };
-      return {
-        ...prev,
-        [selectedClientId]: { ...current, tasks: newTasks }
-      };
-    });
+    if (!billingData) return;
+    const newTasks = [...billingData.tasks];
+    newTasks[index] = { ...newTasks[index], completed: !newTasks[index].completed };
+    const updated: ClientBilling = { ...billingData, tasks: newTasks };
+    setBillingData(updated);
+    saveBilling(updated);
   };
 
   const handleRemoveTask = (index: number) => {
-    if (!selectedClientId) return;
-    setBillingData(prev => {
-      const current = prev[selectedClientId];
-      const newTasks = [...current.tasks];
-      newTasks.splice(index, 1);
-      return {
-        ...prev,
-        [selectedClientId]: { ...current, tasks: newTasks }
-      };
-    });
-  };
-
-  const handleUpdateNotes = (notes: string) => {
-    handleUpdateBillingField('notes', notes);
+    if (!billingData) return;
+    const newTasks = [...billingData.tasks];
+    newTasks.splice(index, 1);
+    const updated: ClientBilling = { ...billingData, tasks: newTasks };
+    setBillingData(updated);
+    saveBilling(updated);
   };
 
   const handleUpdateBillingField = (field: keyof ClientBilling, value: any) => {
-    if (!selectedClientId) return;
-    setSaveStatus('saving');
-    setBillingData(prev => ({
-      ...prev,
-      [selectedClientId]: { 
-        ...(prev[selectedClientId] || { clientId: selectedClientId, tasks: [], notes: '', departureDate: '', returnDate: '', destination: '' }), 
-        [field]: value 
-      }
-    }));
+    if (!selectedClientId || !billingData) return;
     
-    // Debounced status update
-    setTimeout(() => {
-      setSaveStatus('saved');
-      setTimeout(() => setSaveStatus(null), 2000);
-    }, 500);
+    setSaveStatus('saving');
+    const updated: ClientBilling = { 
+      ...billingData, 
+      [field]: value 
+    };
+    
+    setBillingData(updated);
+    saveBilling(updated);
   };
 
   const calculateTotal = (tasks: ClientTask[]) => {
@@ -189,29 +251,39 @@ export default function TareasPage() {
               onChange={e => setSearchTerm(e.target.value)}
             />
           </div>
-          <div className="client-list">
-            {filteredClients.map(client => (
-              <button 
-                key={client.id}
-                className={`client-item ${selectedClientId === client.id ? 'active' : ''}`}
-                onClick={() => setSelectedClientId(client.id)}
-              >
-                <div className="client-avatar">
-                  {client.name.charAt(0)}
-                </div>
-                <div className="client-info">
-                  <span className="client-name">{client.name}</span>
-                  <span className="client-sub">{client.email || client.phone}</span>
-                </div>
-                <ChevronRight size={16} className="chevron" />
-              </button>
-            ))}
+          
+          <div className="client-list custom-scrollbar" style={{ maxHeight: 'calc(100vh - 350px)', overflowY: 'auto' }}>
+            {loadingClients ? (
+              <div className="p-4 text-center"><div className="loader-premium"></div></div>
+            ) : filteredClients.length === 0 ? (
+              <div className="p-4 text-center text-secondary">No se encontraron clientes</div>
+            ) : (
+              filteredClients.map(client => (
+                <button 
+                  key={client.id}
+                  className={`client-item ${selectedClientId === client.id ? 'active' : ''}`}
+                  onClick={() => setSelectedClientId(client.id)}
+                >
+                  <div className="client-avatar">{client.name.charAt(0)}</div>
+                  <div className="client-info">
+                    <span className="client-name">{client.name}</span>
+                    <span className="client-sub">{client.email || client.phone || 'Sin contacto'}</span>
+                  </div>
+                  <ChevronRight size={16} className="chevron" />
+                </button>
+              ))
+            )}
           </div>
         </div>
 
         {/* Right Panel: Billing Details */}
         <div className="billing-main">
-          {selectedClient && currentBilling ? (
+          {loadingBilling ? (
+            <div className="billing-empty-state glass-card">
+              <div className="loader-premium"></div>
+              <p>Cargando información del cliente...</p>
+            </div>
+          ) : selectedClient && billingData ? (
             <div className="billing-content animate-slide-up">
               <div className="billing-header glass-card">
                 <div className="client-summary">
@@ -223,7 +295,7 @@ export default function TareasPage() {
                 </div>
                 <div className="billing-total-badge">
                   <span className="label">Total a Cobrar</span>
-                  <span className="amount">${calculateTotal(currentBilling.tasks).toLocaleString('es-AR')}</span>
+                  <span className="amount">${calculateTotal(billingData.tasks).toLocaleString('es-AR')}</span>
                 </div>
               </div>
 
@@ -235,6 +307,11 @@ export default function TareasPage() {
                       <Calendar size={20} />
                       <h3>Fechas del Viaje</h3>
                     </div>
+                    {saveStatus && (
+                      <div className={`save-badge ${saveStatus}`}>
+                        {saveStatus === 'saving' ? 'Guardando...' : 'Guardado'}
+                      </div>
+                    )}
                   </div>
                   <div className="travel-info-inputs">
                     <div className="grid-2 mb-3">
@@ -246,7 +323,7 @@ export default function TareasPage() {
                             type="text" 
                             className="form-input"
                             placeholder="Ej: Buenos Aires"
-                            value={currentBilling.origin || ''}
+                            value={billingData.origin || ''}
                             onChange={e => handleUpdateBillingField('origin', e.target.value)}
                           />
                         </div>
@@ -258,124 +335,64 @@ export default function TareasPage() {
                           <input 
                             type="text" 
                             className="form-input"
-                            placeholder="Ej: Madrid, España"
-                            value={currentBilling.destination || ''}
+                            placeholder="Ej: Madrid"
+                            value={billingData.destination || ''}
                             onChange={e => handleUpdateBillingField('destination', e.target.value)}
                           />
                         </div>
                       </div>
                     </div>
+                    <div className="grid-2 gap-3 mb-4">
+                      <div className="form-group">
+                        <label>Fecha de Salida</label>
+                        <div className="input-with-icon">
+                          <Calendar size={16} />
+                          <input 
+                            type="date" 
+                            className="form-input"
+                            value={billingData.departureDate || ''}
+                            onChange={e => handleUpdateBillingField('departureDate', e.target.value)}
+                          />
+                        </div>
+                      </div>
+                      <div className="form-group">
+                        <label>Fecha de Regreso</label>
+                        <div className="input-with-icon">
+                          <Calendar size={16} />
+                          <input 
+                            type="date" 
+                            className="form-input"
+                            value={billingData.returnDate || ''}
+                            onChange={e => handleUpdateBillingField('returnDate', e.target.value)}
+                          />
+                        </div>
+                      </div>
+                    </div>
 
-                    <div className="mb-4">
-                      <h4 className="mb-3" style={{ fontSize: '0.9rem', color: 'var(--color-primary)', fontWeight: 800, fontFamily: 'var(--font-main)', letterSpacing: '-0.01em' }}>Vuelo de Salida</h4>
+                    <div className="border-top pt-4 mt-2">
+                      <h4 className="mb-3" style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Logística de Vuelos / Trayectos</h4>
                       <div className="grid-2 gap-3">
                         <div className="form-group">
-                          <label>Salida (Fecha y Hora)</label>
-                          <div className="d-flex gap-2">
-                            <input 
-                              type="date" 
-                              className="form-input"
-                              style={{ flex: 1 }}
-                              value={currentBilling.departureDate || ''}
-                              onChange={e => handleUpdateBillingField('departureDate', e.target.value)}
-                            />
+                          <label>Salida (Hora)</label>
+                          <div className="input-with-icon">
+                            <Clock size={16} />
                             <input 
                               type="time" 
                               className="form-input"
-                              style={{ width: '135px' }}
-                              value={currentBilling.departureTime || ''}
+                              value={billingData.departureTime || ''}
                               onChange={e => handleUpdateBillingField('departureTime', e.target.value)}
                             />
                           </div>
                         </div>
                         <div className="form-group">
-                          <label>Llegada (Fecha y Hora)</label>
-                          <div className="d-flex gap-2">
-                            <input 
-                              type="date" 
-                              className="form-input"
-                              style={{ flex: 1 }}
-                              value={currentBilling.arrivalDate || ''}
-                              onChange={e => handleUpdateBillingField('arrivalDate', e.target.value)}
-                            />
+                          <label>Llegada (Hora)</label>
+                          <div className="input-with-icon">
+                            <Clock size={16} />
                             <input 
                               type="time" 
                               className="form-input"
-                              style={{ width: '135px' }}
-                              value={currentBilling.arrivalTime || ''}
+                              value={billingData.arrivalTime || ''}
                               onChange={e => handleUpdateBillingField('arrivalTime', e.target.value)}
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div>
-                      <h4 className="mb-3" style={{ fontSize: '0.9rem', color: 'var(--color-primary)', fontWeight: 800, fontFamily: 'var(--font-main)', letterSpacing: '-0.01em' }}>Vuelo de Regreso</h4>
-                      <div className="grid-2 gap-3 mb-3">
-                        <div className="form-group">
-                          <label>Origen</label>
-                          <div className="input-with-icon">
-                            <MapPin size={16} />
-                            <input 
-                              type="text" 
-                              className="form-input"
-                              placeholder="Ciudad / Aeropuerto"
-                              value={currentBilling.returnOrigin || ''}
-                              onChange={e => handleUpdateBillingField('returnOrigin', e.target.value)}
-                            />
-                          </div>
-                        </div>
-                        <div className="form-group">
-                          <label>Destino</label>
-                          <div className="input-with-icon">
-                            <MapPin size={16} />
-                            <input 
-                              type="text" 
-                              className="form-input"
-                              placeholder="Ciudad / Aeropuerto"
-                              value={currentBilling.returnDestination || ''}
-                              onChange={e => handleUpdateBillingField('returnDestination', e.target.value)}
-                            />
-                          </div>
-                        </div>
-                      </div>
-                      <div className="grid-2 gap-3">
-                        <div className="form-group">
-                          <label>Salida (Fecha y Hora)</label>
-                          <div className="d-flex gap-2">
-                            <input 
-                              type="date" 
-                              className="form-input"
-                              style={{ flex: 1 }}
-                              value={currentBilling.returnDate || ''}
-                              onChange={e => handleUpdateBillingField('returnDate', e.target.value)}
-                            />
-                            <input 
-                              type="time" 
-                              className="form-input"
-                              style={{ width: '135px' }}
-                              value={currentBilling.returnDepartureTime || ''}
-                              onChange={e => handleUpdateBillingField('returnDepartureTime', e.target.value)}
-                            />
-                          </div>
-                        </div>
-                        <div className="form-group">
-                          <label>Llegada (Fecha y Hora)</label>
-                          <div className="d-flex gap-2">
-                            <input 
-                              type="date" 
-                              className="form-input"
-                              style={{ flex: 1 }}
-                              value={currentBilling.returnArrivalDate || ''}
-                              onChange={e => handleUpdateBillingField('returnArrivalDate', e.target.value)}
-                            />
-                            <input 
-                              type="time" 
-                              className="form-input"
-                              style={{ width: '135px' }}
-                              value={currentBilling.returnArrivalTime || ''}
-                              onChange={e => handleUpdateBillingField('returnArrivalTime', e.target.value)}
                             />
                           </div>
                         </div>
@@ -398,8 +415,8 @@ export default function TareasPage() {
                   </div>
                   
                   <div className="tasks-list">
-                    {currentBilling.tasks.length > 0 ? (
-                      currentBilling.tasks.map((task, idx) => (
+                    {billingData.tasks.length > 0 ? (
+                      billingData.tasks.map((task, idx) => (
                         <div key={idx} className={`task-item ${task.completed ? 'completed' : ''}`}>
                           <div className="task-main-row">
                             <button 
@@ -437,66 +454,49 @@ export default function TareasPage() {
                       <Notebook size={20} />
                       <h3>Notas y Datos</h3>
                     </div>
-                    {saveStatus && (
-                      <div className={`save-badge ${saveStatus}`}>
-                        {saveStatus === 'saving' ? 'Guardando...' : 'Cambios guardados'}
-                      </div>
-                    )}
                   </div>
                   <textarea 
-                    className="notes-textarea auto-expand"
-                    placeholder="Escribe aquí notas sobre el viaje, preferencias del cliente o detalles del cobro..."
-                    value={currentBilling.notes}
-                    onChange={e => {
-                      handleUpdateNotes(e.target.value);
-                      // Simple auto-expand logic
-                      e.target.style.height = 'inherit';
-                      e.target.style.height = `${e.target.scrollHeight}px`;
-                    }}
-                    onFocus={e => {
-                      e.target.style.height = 'inherit';
-                      e.target.style.height = `${e.target.scrollHeight}px`;
-                    }}
+                    className="form-input notes-textarea"
+                    placeholder="Escribe notas internas sobre el cliente o el viaje..."
+                    value={billingData.notes}
+                    onChange={e => handleUpdateBillingField('notes', e.target.value)}
                   />
                 </div>
               </div>
             </div>
           ) : (
-            <div className="select-prompt glass-card">
-              <UserIcon size={64} className="mb-4 text-muted" />
+            <div className="billing-empty-state glass-card">
+              <FileText size={64} strokeWidth={1} />
               <h3>Selecciona un cliente</h3>
-              <p>Elige un cliente de la lista para ver su boleta y gestionar sus tareas.</p>
+              <p>Elige un cliente de la lista para ver su logística y tareas pendientes.</p>
             </div>
           )}
         </div>
       </div>
 
-      {/* Services Picker Modal */}
+      {/* Modal Agregar Tarea */}
       {isAddingTask && (
-        <div className="modal-overlay animate-fade-in" style={{ zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div className="modal-content animate-scale-in" style={{ maxWidth: '500px' }}>
+        <div className="modal-overlay">
+          <div className="modal-content glass-card p-4" style={{ maxWidth: '500px' }}>
             <div className="modal-header">
-              <h3>Seleccionar Tarea / Costo</h3>
-              <button onClick={() => setIsAddingTask(false)} className="close-modal-btn">
-                <X size={20} />
-              </button>
+              <h3>Agregar Tarea de Servicio</h3>
+              <button onClick={() => setIsAddingTask(false)} className="close-btn"><X size={20} /></button>
             </div>
-            <div className="services-picker-list">
+            <div className="services-grid">
               {services.length > 0 ? (
                 services.map(service => (
-                    <button 
+                  <button 
                     key={service.id} 
-                    className="service-picker-item"
+                    className="service-pick-card"
                     onClick={() => handleAddTask(service)}
                   >
                     <span className="name">{service.name}</span>
                     <span className="price">${service.price.toLocaleString('es-AR')}</span>
-                    <Plus size={18} />
                   </button>
                 ))
               ) : (
                 <div className="p-4 text-center">
-                  <p>No hay costos definidos. Ve a la página de "Costos" primero.</p>
+                  <p className="text-secondary">No hay servicios configurados en 'Costos'.</p>
                 </div>
               )}
             </div>
@@ -506,5 +506,3 @@ export default function TareasPage() {
     </div>
   );
 }
-
-

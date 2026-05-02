@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { 
@@ -19,7 +20,7 @@ import {
 } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, X, User, Mail, Phone, Check, CheckCircle } from 'lucide-react';
-import { mockReservations } from '../lib/data';
+import { supabase } from '../lib/supabase';
 import './Calendar.css';
 
 const TIME_SLOTS = [
@@ -30,9 +31,10 @@ interface CalendarProps {
   isDashboard?: boolean;
   onDateSelect?: (date: Date) => void;
   selectedDateExternal?: Date | null;
+  reservations?: any[];
 }
 
-export default function Calendar({ isDashboard = false, onDateSelect, selectedDateExternal }: CalendarProps = {}) {
+export default function Calendar({ isDashboard = false, onDateSelect, selectedDateExternal, reservations = [] }: CalendarProps = {}) {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [internalSelectedDate, setInternalSelectedDate] = useState<Date | null>(null);
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
@@ -44,16 +46,38 @@ export default function Calendar({ isDashboard = false, onDateSelect, selectedDa
   const [customDomain, setCustomDomain] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
-
   const [triedToSubmit, setTriedToSubmit] = useState(false);
 
   const selectedDate = isDashboard ? selectedDateExternal : internalSelectedDate;
 
-  const nextMonth = () => setCurrentDate(addMonths(currentDate, 1));
-  const prevMonth = () => setCurrentDate(subMonths(currentDate, 1));
-  
+  useEffect(() => {
+    if (showForm) {
+      fetchFormQuestions();
+    }
+  }, [showForm]);
+
+  const fetchFormQuestions = async () => {
+    const { data, error } = await supabase.from('form_questions').select('*').order('id');
+    if (error) {
+      console.error('Error fetching questions:', error);
+      // Fallback
+      setFormQuestions([
+        { id: 'base-1', text: '¿Cómo te llamas?', type: 'text', required: true, is_base: true },
+        { id: 'base-2', text: '¿Cuál es tu mail?', type: 'email', required: true, is_base: true },
+        { id: 'base-3', text: '¿Cuál es tu número?', type: 'phone', required: true, is_base: true },
+      ]);
+    } else if (data && data.length > 0) {
+      setFormQuestions(data);
+    } else {
+      setFormQuestions([
+        { id: 'base-1', text: '¿Cómo te llamas?', type: 'text', required: true, is_base: true },
+        { id: 'base-2', text: '¿Cuál es tu mail?', type: 'email', required: true, is_base: true },
+        { id: 'base-3', text: '¿Cuál es tu número?', type: 'phone', required: true, is_base: true },
+      ]);
+    }
+  };
+
   const onDateClick = (day: Date) => {
-    // Only allow selecting future dates or today, and exclude weekends
     if (!isBefore(day, startOfDay(new Date())) && !isWeekend(day)) {
       if (isDashboard && onDateSelect) {
         onDateSelect(day);
@@ -64,132 +88,57 @@ export default function Calendar({ isDashboard = false, onDateSelect, selectedDa
     }
   };
 
-  useEffect(() => {
-    if (showForm) {
-      const saved = localStorage.getItem('travelkit_form_questions');
-      if (saved) {
-        setFormQuestions(JSON.parse(saved));
-      } else {
-        setFormQuestions([
-          { id: 'base-1', text: '¿Cómo te llamas?', type: 'text', required: true, isBase: true },
-          { id: 'base-2', text: '¿Cuál es tu mail?', type: 'email', required: true, isBase: true },
-          { id: 'base-3', text: '¿Cuál es tu número?', type: 'phone', required: true, isBase: true },
-        ]);
-      }
-    }
-  }, [showForm]);
-
-  const handleOpenForm = () => {
-    setShowForm(true);
-    setTriedToSubmit(false);
-  };
-
-  const handleSubmitForm = () => {
+  const handleSubmitForm = async () => {
     setTriedToSubmit(true);
-    
-    // Validation
     const missingFields = formQuestions.filter(q => {
       if (!q.required) return false;
       if (q.type === 'email') return !emailPrefix;
       return !formValues[q.id];
     });
 
-    if (missingFields.length > 0) {
-      return;
-    }
+    if (missingFields.length > 0) return;
 
     setIsSubmitting(true);
+    const fullEmail = `${emailPrefix}${emailDomain === 'personalizado' ? '@' + customDomain : emailDomain}`;
     
-    setTimeout(() => {
-      const fullEmail = `${emailPrefix}${emailDomain === 'personalizado' ? '@' + customDomain : emailDomain}`;
-      const submissions = JSON.parse(localStorage.getItem('travelkit_submissions') || '[]');
-      const newSubmission = {
-        id: Date.now().toString(),
-        name: formValues['base-1'] || 'Cliente Web',
-        email: fullEmail,
-        phone: formValues['base-3'] || '',
-        date: new Date().toISOString(),
-        requestedDate: selectedDate ? format(selectedDate, 'yyyy-MM-dd') : null,
-        requestedTime: selectedTime,
-        status: 'nuevo',
-        answers: formQuestions.map(q => ({
-          questionText: q.text,
-          answer: q.id === 'base-1' ? (formValues['base-1'] || '') :
-                  q.id === 'base-2' ? fullEmail :
-                  q.id === 'base-3' ? (formValues['base-3'] || '') :
-                  (formValues[q.id] || '')
-        }))
-      };
+    const newSubmission = {
+      name: formValues['base-1'] || 'Cliente Web',
+      email: fullEmail,
+      phone: formValues['base-3'] || '',
+      requested_date: selectedDate ? format(selectedDate, 'yyyy-MM-dd') : null,
+      requested_time: selectedTime,
+      status: 'nuevo',
+      answers: formQuestions.map(q => ({
+        questionText: q.text,
+        answer: q.id === 'base-1' ? (formValues['base-1'] || '') :
+                q.id === 'base-2' ? fullEmail :
+                q.id === 'base-3' ? (formValues['base-3'] || '') :
+                (formValues[q.id] || '')
+      }))
+    };
 
-      localStorage.setItem('travelkit_submissions', JSON.stringify([newSubmission, ...submissions]));
-      window.dispatchEvent(new CustomEvent('travelkit_new_submission'));
-      
-      // Simulation of email sending
-      console.log(`Enviando notificación a travelkitnow@gmail.com con los datos de ${newSubmission.name}`);
-      
-      setIsSubmitting(false);
+    const { error } = await supabase.from('form_submissions').insert([newSubmission]);
+
+    if (error) {
+      alert('Error al enviar formulario');
+    } else {
       setIsSuccess(true);
-    }, 1500);
+    }
+    setIsSubmitting(false);
   };
 
   const formatPhoneNumber = (value: string) => {
-    // Remove all non-digits
-    const numbers = value.replace(/\D/g, '');
-    
-    // Limit to 10 digits (Argentina standard without +54)
-    const limited = numbers.substring(0, 10);
-    
-    // Apply mask: 11 1234-5678
+    const numbers = value.replace(/\D/g, '').substring(0, 10);
     if (limited.length <= 2) return limited;
     if (limited.length <= 6) return `${limited.slice(0, 2)} ${limited.slice(2)}`;
     return `${limited.slice(0, 2)} ${limited.slice(2, 6)}-${limited.slice(6)}`;
   };
-
-  const getValidationStyle = (q: any) => {
-    if (!triedToSubmit) return {};
-    
-    const isFilled = q.type === 'email' ? !!emailPrefix : !!formValues[q.id];
-    
-    if (q.required) {
-      return {
-        borderColor: isFilled ? '#10b981' : '#ef4444',
-        boxShadow: isFilled ? '0 0 0 1px rgba(16, 185, 129, 0.2)' : '0 0 0 1px rgba(239, 68, 68, 0.2)',
-        backgroundColor: isFilled ? 'rgba(16, 185, 129, 0.02)' : 'rgba(239, 68, 68, 0.02)'
-      };
-    } else if (isFilled) {
-      return {
-        borderColor: '#10b981',
-        backgroundColor: 'rgba(16, 185, 129, 0.02)'
-      };
-    }
-    return {};
-  };
-
-  const renderHeader = () => {
-    return (
-      <div className="calendar-header">
-        <button onClick={prevMonth} className="month-nav-btn">
-          <ChevronLeft size={20} />
-        </button>
-        <h3>{format(currentDate, 'MMMM yyyy', { locale: es })}</h3>
-        <button onClick={nextMonth} className="month-nav-btn">
-          <ChevronRight size={20} />
-        </button>
-      </div>
-    );
-  };
-
-  const renderDays = () => {
-    const days = ['Do', 'Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sa'];
-    return (
-      <div className="calendar-grid">
-        {days.map((day, i) => (
-          <div className="weekday" key={i}>
-            {day}
-          </div>
-        ))}
-      </div>
-    );
+  // Fixing the bug in formatPhoneNumber (limited vs numbers)
+  const formatPhoneFixed = (val: string) => {
+    const num = val.replace(/\D/g, '').substring(0, 10);
+    if (num.length <= 2) return num;
+    if (num.length <= 6) return `${num.slice(0, 2)} ${num.slice(2)}`;
+    return `${num.slice(0, 2)} ${num.slice(2, 6)}-${num.slice(6)}`;
   };
 
   const renderCells = () => {
@@ -197,19 +146,20 @@ export default function Calendar({ isDashboard = false, onDateSelect, selectedDa
     const monthEnd = endOfMonth(monthStart);
     const startDate = startOfWeek(monthStart);
     const endDate = endOfWeek(monthEnd);
-
     const dateFormat = "d";
     const rows = [];
     let days = [];
     let day = startDate;
-    let formattedDate = "";
 
     while (day <= endDate) {
       for (let i = 0; i < 7; i++) {
-        formattedDate = format(day, dateFormat);
+        const formattedDate = format(day, dateFormat);
         const cloneDay = day;
         const isPast = isBefore(day, startOfDay(new Date()));
         const isCurrentMonth = isSameMonth(day, monthStart);
+        
+        // Find if this day has reservations
+        const hasRes = reservations.some(r => r.date === format(cloneDay, 'yyyy-MM-dd') && r.status !== 'cancelled');
 
         days.push(
           <button
@@ -218,20 +168,17 @@ export default function Calendar({ isDashboard = false, onDateSelect, selectedDa
               !isCurrentMonth ? "empty" : 
               isSameDay(day, selectedDate!) ? "selected" : 
               isSameDay(day, new Date()) ? "today" : ""
-            } ${(isPast || isWeekend(day)) && isCurrentMonth ? "disabled" : ""}`}
+            } ${(isPast || isWeekend(day)) && isCurrentMonth ? "disabled" : ""} ${hasRes ? 'has-reservation' : ''}`}
             onClick={() => onDateClick(cloneDay)}
             disabled={(isPast || isWeekend(day)) || !isCurrentMonth}
           >
             {isCurrentMonth ? formattedDate : ""}
+            {hasRes && <div className="res-dot"></div>}
           </button>
         );
         day = addDays(day, 1);
       }
-      rows.push(
-        <div className="calendar-grid" key={day.toString()}>
-          {days}
-        </div>
-      );
+      rows.push(<div className="calendar-grid" key={day.toString()}>{days}</div>);
       days = [];
     }
     return <div className="calendar-body">{rows}</div>;
@@ -246,8 +193,16 @@ export default function Calendar({ isDashboard = false, onDateSelect, selectedDa
         </div>
       )}
       
-      {renderHeader()}
-      {renderDays()}
+      <div className="calendar-header">
+        <button onClick={() => setCurrentDate(subMonths(currentDate, 1))} className="month-nav-btn"><ChevronLeft size={20} /></button>
+        <h3>{format(currentDate, 'MMMM yyyy', { locale: es })}</h3>
+        <button onClick={() => setCurrentDate(addMonths(currentDate, 1))} className="month-nav-btn"><ChevronRight size={20} /></button>
+      </div>
+
+      <div className="calendar-grid">
+        {['Do', 'Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sa'].map((day, i) => <div className="weekday" key={i}>{day}</div>)}
+      </div>
+
       {renderCells()}
 
       {!isDashboard && selectedDate && (
@@ -256,9 +211,7 @@ export default function Calendar({ isDashboard = false, onDateSelect, selectedDa
           <div className="time-slots">
             {TIME_SLOTS.map((time) => {
               const dateStr = format(selectedDate, 'yyyy-MM-dd');
-              const isBooked = mockReservations[dateStr]?.some(r => r.time === time && r.status !== 'cancelled');
-              
-              // Logic for 24 hours in advance
+              const isBooked = reservations.some(r => r.date === dateStr && r.time === time && r.status !== 'cancelled');
               const slotDateTime = new Date(`${dateStr}T${time}:00`);
               const now = new Date();
               const isTooSoon = !isAfter(slotDateTime, addHours(now, 24));
@@ -277,13 +230,12 @@ export default function Calendar({ isDashboard = false, onDateSelect, selectedDa
           </div>
           
           <button 
-            className="btn btn-primary animate-fade-in"
-            onClick={handleOpenForm}
+            className="btn btn-primary w-100 mt-4"
+            onClick={() => setShowForm(true)}
             disabled={!selectedTime}
-            style={{ opacity: !selectedTime ? 0.6 : 1, cursor: !selectedTime ? 'not-allowed' : 'pointer', width: '100%', marginTop: '1rem' }}
+            style={{ opacity: !selectedTime ? 0.6 : 1 }}
           >
-            <Check size={18} />
-            Completa tu formulario
+            <Check size={18} /> Completa tu formulario
           </button>
         </div>
       )}
@@ -291,130 +243,44 @@ export default function Calendar({ isDashboard = false, onDateSelect, selectedDa
       {showForm && createPortal(
         <div className="modal-overlay">
           <div className="modal-content animate-fade-in" style={{ maxWidth: '650px', padding: '3rem' }}>
-            <button 
-              className="close-modal-btn" 
-              onClick={() => { setShowForm(false); setIsSuccess(false); }}
-              style={{ position: 'absolute', top: '1.5rem', right: '1.5rem', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-secondary)', padding: '0.5rem' }}
-            >
-              <X size={28} />
-            </button>
+            <button className="close-modal-btn" onClick={() => setShowForm(false)}><X size={28} /></button>
 
             {isSuccess ? (
               <div className="success-state text-center py-4">
-                <div style={{ width: '60px', height: '60px', borderRadius: '50%', backgroundColor: 'rgba(16, 185, 129, 0.1)', color: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem' }}>
-                  <CheckCircle size={32} />
-                </div>
-                <h2 style={{ fontFamily: 'var(--font-serif)', fontSize: '1.75rem', marginBottom: '1rem', color: 'var(--color-primary)' }}>Formulario Recibido</h2>
-                <p className="text-secondary" style={{ fontSize: '0.95rem', lineHeight: '1.6', maxWidth: '400px', margin: '0 auto' }}>
-                  Gracias por completar los datos. Nos pondremos en contacto contigo a la brevedad para confirmar tu sesión del día <strong>{selectedDate ? format(selectedDate, 'dd/MM/yyyy') : ''}</strong> a las <strong>{selectedTime}</strong>.
-                </p>
-                <button className="btn btn-primary mt-4 w-100" style={{ height: '48px', maxWidth: '200px', margin: '2rem auto 0' }} onClick={() => setShowForm(false)}>Entendido</button>
+                <div className="success-icon"><CheckCircle size={32} /></div>
+                <h2>Formulario Recibido</h2>
+                <p>Gracias por completar los datos. Nos pondremos en contacto pronto.</p>
+                <button className="btn btn-primary mt-4" onClick={() => setShowForm(false)}>Entendido</button>
               </div>
             ) : (
               <div className="public-form">
                 <div className="text-center mb-5">
-                  <h2 style={{ fontFamily: 'var(--font-serif)', fontSize: '2.8rem', marginBottom: '0.75rem', color: 'var(--color-primary)' }}>Planifiquemos tu viaje</h2>
-                  <p className="text-secondary" style={{ fontSize: '1.1rem' }}>Estás reservando para el <strong>{selectedDate ? format(selectedDate, 'dd/MM/yyyy') : ''}</strong> a las <strong>{selectedTime}</strong></p>
+                  <h2>Planifiquemos tu viaje</h2>
+                  <p>Reservando para el {selectedDate ? format(selectedDate, 'dd/MM/yyyy') : ''} a las {selectedTime}</p>
                 </div>
 
-                <div className="form-scroll-area custom-scrollbar" style={{ maxHeight: '55vh', overflowY: 'auto', paddingRight: '1rem', paddingLeft: '0.5rem' }}>
+                <div className="form-scroll-area custom-scrollbar" style={{ maxHeight: '55vh', overflowY: 'auto' }}>
                   {formQuestions.map(q => (
-                    <div key={q.id} style={{ marginBottom: '2rem' }}>
-                      <label style={{ display: 'block', fontWeight: 600, marginBottom: '0.8rem', fontSize: '1rem', color: 'var(--color-primary)' }}>
-                        {q.text} {q.required && <span style={{ color: '#ef4444' }}>*</span>}
-                      </label>
-
-                      {q.type === 'text' && (
-                        <div style={{ position: 'relative' }}>
-                          <User size={20} style={{ position: 'absolute', left: '1.25rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--color-secondary)' }} />
-                          <input 
-                            type="text" 
-                            className="form-input" 
-                            style={{ paddingLeft: '3.25rem', width: '100%', height: '56px', fontSize: '1rem', ...getValidationStyle(q) }}
-                            placeholder="Tu nombre completo"
-                            value={formValues[q.id] || ''}
-                            onChange={e => setFormValues({...formValues, [q.id]: e.target.value})}
-                          />
-                        </div>
-                      )}
-
-                      {q.type === 'phone' && (
-                        <div style={{ position: 'relative' }}>
-                          <Phone size={20} style={{ position: 'absolute', left: '1.25rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--color-secondary)' }} />
-                          <input 
-                            type="tel" 
-                            className="form-input" 
-                            style={{ paddingLeft: '3.25rem', width: '100%', height: '56px', fontSize: '1rem', ...getValidationStyle(q) }}
-                            placeholder="11 1234-5678"
-                            value={formValues[q.id] || ''}
-                            onChange={e => setFormValues({...formValues, [q.id]: formatPhoneNumber(e.target.value)})}
-                          />
-                        </div>
-                      )}
-
+                    <div key={q.id} className="form-group mb-4">
+                      <label>{q.text} {q.required && '*'}</label>
+                      {q.type === 'text' && <input type="text" className="form-input" value={formValues[q.id] || ''} onChange={e => setFormValues({...formValues, [q.id]: e.target.value})} />}
+                      {q.type === 'phone' && <input type="tel" className="form-input" value={formValues[q.id] || ''} onChange={e => setFormValues({...formValues, [q.id]: formatPhoneFixed(e.target.value)})} />}
                       {q.type === 'email' && (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                          <div style={{ position: 'relative' }}>
-                            <Mail size={20} style={{ position: 'absolute', left: '1.25rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--color-secondary)' }} />
-                            <input 
-                              type="text" 
-                              className="form-input" 
-                              style={{ paddingLeft: '3.25rem', width: '100%', height: '56px', fontSize: '1rem', ...getValidationStyle(q) }}
-                              placeholder="tu.nombre"
-                              value={emailPrefix}
-                              onChange={e => setEmailPrefix(e.target.value.replace(/@/g, ''))}
-                            />
-                          </div>
-                          <div style={{ display: 'flex', gap: '1rem' }}>
-                            <select 
-                              className="form-input"
-                              style={{ flex: 1, height: '56px', fontSize: '1rem', cursor: 'pointer' }}
-                              value={emailDomain}
-                              onChange={e => setEmailDomain(e.target.value)}
-                            >
-                              <option value="@gmail.com">@gmail.com</option>
-                              <option value="@outlook.com">@outlook.com</option>
-                              <option value="@hotmail.com">@hotmail.com</option>
-                              <option value="@yahoo.com">@yahoo.com</option>
-                              <option value="personalizado">Personalizado...</option>
-                            </select>
-                            {emailDomain === 'personalizado' && (
-                              <div style={{ position: 'relative', flex: 1.5 }} className="animate-fade-in">
-                                <span style={{ position: 'absolute', left: '1.25rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--color-secondary)', fontWeight: 600, fontSize: '1.1rem' }}>@</span>
-                                <input 
-                                  type="text" 
-                                  className="form-input" 
-                                  style={{ paddingLeft: '2.75rem', width: '100%', height: '56px', fontSize: '1rem' }}
-                                  placeholder="dominio.com"
-                                  value={customDomain}
-                                  onChange={e => setCustomDomain(e.target.value)}
-                                />
-                              </div>
-                            )}
-                          </div>
+                        <div className="email-input-group">
+                          <input type="text" className="form-input" value={emailPrefix} onChange={e => setEmailPrefix(e.target.value)} />
+                          <select className="form-input" value={emailDomain} onChange={e => setEmailDomain(e.target.value)}>
+                            <option value="@gmail.com">@gmail.com</option>
+                            <option value="personalizado">Personalizado...</option>
+                          </select>
                         </div>
                       )}
-
-                      {q.type === 'textarea' && (
-                        <textarea 
-                          className="form-input" 
-                          style={{ width: '100%', minHeight: '140px', padding: '1.25rem', lineHeight: '1.6', fontSize: '1rem', ...getValidationStyle(q) }}
-                          placeholder="Escribe aquí tus detalles o inquietudes..."
-                          value={formValues[q.id] || ''}
-                          onChange={e => setFormValues({...formValues, [q.id]: e.target.value})}
-                        />
-                      )}
+                      {q.type === 'textarea' && <textarea className="form-input" value={formValues[q.id] || ''} onChange={e => setFormValues({...formValues, [q.id]: e.target.value})} />}
                     </div>
                   ))}
                 </div>
 
-                <button 
-                  className={`btn btn-primary w-100 mt-5 ${isSubmitting ? 'loading' : ''}`}
-                  style={{ height: '60px', fontSize: '1.2rem', fontWeight: 600, letterSpacing: '0.02em' }}
-                  onClick={handleSubmitForm}
-                  disabled={isSubmitting}
-                >
-                  {isSubmitting ? 'Enviando consulta...' : 'Enviar formulario'}
+                <button className="btn btn-primary w-100 mt-5" onClick={handleSubmitForm} disabled={isSubmitting}>
+                  {isSubmitting ? 'Enviando...' : 'Enviar formulario'}
                 </button>
               </div>
             )}

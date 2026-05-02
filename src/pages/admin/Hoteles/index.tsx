@@ -13,6 +13,7 @@ import {
   MapPin,
   Info
 } from 'lucide-react';
+import { supabase } from '../../../lib/supabase';
 import './Hoteles.css';
 
 interface HotelLink {
@@ -22,19 +23,19 @@ interface HotelLink {
 
 interface Hotel {
   id: string;
+  folder_id: string;
   name: string;
-  costUsd: number;
+  cost_usd: number;
   address: string;
   description: string;
   notes: string;
   links: HotelLink[];
-  // New Fields
   nights: number;
-  breakfast: boolean;
-  halfBoard: boolean;
-  allInclusive: boolean;
-  extraServices: string;
   stars: number;
+  breakfast: boolean;
+  half_board: boolean;
+  all_inclusive: boolean;
+  extra_services: string;
 }
 
 interface HotelFolder {
@@ -44,11 +45,8 @@ interface HotelFolder {
 }
 
 export default function HotelesPage() {
-  const [folders, setFolders] = useState<HotelFolder[]>(() => {
-    const saved = localStorage.getItem('travelkit_hotel_folders');
-    return saved ? JSON.parse(saved) : [];
-  });
-
+  const [folders, setFolders] = useState<HotelFolder[]>([]);
+  const [loading, setLoading] = useState(true);
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
   const [dollarRate, setDollarRate] = useState<number>(0);
 
@@ -60,13 +58,13 @@ export default function HotelesPage() {
   // Form States
   const [newFolderName, setNewFolderName] = useState('');
   const [newHotel, setNewHotel] = useState<Partial<Hotel>>({
-    name: '', costUsd: 0, address: '', description: '', notes: '', links: [],
-    nights: 1, breakfast: false, halfBoard: false, allInclusive: false, extraServices: '', stars: 3
+    name: '', cost_usd: 0, address: '', description: '', notes: '', links: [],
+    nights: 1, breakfast: false, half_board: false, all_inclusive: false, extra_services: '', stars: 3
   });
 
   useEffect(() => {
-    localStorage.setItem('travelkit_hotel_folders', JSON.stringify(folders));
-  }, [folders]);
+    fetchFolders();
+  }, []);
 
   useEffect(() => {
     fetch('https://dolarapi.com/v1/dolares/blue')
@@ -75,86 +73,131 @@ export default function HotelesPage() {
       .catch(() => setDollarRate(0));
   }, []);
 
-  const selectedFolder = folders.find(f => f.id === selectedFolderId);
+  const fetchFolders = async () => {
+    setLoading(true);
+    const { data: folderData, error: folderError } = await supabase
+      .from('catalog_folders')
+      .select('*')
+      .eq('type', 'hotel')
+      .order('name');
 
-  const handleAddFolder = () => {
-    if (!newFolderName.trim()) return;
-    const folder: HotelFolder = {
-      id: `folder-${Date.now()}`,
-      name: newFolderName.trim(),
-      hotels: []
-    };
-    setFolders([...folders, folder]);
-    setNewFolderName('');
-    setShowFolderModal(false);
+    if (folderError) {
+      console.error('Error fetching folders:', folderError);
+      setLoading(false);
+      return;
+    }
+
+    if (folderData.length === 0) {
+      setFolders([]);
+      setLoading(false);
+      return;
+    }
+
+    const { data: itemData, error: itemError } = await supabase
+      .from('catalog_items')
+      .select('*')
+      .in('folder_id', folderData.map(f => f.id));
+
+    if (itemError) console.error('Error fetching items:', itemError);
+
+    const combined: HotelFolder[] = folderData.map(f => ({
+      id: f.id,
+      name: f.name,
+      hotels: (itemData || [])
+        .filter(i => i.folder_id === f.id)
+        .map(i => ({
+          id: i.id,
+          folder_id: i.folder_id,
+          name: i.name,
+          cost_usd: i.cost_usd,
+          address: i.address,
+          description: i.description,
+          notes: i.notes,
+          links: i.links || [],
+          nights: i.nights,
+          stars: i.stars,
+          breakfast: i.breakfast,
+          half_board: i.half_board,
+          all_inclusive: i.all_inclusive,
+          extra_services: i.extra_services
+        }))
+    }));
+
+    setFolders(combined);
+    setLoading(false);
   };
 
-  const handleDeleteFolder = (id: string, e: React.MouseEvent) => {
+  const handleAddFolder = async () => {
+    if (!newFolderName.trim()) return;
+    const { data, error } = await supabase
+      .from('catalog_folders')
+      .insert([{ name: newFolderName.trim(), type: 'hotel' }])
+      .select();
+
+    if (error) {
+      alert('Error al crear carpeta');
+    } else if (data) {
+      setFolders([...folders, { id: data[0].id, name: data[0].name, hotels: [] }]);
+      setNewFolderName('');
+      setShowFolderModal(false);
+    }
+  };
+
+  const handleDeleteFolder = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     if (window.confirm('¿Eliminar esta carpeta y todos sus hoteles?')) {
-      setFolders(folders.filter(f => f.id !== id));
-      if (selectedFolderId === id) setSelectedFolderId(null);
+      const { error } = await supabase.from('catalog_folders').delete().eq('id', id);
+      if (!error) {
+        setFolders(folders.filter(f => f.id !== id));
+        if (selectedFolderId === id) setSelectedFolderId(null);
+      }
     }
   };
 
-  const handleAddHotel = () => {
+  const handleAddHotel = async () => {
     if (!selectedFolderId || !newHotel.name) return;
 
+    const dbData = {
+      folder_id: selectedFolderId,
+      name: newHotel.name,
+      cost_usd: Number(newHotel.cost_usd) || 0,
+      address: newHotel.address || '',
+      description: newHotel.description || '',
+      notes: newHotel.notes || '',
+      links: newHotel.links || [],
+      nights: Number(newHotel.nights) || 1,
+      stars: Number(newHotel.stars) || 3,
+      breakfast: !!newHotel.breakfast,
+      half_board: !!newHotel.half_board,
+      all_inclusive: !!newHotel.all_inclusive,
+      extra_services: newHotel.extra_services || ''
+    };
+
     if (editingHotelId) {
-      setFolders(folders.map(f => {
-        if (f.id === selectedFolderId) {
-          return {
-            ...f,
-            hotels: f.hotels.map(h =>
-              h.id === editingHotelId ? { ...h, ...newHotel as Hotel } : h
-            )
-          };
-        }
-        return f;
-      }));
+      const { error } = await supabase.from('catalog_items').update(dbData).eq('id', editingHotelId);
+      if (error) alert('Error al actualizar hotel');
+      else {
+        fetchFolders();
+        setShowHotelModal(false);
+      }
     } else {
-      const hotel: Hotel = {
-        id: `ht-${Date.now()}`,
-        name: newHotel.name || '',
-        costUsd: Number(newHotel.costUsd) || 0,
-        address: newHotel.address || '',
-        description: newHotel.description || '',
-        notes: newHotel.notes || '',
-        links: newHotel.links || [],
-        nights: Number(newHotel.nights) || 1,
-        breakfast: !!newHotel.breakfast,
-        halfBoard: !!newHotel.halfBoard,
-        allInclusive: !!newHotel.allInclusive,
-        extraServices: newHotel.extraServices || '',
-        stars: Number(newHotel.stars) || 3
-      };
-      setFolders(folders.map(f => {
-        if (f.id === selectedFolderId) {
-          return { ...f, hotels: [...f.hotels, hotel] };
-        }
-        return f;
-      }));
+      const { error } = await supabase.from('catalog_items').insert([dbData]);
+      if (error) alert('Error al guardar hotel');
+      else {
+        fetchFolders();
+        setShowHotelModal(false);
+      }
     }
-
-    setNewHotel({ 
-      name: '', costUsd: 0, address: '', description: '', notes: '', links: [],
-      nights: 1, breakfast: false, halfBoard: false, allInclusive: false, extraServices: '', stars: 3
-    });
-    setEditingHotelId(null);
-    setShowHotelModal(false);
   };
 
-  const handleDeleteHotel = (id: string) => {
-    if (!selectedFolderId) return;
+  const handleDeleteHotel = async (id: string) => {
     if (window.confirm('¿Eliminar este hotel?')) {
-      setFolders(folders.map(f => {
-        if (f.id === selectedFolderId) {
-          return { ...f, hotels: f.hotels.filter(h => h.id !== id) };
-        }
-        return f;
-      }));
+      const { error } = await supabase.from('catalog_items').delete().eq('id', id);
+      if (!error) fetchFolders();
     }
   };
+
+  const selectedFolder = folders.find(f => f.id === selectedFolderId);
 
   const openEditModal = (h: Hotel) => {
     setNewHotel(h);
@@ -164,8 +207,8 @@ export default function HotelesPage() {
 
   const openCreateModal = () => {
     setNewHotel({ 
-      name: '', costUsd: 0, address: '', description: '', notes: '', links: [],
-      nights: 1, breakfast: false, halfBoard: false, allInclusive: false, extraServices: '', stars: 3
+      name: '', cost_usd: 0, address: '', description: '', notes: '', links: [],
+      nights: 1, breakfast: false, half_board: false, all_inclusive: false, extra_services: '', stars: 3
     });
     setEditingHotelId(null);
     setShowHotelModal(true);
@@ -199,7 +242,12 @@ export default function HotelesPage() {
             </button>
           </div>
 
-          {folders.length === 0 ? (
+          {loading ? (
+            <div className="p-5 text-center">
+              <div className="loader-premium"></div>
+              <p className="mt-3">Cargando destinos...</p>
+            </div>
+          ) : folders.length === 0 ? (
             <div className="empty-state-card glass-card">
               <HotelIcon size={80} strokeWidth={1} />
               <h3>Sin destinos aún</h3>
@@ -267,8 +315,8 @@ export default function HotelesPage() {
                           </div>
                         </div>
                         <div className="hotel-costs">
-                          <span className="cost-usd">u$s {hotel.costUsd}</span>
-                          <span className="cost-ars">≈ ${(hotel.costUsd * dollarRate).toLocaleString('es-AR')}</span>
+                          <span className="cost-usd">u$s {hotel.cost_usd}</span>
+                          <span className="cost-ars">≈ ${(hotel.cost_usd * dollarRate).toLocaleString('es-AR')}</span>
                         </div>
                       </div>
                       <div style={{ display: 'flex', gap: '0.5rem' }}>
@@ -306,14 +354,14 @@ export default function HotelesPage() {
 
                       <div className="meal-plan-tags" style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.75rem' }}>
                         {hotel.breakfast && <span className="meal-tag">☕ Desayuno</span>}
-                        {hotel.halfBoard && <span className="meal-tag">🍽️ Media Pensión</span>}
-                        {hotel.allInclusive && <span className="meal-tag" style={{ background: '#1F3A4D', color: 'white' }}>✨ All Inclusive</span>}
+                        {hotel.half_board && <span className="meal-tag">🍽️ Media Pensión</span>}
+                        {hotel.all_inclusive && <span className="meal-tag" style={{ background: '#1F3A4D', color: 'white' }}>✨ All Inclusive</span>}
                       </div>
 
                       <div className="info-box">
                         <Info size={14} style={{ marginRight: '0.5rem', verticalAlign: 'middle' }} />
                         <strong>Servicios/Descripción:</strong> {hotel.description || 'Sin descripción.'}
-                        {hotel.extraServices && <span style={{ display: 'block', marginTop: '0.25rem', fontSize: '0.8rem', fontStyle: 'italic' }}>+ {hotel.extraServices}</span>}
+                        {hotel.extra_services && <span style={{ display: 'block', marginTop: '0.25rem', fontSize: '0.8rem', fontStyle: 'italic' }}>+ {hotel.extra_services}</span>}
                       </div>
 
                       {hotel.notes && (
@@ -338,7 +386,7 @@ export default function HotelesPage() {
                   <span className="stat-label">Costo Promedio</span>
                   <span className="stat-value highlight">
                     u$s {selectedFolder?.hotels.length
-                      ? Math.round(selectedFolder.hotels.reduce((a, h) => a + h.costUsd, 0) / selectedFolder.hotels.length)
+                      ? Math.round(selectedFolder.hotels.reduce((a, h) => a + h.cost_usd, 0) / selectedFolder.hotels.length)
                       : 0}
                   </span>
                 </div>
@@ -422,8 +470,8 @@ export default function HotelesPage() {
                       <input
                         type="number"
                         className="form-input"
-                        value={newHotel.costUsd || 0}
-                        onChange={e => setNewHotel({ ...newHotel, costUsd: parseFloat(e.target.value) })}
+                        value={newHotel.cost_usd || 0}
+                        onChange={e => setNewHotel({ ...newHotel, cost_usd: parseFloat(e.target.value) })}
                       />
                     </div>
                   </div>
@@ -463,11 +511,11 @@ export default function HotelesPage() {
                       Desayuno
                     </label>
                     <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', margin: 0 }}>
-                      <input type="checkbox" checked={newHotel.halfBoard} onChange={e => setNewHotel({...newHotel, halfBoard: e.target.checked})} />
+                      <input type="checkbox" checked={newHotel.half_board} onChange={e => setNewHotel({...newHotel, half_board: e.target.checked})} />
                       Media Pensión
                     </label>
                     <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', margin: 0 }}>
-                      <input type="checkbox" checked={newHotel.allInclusive} onChange={e => setNewHotel({...newHotel, allInclusive: e.target.checked})} />
+                      <input type="checkbox" checked={newHotel.all_inclusive} onChange={e => setNewHotel({...newHotel, all_inclusive: e.target.checked})} />
                       All Inclusive
                     </label>
                   </div>
@@ -480,8 +528,8 @@ export default function HotelesPage() {
                     <input
                       type="text"
                       className="form-input"
-                      value={newHotel.extraServices || ''}
-                      onChange={e => setNewHotel({ ...newHotel, extraServices: e.target.value })}
+                      value={newHotel.extra_services || ''}
+                      onChange={e => setNewHotel({ ...newHotel, extra_services: e.target.value })}
                       placeholder="Ej: Merienda libre, Acceso al Spa..."
                     />
                   </div>
