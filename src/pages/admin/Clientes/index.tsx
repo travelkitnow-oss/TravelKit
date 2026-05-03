@@ -52,7 +52,7 @@ export default function ClientesPage() {
     if (error) {
       console.error('Error fetching clients:', error);
     } else {
-      setClients(data || []);
+      setClients((data || []).filter((c: any) => c.source !== 'agenda_session_only'));
     }
     setLoading(false);
   };

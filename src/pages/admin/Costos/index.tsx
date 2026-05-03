@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Trash2, Edit2, X, Check } from 'lucide-react';
+import { Plus, Trash2, Edit2, X, Check, Ticket, DollarSign, Package, Briefcase } from 'lucide-react';
 import ConfirmationModal from '../../../components/ConfirmationModal/ConfirmationModal';
 import { supabase } from '../../../lib/supabase';
 import './Costos.css';
@@ -87,6 +87,14 @@ export default function CostosPage() {
         <p>Define los precios de tus asesorías y servicios personalizados para mantener la transparencia con tus viajeros.</p>
       </header>
 
+      <div className="glass-card mb-4" style={{ borderLeft: '4px solid var(--color-accent)', background: 'rgba(212, 175, 55, 0.05)' }}>
+        <div className="card-body py-3">
+          <p className="text-sm m-0">
+            <strong>💡 Tip:</strong> Crea un servicio llamado <strong>"Sesión Inicial"</strong> para que el sistema sepa qué precio cobrar en la Agenda (adelanto del 50% y saldo final).
+          </p>
+        </div>
+      </div>
+
       <div className="glass-card">
         <div className="card-header border-bottom" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <h3 style={{ margin: 0 }}>Listado de Tarifas</h3>
@@ -112,52 +120,66 @@ export default function CostosPage() {
             <tbody>
               {services.length > 0 ? (
                 services.map(service => (
-                  <tr key={service.id}>
+                  <tr key={service.id} className="costos-row">
                     <td>
                       {editingService?.id === service.id ? (
-                        <input 
-                          type="text" 
-                          className="form-input-sm"
-                          value={editingService.name}
-                          onChange={e => setEditingService({...editingService, name: e.target.value})}
-                        />
+                        <div className="edit-input-wrapper">
+                          <Package size={18} className="text-secondary" />
+                          <input 
+                            type="text" 
+                            className="form-input-sm"
+                            value={editingService.name}
+                            onChange={e => setEditingService({...editingService, name: e.target.value})}
+                          />
+                        </div>
                       ) : (
-                        <span className="service-name">{service.name}</span>
+                        <div className="service-info-cell">
+                          <div className="service-icon-bg">
+                            {service.name.toLowerCase().includes('sesi') ? <Briefcase size={18} /> : <Ticket size={18} />}
+                          </div>
+                          <span className="service-name">{service.name}</span>
+                        </div>
                       )}
                     </td>
                     <td>
                       {editingService?.id === service.id ? (
-                        <input 
-                          type="number" 
-                          className="form-input-sm price-input"
-                          style={{ width: '120px', textAlign: 'right', fontWeight: 'bold' }}
-                          value={editingService.price}
-                          onChange={e => setEditingService({...editingService, price: parseFloat(e.target.value)})}
-                        />
+                        <div className="edit-input-wrapper">
+                          <span className="currency-prefix">$</span>
+                          <input 
+                            type="number" 
+                            className="form-input-sm price-input"
+                            style={{ fontWeight: 'bold' }}
+                            value={editingService.price}
+                            onChange={e => setEditingService({...editingService, price: parseFloat(e.target.value)})}
+                          />
+                        </div>
                       ) : (
-                        <span className="service-price">${service.price.toLocaleString('es-AR')}</span>
+                        <div className="price-badge">
+                          <DollarSign size={14} />
+                          <span>{service.price.toLocaleString('es-AR')}</span>
+                        </div>
                       )}
                     </td>
                     <td style={{ textAlign: 'right' }}>
-                      <div className="actions-cell" style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+                      <div className="actions-cell">
                         {editingService?.id === service.id ? (
-                          <>
+                          <div style={{ display: 'flex', gap: '0.5rem' }}>
                             <button className="btn btn-primary btn-xs" onClick={handleUpdateService} title="Guardar">
                               <Check size={14} />
                             </button>
                             <button className="btn btn-outline btn-xs" onClick={() => setEditingService(null)} title="Cancelar">
                               <X size={14} />
                             </button>
-                          </>
+                          </div>
                         ) : (
-                          <>
-                            <button className="btn-icon-sm" onClick={() => setEditingService(service)} title="Editar">
+                          <div className="action-buttons-row">
+                            <button className="action-btn edit" onClick={() => setEditingService(service)} title="Editar">
                               <Edit2 size={16} />
                             </button>
-                            <button className="btn-icon-sm text-danger" onClick={() => setIsDeleting(service.id)} title="Eliminar">
+                            <button className="action-btn delete" onClick={() => setIsDeleting(service.id)} title="Eliminar">
                               <Trash2 size={16} />
                             </button>
-                          </>
+                          </div>
                         )}
                       </div>
                     </td>
@@ -165,7 +187,13 @@ export default function CostosPage() {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={3} className="text-center py-4 text-secondary">No se encontraron servicios definidos.</td>
+                  <td colSpan={3}>
+                    <div className="empty-state-container">
+                      <Package size={48} />
+                      <p>No se encontraron servicios definidos.</p>
+                      <button className="btn btn-outline btn-sm" onClick={() => setShowAddModal(true)}>Cargar mi primer servicio</button>
+                    </div>
+                  </td>
                 </tr>
               )}
             </tbody>

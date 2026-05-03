@@ -10,7 +10,8 @@ import {
   ArrowDownRight,
   PieChart,
   BarChart3,
-  Download
+  Download,
+  X
 } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import './Ganancias.css';
@@ -20,6 +21,8 @@ export default function GananciasPage() {
   const [period, setPeriod] = useState('este-mes');
   const [stats, setStats] = useState<any[]>([]);
   const [recentTransactions, setRecentTransactions] = useState<any[]>([]);
+  const [chartData, setChartData] = useState<any[]>([]);
+  const [pieData, setPieData] = useState<any[]>([]);
 
   useEffect(() => {
     fetchFinancialData();
@@ -28,16 +31,50 @@ export default function GananciasPage() {
   const fetchFinancialData = async () => {
     setLoading(true);
     
-    // 1. Fetch Billing for Total Income
-    const { data: billingData } = await supabase.from('client_billing').select('tasks');
+    // 1. Fetch Billing and join with Clients
+    const { data: billingData } = await supabase
+      .from('client_billing')
+      .select('tasks, client_id, clients(name)');
+
     let totalIncome = 0;
+    const confirmedTransactions: any[] = [];
+    const revenueByMonth: { [key: string]: number } = {};
+    const revenueByService: { [key: string]: number } = {};
+
     (billingData || []).forEach(b => {
       if (b.tasks && Array.isArray(b.tasks)) {
-        b.tasks.forEach((t: any) => {
-          totalIncome += Number(t.price) || 0;
+        b.tasks.forEach((t: any, idx: number) => {
+          if (t.paid) {
+            const amount = Math.abs(Number(t.price) || 0);
+            totalIncome += amount;
+            
+            const paidDate = t.paidAt ? new Date(t.paidAt) : new Date(t.date);
+            const monthKey = paidDate.toLocaleString('es-AR', { month: 'short' });
+            revenueByMonth[monthKey] = (revenueByMonth[monthKey] || 0) + amount;
+            
+            // For pie chart, clean up names or use categories
+            const serviceName = t.name.split('] ').pop() || t.name;
+            revenueByService[serviceName] = (revenueByService[serviceName] || 0) + amount;
+
+            confirmedTransactions.push({
+              id: `${b.client_id}-${idx}`,
+              clientId: b.client_id,
+              taskIndex: idx,
+              client: (b.clients as any)?.name || 'Cliente desconocido',
+              service: t.name,
+              amount: `$${amount.toLocaleString('es-AR')}`,
+              numericAmount: amount,
+              date: paidDate.toLocaleDateString(),
+              status: 'completado',
+              timestamp: paidDate.getTime()
+            });
+          }
         });
       }
     });
+
+    // Sort transactions by date (newest first)
+    confirmedTransactions.sort((a, b) => b.timestamp - a.timestamp);
 
     // 2. Fetch Meetings
     const { data: meetingsData } = await supabase.from('admin_meetings').select('*').eq('status', 'confirmed');
@@ -49,26 +86,85 @@ export default function GananciasPage() {
 
     // 4. Update Stats
     setStats([
-      { label: 'Ingresos Totales', value: `$${totalIncome.toLocaleString('es-AR')}`, change: '+12.5%', isUp: true, icon: DollarSign },
+      { label: 'Ingresos Cobrados', value: `$${totalIncome.toLocaleString('es-AR')}`, change: '+12.5%', isUp: true, icon: DollarSign },
       { label: 'Sesiones Realizadas', value: sessionsCount.toString(), change: '+8%', isUp: true, icon: Calendar },
       { label: 'Clientes Nuevos', value: clientsCount.toString(), change: '+2%', isUp: true, icon: Users },
       { label: 'Tasa de Conversión', value: '64%', change: '+5%', isUp: true, icon: TrendingUp },
     ]);
 
-    // 5. Build Recent Transactions (from billing + clients)
-    // For simplicity, we'll just show the latest clients as "transactions" or we could fetch billing join clients
-    // Let's just use the latest 5 clients for now as a mock for recently active billing
-    const transactions = (clientsData || []).slice(0, 5).map(c => ({
-      id: c.id,
-      client: c.name,
-      service: 'Planificación de Viaje',
-      amount: '$15.000', // This would ideally come from the billing table
-      date: new Date(c.created_at).toLocaleDateString(),
-      status: 'completado'
-    }));
-    setRecentTransactions(transactions);
+    // 5. Update Recent Transactions
+    setRecentTransactions(confirmedTransactions.slice(0, 10));
+
+    // 6. Set Chart Data
+    const months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+    const currentMonthIdx = new Date().getMonth();
+    const last6Months = [];
+    for (let i = 5; i >= 0; i--) {
+      const idx = (currentMonthIdx - i + 12) % 12;
+      const m = months[idx];
+      last6Months.push({ label: m, value: revenueByMonth[m] || 0 });
+    }
+    setChartData(last6Months);
+
+    // 7. Set Pie Data
+    const sortedServices = Object.entries(revenueByService)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5);
+    const totalForPie = sortedServices.reduce((sum, s) => sum + s[1], 0);
+    setPieData(sortedServices.map(([name, val]) => ({
+      name,
+      value: val,
+      percent: totalForPie > 0 ? Math.round((val / totalIncome) * 100) : 0
+    })));
 
     setLoading(false);
+  };
+
+  const handleDeleteActivity = async (tx: any) => {
+    if (!window.confirm('¿Estás seguro de que quieres eliminar este registro de cobro? El servicio volverá a estar pendiente de pago.')) return;
+
+    try {
+      // 1. Fetch current billing data to get the latest tasks array
+      const { data: billing, error: fetchError } = await supabase
+        .from('client_billing')
+        .select('tasks')
+        .eq('client_id', tx.clientId)
+        .single();
+
+      if (fetchError || !billing) throw new Error('No se pudo encontrar la cuenta del cliente');
+
+      const tasks = [...(billing.tasks as any[])];
+      const task = tasks[tx.taskIndex];
+
+      if (task) {
+        // If it was a "payment-record" OR a session charge that was duplicated, we remove it entirely
+        if (task.serviceId === 'payment-record' || task.name.includes('Sesión Inicial')) {
+          tasks.splice(tx.taskIndex, 1);
+        } else {
+          // If it was a regular service marked as paid, we mark it as unpaid
+          tasks[tx.taskIndex] = {
+            ...task,
+            paid: false,
+            paidAt: null,
+            completed: false
+          };
+        }
+
+        // 2. Update Supabase
+        const { error: updateError } = await supabase
+          .from('client_billing')
+          .update({ tasks })
+          .eq('client_id', tx.clientId);
+
+        if (updateError) throw updateError;
+
+        // 3. Refresh data
+        fetchFinancialData();
+      }
+    } catch (error: any) {
+      console.error('Error deleting activity:', error);
+      alert('Error al eliminar la actividad: ' + error.message);
+    }
   };
 
   return (
@@ -131,14 +227,18 @@ export default function GananciasPage() {
               </div>
               <div className="card-body chart-placeholder">
                 <div className="mock-chart">
-                  {[40, 65, 45, 80, 55, 90, 70].map((h, i) => (
-                    <div key={i} className="chart-bar-wrapper">
-                      <div className="chart-bar" style={{ height: `${h}%` }}>
-                        <div className="bar-tooltip">${(h * 150).toLocaleString()}</div>
+                  {chartData.map((d, i) => {
+                    const maxVal = Math.max(...chartData.map(cd => cd.value), 1000);
+                    const height = (d.value / maxVal) * 100;
+                    return (
+                      <div key={i} className="chart-bar-wrapper">
+                        <div className="chart-bar" style={{ height: `${Math.max(height, 5)}%` }}>
+                          <div className="bar-tooltip">${d.value.toLocaleString()}</div>
+                        </div>
+                        <span className="bar-label">{d.label}</span>
                       </div>
-                      <span className="bar-label">S{i+1}</span>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             </div>
@@ -149,17 +249,19 @@ export default function GananciasPage() {
               </div>
               <div className="card-body pie-placeholder">
                 <div className="mock-pie">
-                  <div className="pie-slice slice-1"></div>
-                  <div className="pie-slice slice-2"></div>
-                  <div className="pie-slice slice-3"></div>
+                  {pieData.map((d, i) => (
+                    <div key={i} className={`pie-slice slice-${i+1}`} style={{ transform: `rotate(${pieData.slice(0, i).reduce((sum, p) => sum + (p.percent * 3.6), 0)}deg)`, clipPath: `polygon(50% 50%, 50% 0%, ${d.percent > 50 ? '100% 0%, 100% 100%, 0% 100%, 0% 0%,' : ''} 100% 0%)` }}></div>
+                  ))}
                   <div className="pie-center">
                     <span className="pie-total">100%</span>
                   </div>
                 </div>
                 <div className="pie-legend">
-                  <div className="legend-item"><span className="dot slice-1"></span> Sesiones (45%)</div>
-                  <div className="legend-item"><span className="dot slice-2"></span> Planificación (35%)</div>
-                  <div className="legend-item"><span className="dot slice-3"></span> Otros (20%)</div>
+                  {pieData.length > 0 ? pieData.map((d, i) => (
+                    <div key={i} className="legend-item"><span className={`dot slice-${i+1}`}></span> {d.name} ({d.percent}%)</div>
+                  )) : (
+                    <div className="legend-item" style={{ opacity: 0.5 }}>Sin datos de servicios</div>
+                  )}
                 </div>
               </div>
             </div>
@@ -179,8 +281,9 @@ export default function GananciasPage() {
                     <th>Cliente</th>
                     <th>Servicio</th>
                     <th>Fecha</th>
-                    <th>Monto Estimado</th>
+                    <th>Monto Cobrado</th>
                     <th>Estado</th>
+                    <th>Acciones</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -197,6 +300,16 @@ export default function GananciasPage() {
                       <td className="fw-bold">{tx.amount}</td>
                       <td>
                         <span className={`status-pill ${tx.status}`}>{tx.status}</span>
+                      </td>
+                      <td>
+                        <button 
+                          className="btn-icon-sm" 
+                          style={{ color: '#ef4444', background: 'rgba(239, 68, 68, 0.1)', border: 'none', borderRadius: '6px', padding: '4px', cursor: 'pointer' }}
+                          onClick={() => handleDeleteActivity(tx)}
+                          title="Eliminar registro"
+                        >
+                          <X size={14} />
+                        </button>
                       </td>
                     </tr>
                   ))}

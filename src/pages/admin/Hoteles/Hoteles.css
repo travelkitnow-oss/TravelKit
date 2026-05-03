@@ -233,10 +233,12 @@
   padding: 0.5rem;
   border-radius: 10px;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   display: flex;
   align-items: center;
   justify-content: center;
+  position: relative;
+  z-index: 10;
 }
 
 .btn-edit-hotel {
@@ -245,15 +247,19 @@
   color: var(--color-primary);
 }
 
-.btn-delete-folder:hover,
-.btn-delete-hotel:hover {
-  background: #ef4444;
-  color: white;
+.folder-card .btn-delete-folder:hover,
+.hotel-item .btn-delete-hotel:hover {
+  background: #ef4444 !important;
+  color: white !important;
+  transform: scale(1.2) rotate(5deg) !important;
+  box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4) !important;
 }
 
-.btn-edit-hotel:hover {
-  background: var(--color-primary);
-  color: white;
+.hotel-item .btn-edit-hotel:hover {
+  background: var(--color-primary) !important;
+  color: white !important;
+  transform: scale(1.2) rotate(-5deg) !important;
+  box-shadow: 0 4px 15px rgba(31, 58, 77, 0.4) !important;
 }
 
 .meal-plan-tags {

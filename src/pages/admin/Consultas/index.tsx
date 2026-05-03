@@ -62,25 +62,71 @@ export default function ConsultasPage() {
       return;
     }
 
-    // 1. Mark as accepted in submissions
-    await updateStatus(sub.id, 'aceptado');
+    try {
+      // 1. Create/Find Client first to link the meeting
+      let clientId: string | null = null;
+      
+      // Check if client exists by email
+      const { data: existingClient } = await supabase
+        .from('clients')
+        .select('id, source')
+        .eq('email', sub.email)
+        .single();
+        
+      if (existingClient) {
+        clientId = existingClient.id;
+        // If it was a session-only lead, promote it to a full client now that we accepted the consultation
+        if (existingClient.source === 'agenda_session_only') {
+          await supabase.from('clients').update({ source: 'formulario' }).eq('id', clientId);
+        }
+      } else {
+        const { data: newClient, error: clientError } = await supabase
+          .from('clients')
+          .insert([{
+            name: sub.name,
+            email: sub.email,
+            phone: sub.phone,
+            source: 'formulario'
+          }])
+          .select()
+          .single();
+          
+        if (clientError) throw clientError;
+        clientId = newClient.id;
 
-    // 2. Create reservation in admin_meetings
-    const { error } = await supabase.from('admin_meetings').insert([{
-      client_name: sub.name,
-      destination: sub.answers.find(a => a.questionText.toLowerCase().includes('destino'))?.answer || 'Por definir',
-      email: sub.email,
-      phone: sub.phone,
-      meeting_date: sub.requested_date,
-      meeting_time: sub.requested_time,
-      status: 'confirmed',
-      google_meet_url: 'https://meet.google.com/' + Math.random().toString(36).substring(7)
-    }]);
+        // Create billing record for the new client
+        await supabase.from('client_billing').insert([{
+          client_id: clientId,
+          destination: sub.answers.find(a => a.questionText.toLowerCase().includes('destino'))?.answer || 'Por definir',
+          tasks: [],
+          notes: '',
+          passengers: 1
+        }]);
+      }
 
-    if (!error) {
+      // 2. Mark as accepted in submissions
+      await updateStatus(sub.id, 'aceptado');
+
+      // 3. Create reservation in admin_meetings with client_id
+      const { error: meetingError } = await supabase.from('admin_meetings').insert([{
+        client_name: sub.name,
+        client_id: clientId, // Link to client
+        destination: sub.answers.find(a => a.questionText.toLowerCase().includes('destino'))?.answer || 'Por definir',
+        email: sub.email,
+        phone: sub.phone,
+        meeting_date: sub.requested_date,
+        meeting_time: sub.requested_time,
+        status: 'confirmed',
+        google_meet_url: 'https://meet.google.com/' + Math.random().toString(36).substring(7)
+      }]);
+
+      if (meetingError) throw meetingError;
+
       alert('¡Reunión aceptada y agendada correctamente!');
-    } else {
-      alert('Error al agendar reunión');
+      fetchSubmissions();
+    } catch (error: any) {
+      console.error('Error accepting consultation:', error);
+      alert('Error: ' + error.message);
     }
   };
 

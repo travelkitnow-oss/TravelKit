@@ -9,7 +9,9 @@ import {
   Clock,
   Trash2,
   Calendar as CalendarIcon,
-  Users
+  Users,
+  DollarSign,
+  Link2
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -27,13 +29,17 @@ interface Reservation {
   googleMeet?: string;
   email?: string;
   phone?: string;
+  clientId?: string;
   date: string;
+  advancePaid?: boolean;
+  finalPaid?: boolean;
 }
 
 export default function AgendaPage() {
   const [selectedDate, setSelectedDate] = useState<Date | null>(new Date());
   const [allReservations, setAllReservations] = useState<Reservation[]>([]);
   const [loading, setLoading] = useState(true);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   
   const [postponeData, setPostponeData] = useState<{ res: Reservation, oldDate: string } | null>(null);
   const [newPostponeDate, setNewPostponeDate] = useState<string>('');
@@ -46,6 +52,7 @@ export default function AgendaPage() {
   const [newResPhone, setNewResPhone] = useState('');
   const [newResTime, setNewResTime] = useState('');
   const [newResDate, setNewResDate] = useState<string>('');
+  const [newResLink, setNewResLink] = useState('');
   const [newClientPax, setNewClientPax] = useState(2);
   const [attemptedSubmit, setAttemptedSubmit] = useState(false);
   const [deleteConfirmData, setDeleteConfirmData] = useState<{ dateStr: string, resId: string, client: string } | null>(null);
@@ -61,17 +68,35 @@ export default function AgendaPage() {
     const { data, error } = await supabase.from('admin_meetings').select('*');
     if (error) console.error('Error fetching meetings:', error);
     else {
-      const mapped: Reservation[] = (data || []).map(r => ({
-        id: r.id,
-        client: r.client_name,
-        dest: r.destination,
-        time: r.meeting_time,
-        status: r.status,
-        googleMeet: r.google_meet_url,
-        email: r.email,
-        phone: r.phone,
-        date: r.meeting_date
-      }));
+      // Fetch billing info for all meetings that have a clientId
+      const clientIds = (data || []).filter(r => r.client_id).map(r => r.client_id);
+      const { data: billingData } = await supabase
+        .from('client_billing')
+        .select('client_id, tasks')
+        .in('client_id', clientIds);
+
+      const billingMap = (billingData || []).reduce((acc: any, curr: any) => {
+        acc[curr.client_id] = curr.tasks || [];
+        return acc;
+      }, {});
+
+      const mapped: Reservation[] = (data || []).map(r => {
+        const tasks = billingMap[r.client_id] || [];
+        return {
+          id: r.id,
+          client: r.client_name,
+          dest: r.destination,
+          time: r.meeting_time,
+          status: r.status,
+          googleMeet: r.google_meet_url,
+          email: r.email,
+          phone: r.phone,
+          date: r.meeting_date,
+          clientId: r.client_id,
+          advancePaid: tasks.some((t: any) => t.name.includes('Adelanto 50%') && t.paid),
+          finalPaid: tasks.some((t: any) => t.name.includes('Pago Final 50%') && t.paid)
+        };
+      });
       setAllReservations(mapped);
     }
     setLoading(false);
@@ -182,7 +207,7 @@ export default function AgendaPage() {
       meeting_date: newResDate,
       meeting_time: newResTime,
       status: 'confirmed',
-      google_meet_url: 'https://meet.google.com/' + Math.random().toString(36).substring(7)
+      google_meet_url: newResLink || ('https://meet.google.com/' + Math.random().toString(36).substring(7))
     }]);
 
     if (error) {
@@ -197,6 +222,103 @@ export default function AgendaPage() {
       setNewResEmail('');
       setNewResPhone('');
       setNewResTime('');
+      setNewResLink('');
+    }
+  };
+
+  const handleUpdateLink = async (resId: string, link: string) => {
+    const { error } = await supabase.from('admin_meetings').update({ google_meet_url: link }).eq('id', resId);
+    if (!error) {
+      setAllReservations(prev => prev.map(r => r.id === resId ? { ...r, googleMeet: link } : r));
+      setToast({ message: 'Link actualizado con éxito', type: 'success' });
+      setTimeout(() => setToast(null), 3000);
+    }
+  };
+
+  const handleChargeMeeting = async (res: Reservation, type: 'advance' | 'final') => {
+    if (type === 'advance' && res.advancePaid) return;
+    if (type === 'final' && res.finalPaid) return;
+    
+    let clientId = res.clientId;
+
+    try {
+      if (!clientId) {
+        const { data: newClient, error: clientError } = await supabase
+          .from('clients')
+          .insert([{
+            name: res.client,
+            email: res.email || '',
+            phone: res.phone || '',
+            source: 'agenda_session_only'
+          }])
+          .select()
+          .single();
+
+        if (clientError) throw clientError;
+        clientId = newClient.id;
+
+        await supabase.from('client_billing').insert([{
+          client_id: clientId,
+          destination: res.dest || 'Por definir',
+          tasks: [],
+          notes: '',
+          passengers: 1
+        }]);
+
+        await supabase.from('admin_meetings').update({ client_id: clientId }).eq('id', res.id);
+        setAllReservations(prev => prev.map(r => r.id === res.id ? { ...r, clientId } : r));
+      }
+
+      const { data: services } = await supabase.from('services').select('*').ilike('name', '%sesi%n%');
+      const meetingService = services?.[0];
+      const totalPrice = meetingService ? meetingService.price : 50000; 
+      const chargeAmount = totalPrice / 2;
+
+      const { data: billing } = await supabase.from('client_billing').select('tasks').eq('client_id', clientId).single();
+      if (!billing) throw new Error('No se encontró cuenta de cobro para este cliente');
+
+      const tasks = [...(billing.tasks as any[])];
+      const taskName = type === 'advance' ? `Adelanto 50% - Sesión Inicial` : `Pago Final 50% - Sesión Inicial`;
+      
+      if (tasks.some(t => t.name === taskName && t.paid)) {
+        setToast({ message: `Este ${type === 'advance' ? 'adelanto' : 'pago final'} ya fue registrado anteriormente.`, type: 'error' });
+        return;
+      }
+
+      tasks.push({
+        serviceId: meetingService?.id || 'manual-session',
+        name: taskName,
+        price: chargeAmount,
+        date: new Date().toISOString(),
+        completed: true,
+        paid: true,
+        paidAt: new Date().toISOString()
+      });
+
+      const { error } = await supabase.from('client_billing').update({ tasks }).eq('client_id', clientId);
+      if (error) throw error;
+
+      setToast({ 
+        message: `¡Cobro de ${type === 'advance' ? 'adelanto' : 'pago final'} registrado con éxito!`, 
+        type: 'success' 
+      });
+      
+      // Update local state immediately to block button
+      setAllReservations(prev => prev.map(r => 
+        r.id === res.id 
+          ? { 
+              ...r, 
+              clientId, 
+              advancePaid: type === 'advance' ? true : r.advancePaid,
+              finalPaid: type === 'final' ? true : r.finalPaid
+            } 
+          : r
+      ));
+
+      setTimeout(() => setToast(null), 4000);
+    } catch (error: any) {
+      console.error('Error in handleChargeMeeting:', error);
+      setToast({ message: 'Error al registrar cobro: ' + error.message, type: 'error' });
     }
   };
 
@@ -213,6 +335,13 @@ export default function AgendaPage() {
 
   return (
     <div className="agenda-page animate-fade-in">
+      {toast && (
+          <div className={`premium-toast ${toast.type} animate-slide-up`}>
+            {toast.type === 'success' ? <Check size={20} /> : <X size={20} />}
+            <span>{toast.message}</span>
+            <button className="toast-close" onClick={() => setToast(null)}><X size={14} /></button>
+          </div>
+        )}
       <header className="page-header-centered">
         <h1>Hola, Lucía 👋</h1>
         <p>Aquí tienes el resumen de tu agenda para organizar viajes y reuniones.</p>
@@ -347,9 +476,78 @@ export default function AgendaPage() {
                         {res.email && <p className="text-xs text-secondary" style={{ marginTop: '0.25rem' }}>📧 {res.email}</p>}
                         {res.phone && <p className="text-xs text-secondary">📞 {res.phone}</p>}
                         {res.status === 'confirmed' && (
-                          <a href={res.googleMeet} target="_blank" rel="noreferrer" className="btn btn-sm btn-outline mt-2" style={{ width: '100%', justifyContent: 'center' }}>
-                            Unirse a la reunión
-                          </a>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '1rem' }}>
+                            {!res.googleMeet || res.googleMeet.includes('Math.random') ? (
+                              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                <input 
+                                  type="text" 
+                                  className="form-input-sm" 
+                                  placeholder="Pegar link de la reunión (Meet, Zoom, etc)"
+                                  style={{ flex: 1, fontSize: '0.8rem' }}
+                                  onKeyDown={(e: any) => {
+                                    if (e.key === 'Enter') handleUpdateLink(res.id, e.target.value);
+                                  }}
+                                  onBlur={(e) => {
+                                    if (e.target.value) handleUpdateLink(res.id, e.target.value);
+                                  }}
+                                />
+                                <button className="btn btn-sm btn-primary" onClick={(e) => {
+                                  const input = (e.currentTarget.previousSibling as HTMLInputElement);
+                                  handleUpdateLink(res.id, input.value);
+                                }}>Guardar</button>
+                              </div>
+                            ) : (
+                              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                                <a 
+                                  href={res.googleMeet} 
+                                  target="_blank" 
+                                  rel="noreferrer" 
+                                  className="btn btn-sm btn-primary" 
+                                  style={{ flex: 1, justifyContent: 'center', height: '42px', display: 'flex', alignItems: 'center', borderRadius: '12px' }}
+                                >
+                                  Unirse a la reunión
+                                </a>
+                                <button 
+                                  className="btn btn-sm btn-outline" 
+                                  style={{ width: '42px', height: '42px', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, borderRadius: '12px' }}
+                                  onClick={() => handleUpdateLink(res.id, '')}
+                                  title="Cambiar link"
+                                >
+                                  <Link2 size={18} />
+                                </button>
+                              </div>
+                            )}
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+                              <button 
+                                className="btn btn-xs" 
+                                style={{ 
+                                  backgroundColor: res.advancePaid ? '#e2e8f0' : 'transparent',
+                                  color: res.advancePaid ? '#475569' : 'var(--color-primary)',
+                                  border: '1px solid ' + (res.advancePaid ? '#cbd5e1' : 'var(--color-tertiary)'),
+                                  cursor: res.advancePaid ? 'default' : 'pointer',
+                                  fontWeight: res.advancePaid ? '700' : '500'
+                                }}
+                                onClick={() => !res.advancePaid && handleChargeMeeting(res, 'advance')}
+                                disabled={res.advancePaid}
+                              >
+                                {res.advancePaid ? 'YA PAGÓ EL 50%' : '$ Cobrar 50% Adelanto'}
+                              </button>
+                              <button 
+                                className="btn btn-xs" 
+                                style={{ 
+                                  backgroundColor: res.finalPaid ? '#e2e8f0' : 'transparent',
+                                  color: res.finalPaid ? '#475569' : 'var(--color-primary)',
+                                  border: '1px solid ' + (res.finalPaid ? '#cbd5e1' : 'var(--color-tertiary)'),
+                                  cursor: res.finalPaid ? 'default' : 'pointer',
+                                  fontWeight: res.finalPaid ? '700' : '500'
+                                }}
+                                onClick={() => !res.finalPaid && handleChargeMeeting(res, 'final')}
+                                disabled={res.finalPaid}
+                              >
+                                {res.finalPaid ? 'PAGO TOTAL' : '$ Cobrar 50% Final'}
+                              </button>
+                            </div>
+                          </div>
                         )}
                       </div>
                     )}
@@ -488,6 +686,17 @@ export default function AgendaPage() {
                     })}
                   </select>
                 </div>
+              </div>
+
+              <div className="form-group">
+                <label className="text-xs font-semibold uppercase">Link de la reunión (Opcional)</label>
+                <input 
+                  type="text" 
+                  className="form-input"
+                  placeholder="https://meet.google.com/..."
+                  value={newResLink}
+                  onChange={e => setNewResLink(e.target.value)}
+                />
               </div>
             </div>
 

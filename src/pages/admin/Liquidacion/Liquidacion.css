@@ -125,6 +125,34 @@
   opacity: 0.6;
 }
 
+.btn-icon-trash {
+  background: none;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 8px;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+}
+
+.btn-icon-trash:hover {
+  background: #fee2e2;
+  color: #ef4444;
+}
+
+.client-item-premium.active .btn-icon-trash {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.client-item-premium.active .btn-icon-trash:hover {
+  background: rgba(239, 68, 68, 0.2);
+  color: #fca5a5;
+}
+
 /* ── HERO TOTAL CARD ── */
 .total-cost-hero-premium {
   background: #1F3A4D;

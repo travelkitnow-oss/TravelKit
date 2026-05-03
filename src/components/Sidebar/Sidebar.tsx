@@ -27,7 +27,7 @@ interface SidebarProps {
 
 export default function Sidebar({ userEmail, handleLogout }: SidebarProps) {
   const location = useLocation();
-  const [isViajeOpen, setIsViajeOpen] = useState(true);
+  const [isViajeOpen, setIsViajeOpen] = useState(false);
 
   // Check if any sub-item is active to keep dropdown open if needed
   const viajeRoutes = ['/excursiones', '/transportes', '/hoteles', '/agenda-clientes', '/pasajes'];

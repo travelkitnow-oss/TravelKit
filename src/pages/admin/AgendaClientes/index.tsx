@@ -12,9 +12,9 @@ import {
   Clock,
   ArrowRight,
   MapPin,
-  PlaneTakeoff,
   PlaneLanding,
-  Plus
+  Plus,
+  QrCode
 } from 'lucide-react';
 import {
   format,
@@ -47,6 +47,8 @@ export default function AgendaClientesPage() {
     endDate: '',
     endTime: '10:00'
   });
+  const [selectedDayForDetails, setSelectedDayForDetails] = useState<Date | null>(null);
+  const [selectedItemForDetails, setSelectedItemForDetails] = useState<any | null>(null);
 
   const [clients, setClients] = useState<any[]>([]);
   const [billingData, setBillingData] = useState<Record<string, any>>({});
@@ -64,7 +66,11 @@ export default function AgendaClientesPage() {
   }, [selectedClientId]);
 
   const fetchInitialData = async () => {
-    const { data: clientsData } = await supabase.from('clients').select('*').order('name');
+    const { data: clientsData } = await supabase
+      .from('clients')
+      .select('*')
+      .neq('source', 'agenda_session_only')
+      .order('name');
     setClients(clientsData || []);
 
     const { data: foldersData } = await supabase.from('catalog_folders').select('*');
@@ -191,14 +197,19 @@ export default function AgendaClientesPage() {
           <div
             key={day.toString()}
             className={`calendar-cell ${!isSameMonth(day, monthStart) ? "disabled" : ""} ${isTripDay ? 'selected' : ''} ${isStart ? 'trip-start' : ''} ${isEnd ? 'trip-end' : ''}`}
+            onClick={() => setSelectedDayForDetails(cloneDay)}
           >
             <span className="number">{format(day, "d")}</span>
             <div className="trip-markers">
-              {dayItems.map((item, idx) => (
-                <div key={idx} className={`trip-marker ${item.type}`} title={`${item.time} - ${item.name}`}>
-                  {item.name}
+              {dayItems.slice(0, 2).map((item, idx) => (
+                <div key={idx} className={`trip-pill ${item.type}`} title={`${item.time} - ${item.name}`}>
+                  <span className="pill-dot"></span>
+                  <span className="pill-name">{item.name}</span>
                 </div>
               ))}
+              {dayItems.length > 2 && (
+                <div className="more-markers">+{dayItems.length - 2} más</div>
+              )}
             </div>
           </div>
         );
@@ -215,11 +226,11 @@ export default function AgendaClientesPage() {
       alert("No hay actividades agendadas para exportar.");
       return;
     }
-    
+
     const doc = new jsPDF();
     const client = selectedClientData;
     const b = client.dates || {};
-    
+
     // Palette
     const c = {
       deepBlue: [31, 58, 77],    // #1F3A4D
@@ -233,8 +244,8 @@ export default function AgendaClientesPage() {
       blue: [59, 130, 246]       // Traslado
     };
 
-    const tripDuration = b.departure_date && b.return_date 
-      ? Math.ceil((new Date(b.return_date).getTime() - new Date(b.departure_date).getTime()) / (1000 * 3600 * 24)) 
+    const tripDuration = b.departure_date && b.return_date
+      ? Math.ceil((new Date(b.return_date).getTime() - new Date(b.departure_date).getTime()) / (1000 * 3600 * 24))
       : 0;
 
     const counts = {
@@ -247,7 +258,7 @@ export default function AgendaClientesPage() {
       // Header Background
       doc.setFillColor(c.beige[0], c.beige[1], c.beige[2]);
       doc.rect(0, 0, 210, 55, 'F');
-      
+
       // Logo (Left)
       try {
         doc.addImage(logo, 'JPEG', 15, 5, 45, 45);
@@ -262,12 +273,12 @@ export default function AgendaClientesPage() {
       doc.setFontSize(24);
       doc.setFont("helvetica", "bold");
       doc.text("Travel Kit", 65, 20);
-      
+
       doc.setFontSize(9);
       doc.setFont("helvetica", "normal");
       doc.setTextColor(c.grayBlue[0], c.grayBlue[1], c.grayBlue[2]);
       doc.text("EL VIAJE ES EL CAMINO", 65, 27);
-      
+
       doc.setDrawColor(c.gold[0], c.gold[1], c.gold[2]);
       doc.setLineWidth(0.5);
       doc.line(65, 30, 135, 30);
@@ -307,7 +318,7 @@ export default function AgendaClientesPage() {
     doc.setDrawColor(c.lightBlue[0], c.lightBlue[1], c.lightBlue[2]);
     doc.setLineWidth(0.2);
     doc.roundedRect(15, yPos, 180, 50, 3, 3, 'D');
-    
+
     // Summary Card Gold Left Bar
     doc.setFillColor(c.gold[0], c.gold[1], c.gold[2]);
     doc.rect(15, yPos + 5, 2.5, 40, 'F');
@@ -328,7 +339,7 @@ export default function AgendaClientesPage() {
       doc.setTextColor(c.grayBlue[0], c.grayBlue[1], c.grayBlue[2]);
       doc.text(`Llegada: ${format(parseISO(b.departure_date), 'dd/MM/yyyy')} • ${b.arrival_time || '--'} hs`, 35, yPos + 26);
     }
-    
+
     doc.setFontSize(10);
     doc.setTextColor(c.deepBlue[0], c.deepBlue[1], c.deepBlue[2]);
     if (b.return_date) {
@@ -369,7 +380,7 @@ export default function AgendaClientesPage() {
     doc.setDrawColor(c.gold[0], c.gold[1], c.gold[2]);
     doc.setLineWidth(1.5);
     doc.line(15, yPos + 2.5, 55, yPos + 2.5);
-    
+
     yPos += 15;
 
     // Group items by day
@@ -394,13 +405,13 @@ export default function AgendaClientesPage() {
       doc.rect(15, yPos, 180, 10, 'F');
       doc.setFillColor(c.gold[0], c.gold[1], c.gold[2]);
       doc.rect(15, yPos, 3, 10, 'F');
-      
+
       doc.setTextColor(c.deepBlue[0], c.deepBlue[1], c.deepBlue[2]);
       doc.setFontSize(9);
       doc.setFont("helvetica", "bold");
       const formattedDate = format(parseISO(dateKey), "EEEE d 'de' MMMM yyyy", { locale: es });
       doc.text(formattedDate.charAt(0).toUpperCase() + formattedDate.slice(1), 22, yPos + 6.5);
-      
+
       yPos += 15;
 
       const itemsInDay = groupedItems[dateKey].sort((a: any, b: any) => a.time.localeCompare(b.time));
@@ -424,7 +435,7 @@ export default function AgendaClientesPage() {
         doc.setTextColor(typeColor[0], typeColor[1], typeColor[2]);
         doc.setFont("helvetica", "bold");
         doc.text(item.time, 22, yPos + 10);
-        
+
         doc.setDrawColor(203, 213, 225);
         doc.setLineWidth(0.1);
         doc.line(38, yPos + 6, 38, yPos + 19);
@@ -436,7 +447,7 @@ export default function AgendaClientesPage() {
         doc.setFontSize(8);
         doc.setFont("helvetica", "normal");
         doc.setTextColor(c.grayBlue[0], c.grayBlue[1], c.grayBlue[2]);
-        
+
         const catalogItem = catalogFolders.flatMap(f => f.items).find(i => i.id === item.item_id);
         const displayOrigin = item.origin || catalogItem?.origin;
         const displayDestination = item.destination || catalogItem?.destination;
@@ -504,60 +515,104 @@ export default function AgendaClientesPage() {
 
             <div className="banner-vuelos-grid">
               {/* Vuelo Ida */}
-              <div className="vuelo-card ida">
-                <div className="vuelo-card-header">
-                  <div className="vuelo-tag">VUELO DE IDA</div>
-                  <div className="vuelo-route-mini">
-                    <span>{b.origin || '---'}</span>
-                    <ArrowRight size={12} />
-                    <span>{b.destination || '---'}</span>
+              <div className="vuelo-card ida premium-ticket">
+                <div className="ticket-main">
+                  <div className="ticket-header-pro">
+                    <div className="vuelo-tag-pro">BOARDING PASS</div>
+                    <div className="vuelo-status">CONFIRMADO</div>
+                  </div>
+
+                  <div className="ticket-route-pro">
+                    <div className="city-group">
+                      <span className="city-code">{b.origin?.substring(0, 3).toUpperCase() || '---'}</span>
+                      <span className="city-name">{b.origin || 'Origen'}</span>
+                    </div>
+
+                    <div className="flight-path">
+                      <div className="path-line"></div>
+                      <Plane size={20} className="path-plane" />
+                    </div>
+
+                    <div className="city-group dest">
+                      <span className="city-code">{b.destination?.substring(0, 3).toUpperCase() || '---'}</span>
+                      <span className="city-name">{b.destination || 'Destino'}</span>
+                    </div>
+                  </div>
+
+                  <div className="ticket-footer-pro">
+                    <div className="footer-item">
+                      <span className="item-label">FECHA</span>
+                      <span className="item-value">{b.departure_date ? format(parseISO(b.departure_date), 'dd MMM yyyy', { locale: es }) : '---'}</span>
+                    </div>
+                    <div className="footer-item">
+                      <span className="item-label">SALIDA</span>
+                      <span className="item-value">{b.departure_time || '--:--'} HS</span>
+                    </div>
+                    <div className="footer-item">
+                      <span className="item-label">LLEGADA</span>
+                      <span className="item-value">{b.arrival_time || '--:--'} HS</span>
+                    </div>
                   </div>
                 </div>
-                <div className="vuelo-details">
-                  <div className="vuelo-date">
-                    <CalendarIcon size={14} />
-                    {b.departure_date ? format(parseISO(b.departure_date), 'dd MMM yyyy', { locale: es }) : '---'}
+
+                <div className="ticket-stub">
+                  <div className="stub-notch top"></div>
+                  <div className="stub-content">
+                    <QrCode size={40} className="stub-qr" />
+                    <div className="stub-text">GATE OPEN</div>
                   </div>
-                  <div className="vuelo-times">
-                    <div className="time-group">
-                      <PlaneTakeoff size={14} />
-                      <span>{b.departure_time || '--:--'} hs</span>
-                    </div>
-                    <ArrowRight size={14} className="time-sep" />
-                    <div className="time-group">
-                      <PlaneLanding size={14} />
-                      <span>{b.arrival_time || '--:--'} hs</span>
-                    </div>
-                  </div>
+                  <div className="stub-notch bottom"></div>
                 </div>
               </div>
 
               {/* Vuelo Vuelta */}
-              <div className="vuelo-card vuelta">
-                <div className="vuelo-card-header">
-                  <div className="vuelo-tag">VUELO DE VUELTA</div>
-                  <div className="vuelo-route-mini">
-                    <span>{b.return_origin || b.destination || '---'}</span>
-                    <ArrowRight size={12} />
-                    <span>{b.return_destination || b.origin || '---'}</span>
+              <div className="vuelo-card vuelta premium-ticket">
+                <div className="ticket-main">
+                  <div className="ticket-header-pro">
+                    <div className="vuelo-tag-pro">BOARDING PASS</div>
+                    <div className="vuelo-status">CONFIRMADO</div>
+                  </div>
+
+                  <div className="ticket-route-pro">
+                    <div className="city-group">
+                      <span className="city-code">{(b.return_origin || b.destination)?.substring(0, 3).toUpperCase() || '---'}</span>
+                      <span className="city-name">{b.return_origin || b.destination || 'Origen'}</span>
+                    </div>
+
+                    <div className="flight-path">
+                      <div className="path-line"></div>
+                      <Plane size={20} className="path-plane" />
+                    </div>
+
+                    <div className="city-group dest">
+                      <span className="city-code">{(b.return_destination || b.origin)?.substring(0, 3).toUpperCase() || '---'}</span>
+                      <span className="city-name">{b.return_destination || b.origin || 'Destino'}</span>
+                    </div>
+                  </div>
+
+                  <div className="ticket-footer-pro">
+                    <div className="footer-item">
+                      <span className="item-label">FECHA</span>
+                      <span className="item-value">{b.return_date ? format(parseISO(b.return_date), 'dd MMM yyyy', { locale: es }) : '---'}</span>
+                    </div>
+                    <div className="footer-item">
+                      <span className="item-label">SALIDA</span>
+                      <span className="item-value">{b.return_departure_time || '--:--'} HS</span>
+                    </div>
+                    <div className="footer-item">
+                      <span className="item-label">LLEGADA</span>
+                      <span className="item-value">{b.return_arrival_time || '--:--'} HS</span>
+                    </div>
                   </div>
                 </div>
-                <div className="vuelo-details">
-                  <div className="vuelo-date">
-                    <CalendarIcon size={14} />
-                    {b.return_date ? format(parseISO(b.return_date), 'dd MMM yyyy', { locale: es }) : '---'}
+
+                <div className="ticket-stub">
+                  <div className="stub-notch top"></div>
+                  <div className="stub-content">
+                    <QrCode size={40} className="stub-qr" />
+                    <div className="stub-text">GATE OPEN</div>
                   </div>
-                  <div className="vuelo-times">
-                    <div className="time-group">
-                      <PlaneTakeoff size={14} />
-                      <span>{b.return_departure_time || '--:--'} hs</span>
-                    </div>
-                    <ArrowRight size={14} className="time-sep" />
-                    <div className="time-group">
-                      <PlaneLanding size={14} />
-                      <span>{b.return_arrival_time || '--:--'} hs</span>
-                    </div>
-                  </div>
+                  <div className="stub-notch bottom"></div>
                 </div>
               </div>
             </div>
@@ -598,87 +653,103 @@ export default function AgendaClientesPage() {
               <div className="accent-line"></div>
             </div>
 
-            <div className="agenda-activities-column animate-fade-in">
-              <div className="timeline-container">
-                {scheduledItems.length === 0 ? (
-                  <div className="scheduler-empty glass-card p-12 text-center">
-                    <CalendarIcon size={48} style={{ opacity: 0.2, marginBottom: '1rem' }} />
-                    <p>No hay actividades agendadas aún.</p>
-                  </div>
-                ) : (
-                  scheduledItems.map(item => {
-                    const catalogItem = catalogFolders.flatMap(f => f.items).find(i => i.id === item.item_id);
-                    const displayOrigin = item.origin || catalogItem?.origin;
-                    const displayDestination = item.destination || catalogItem?.destination;
-
-                    return (
-                      <div key={item.id} className={`timeline-item ${item.type}`}>
-                        <div className="timeline-dot"></div>
-                        <div className="timeline-content-card">
-                          <div className="timeline-time-col">
-                            <span className="timeline-date">{format(parseISO(item.date), 'dd MMM', { locale: es })}</span>
-                            <span className="timeline-hour">{item.time} hs</span>
+            <div className="agenda-sectors-container animate-fade-in">
+              <div className="agenda-sector hotel">
+                <div className="sector-header">
+                  <Hotel size={20} />
+                  <h3>Alojamientos</h3>
+                </div>
+                <div className="sector-list">
+                  {scheduledItems.filter(i => i.type === 'hotel').length === 0 ? (
+                    <div className="sector-empty">Sin hoteles agendados</div>
+                  ) : (
+                    scheduledItems.filter(i => i.type === 'hotel').map(item => {
+                      const catalogItem = catalogFolders.flatMap(f => f.items).find(i => i.id === item.item_id);
+                      const address = item.address || catalogItem?.location;
+                      return (
+                        <div key={item.id} className="sector-item" onClick={() => setSelectedItemForDetails(item)}>
+                          <div className="item-main-info">
+                            <div className="item-date">{format(parseISO(item.date), 'dd/MM')}</div>
+                            <div className="item-details-brief">
+                              <span className="item-name">{item.name}</span>
+                              {address && <span className="item-address-mini"><MapPin size={10} /> {address}</span>}
+                            </div>
                           </div>
-                          
-                          <div className="timeline-info-col">
-                            <div className="timeline-category">
-                              {item.type === 'hotel' ? 'Alojamiento' : item.type === 'transport' ? 'Transporte' : 'Excursión'}
-                            </div>
-                            <div className="timeline-title">
-                              {item.type === 'hotel' ? <Hotel size={20} /> : item.type === 'transport' ? <Plane size={20} /> : <MapPin size={20} />}
-                              {item.name}
-                            </div>
+                          <button className="btn-mini-delete" onClick={(e) => { e.stopPropagation(); handleRemoveItem(item.id); }}>
+                            <X size={12} />
+                          </button>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
 
-                            <div className="timeline-details-grid">
-                              {item.type === 'hotel' ? (
-                                <>
-                                  <div className="detail-sub-item">
-                                    <span className="detail-label">Check-in</span>
-                                    <div className="detail-value">
-                                      <CalendarIcon size={14} /> {format(parseISO(item.date), 'dd/MM/yyyy')}
-                                    </div>
-                                    <div className="detail-value">
-                                      <Clock size={14} /> {item.time} hs
-                                    </div>
-                                  </div>
-                                  <div className="detail-sub-item">
-                                    <span className="detail-label">Check-out</span>
-                                    <div className="detail-value">
-                                      <CalendarIcon size={14} /> {format(parseISO(item.end_date), 'dd/MM/yyyy')}
-                                    </div>
-                                    <div className="detail-value">
-                                      <Clock size={14} /> {item.end_time} hs
-                                    </div>
-                                  </div>
-                                </>
-                              ) : (
-                                <div className="detail-sub-item">
-                                  <span className="detail-label">{item.type === 'transport' ? 'Salida' : 'Visita'}</span>
-                                  <div className="detail-value">
-                                    <CalendarIcon size={14} /> {format(parseISO(item.date), 'dd/MM/yyyy')}
-                                    <Clock size={14} style={{ marginLeft: '8px' }} /> {item.time} hs
-                                  </div>
-                                  {item.type === 'transport' && (displayOrigin || displayDestination) && (
-                                    <div className="detail-value" style={{ marginTop: '0.5rem', color: 'var(--color-primary)' }}>
-                                      <MapPin size={14} />
-                                      <span>{displayOrigin || '---'}</span>
-                                      <ArrowRight size={12} style={{ margin: '0 4px' }} />
-                                      <span>{displayDestination || '---'}</span>
-                                    </div>
-                                  )}
-                                </div>
+              <div className="agenda-sector transport">
+                <div className="sector-header">
+                  <Plane size={20} />
+                  <h3>Transportes</h3>
+                </div>
+                <div className="sector-list">
+                  {scheduledItems.filter(i => i.type === 'transport').length === 0 ? (
+                    <div className="sector-empty">Sin transportes agendados</div>
+                  ) : (
+                    scheduledItems.filter(i => i.type === 'transport').map(item => {
+                      const catalogItem = catalogFolders.flatMap(f => f.items).find(i => i.id === item.item_id);
+                      const origin = item.origin || catalogItem?.origin;
+                      const destination = item.destination || catalogItem?.destination;
+                      return (
+                        <div key={item.id} className="sector-item" onClick={() => setSelectedItemForDetails(item)}>
+                          <div className="item-main-info">
+                            <div className="item-date">{format(parseISO(item.date), 'dd/MM')}</div>
+                            <div className="item-details-brief">
+                              <span className="item-name">{item.name}</span>
+                              {(origin || destination) && (
+                                <span className="item-address-mini">
+                                  {origin} <ArrowRight size={10} /> {destination}
+                                </span>
                               )}
                             </div>
                           </div>
-
-                          <button className="btn-delete-timeline" onClick={() => handleRemoveItem(item.id)}>
-                            <X size={18} />
+                          <button className="btn-mini-delete" onClick={(e) => { e.stopPropagation(); handleRemoveItem(item.id); }}>
+                            <X size={12} />
                           </button>
                         </div>
-                      </div>
-                    );
-                  })
-                )}
+                      );
+                    })
+                  )}
+                </div>
+              </div>
+
+              <div className="agenda-sector excursion">
+                <div className="sector-header">
+                  <MapPin size={20} />
+                  <h3>Excursiones</h3>
+                </div>
+                <div className="sector-list">
+                  {scheduledItems.filter(i => i.type === 'excursion').length === 0 ? (
+                    <div className="sector-empty">Sin excursiones agendadas</div>
+                  ) : (
+                    scheduledItems.filter(i => i.type === 'excursion').map(item => {
+                      const catalogItem = catalogFolders.flatMap(f => f.items).find(i => i.id === item.item_id);
+                      const address = item.address || catalogItem?.location;
+                      return (
+                        <div key={item.id} className="sector-item" onClick={() => setSelectedItemForDetails(item)}>
+                          <div className="item-main-info">
+                            <div className="item-date">{format(parseISO(item.date), 'dd/MM')}</div>
+                            <div className="item-details-brief">
+                              <span className="item-name">{item.name}</span>
+                              {address && <span className="item-address-mini"><MapPin size={10} /> {address}</span>}
+                            </div>
+                          </div>
+                          <button className="btn-mini-delete" onClick={(e) => { e.stopPropagation(); handleRemoveItem(item.id); }}>
+                            <X size={12} />
+                          </button>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
               </div>
             </div>
           </div>
@@ -771,6 +842,164 @@ export default function AgendaClientesPage() {
             <button className="btn btn-primary w-100 mt-6 py-3" onClick={handleScheduleItem} style={{ borderRadius: '50px', fontSize: '1rem' }}>
               Confirmar en Agenda
             </button>
+          </div>
+        </div>
+      )}
+
+      {selectedDayForDetails && (
+        <div className="modal-overlay">
+          <div className="modal-content glass-card day-details-modal animate-scale-in">
+            <div className="modal-header-premium">
+              <div className="day-info-pro">
+                <div className="day-circle">
+                  <span className="day-number">{format(selectedDayForDetails, "d")}</span>
+                </div>
+                <div className="day-text">
+                  <span className="day-month">{format(selectedDayForDetails, "MMMM", { locale: es })}</span>
+                  <span className="day-weekday">{format(selectedDayForDetails, "EEEE", { locale: es })}</span>
+                </div>
+              </div>
+              <button onClick={() => setSelectedDayForDetails(null)} className="close-modal-btn"><X size={24} /></button>
+            </div>
+
+            <div className="day-view-container">
+              <div className="hour-grid custom-scroll">
+                {Array.from({ length: 24 }).map((_, i) => {
+                  const hour = i; // 00:00 to 23:00
+                  const hourStr = hour < 10 ? `0${hour}:00` : `${hour}:00`;
+                  const activitiesInHour = scheduledItems
+                    .filter(item => {
+                      const itemStart = parseISO(item.date);
+                      const matchesDay = (item.type === 'hotel' && item.end_date)
+                        ? isWithinInterval(selectedDayForDetails, { start: itemStart, end: parseISO(item.end_date) })
+                        : isSameDay(selectedDayForDetails, itemStart);
+
+                      return matchesDay && item.time.startsWith(hourStr.split(':')[0]);
+                    });
+
+                  return (
+                    <div key={hour} className="hour-row">
+                      <div className="hour-label">{hourStr}</div>
+                      <div className="hour-content">
+                        {activitiesInHour.map((item, idx) => {
+                          const catalogItem = catalogFolders.flatMap(f => f.items).find(i => i.id === item.item_id);
+                          const address = item.address || catalogItem?.location;
+                          const origin = item.origin || catalogItem?.origin;
+                          const destination = item.destination || catalogItem?.destination;
+
+                          return (
+                            <div key={idx} className={`hour-activity-card ${item.type}`}>
+                              <div className="card-accent"></div>
+                              <div className="card-info">
+                                <span className="card-type">{item.type}</span>
+                                <span className="card-name">{item.name}</span>
+                                <span className="card-time">{item.time} hs</span>
+                                {item.type === 'transport' ? (
+                                  <div className="card-route-mini">
+                                    {origin} <ArrowRight size={10} /> {destination}
+                                  </div>
+                                ) : address ? (
+                                  <div className="card-address-mini">
+                                    <MapPin size={10} /> {address}
+                                  </div>
+                                ) : null}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {selectedItemForDetails && (
+        <div className="modal-overlay">
+          <div className="modal-content glass-card item-details-modal animate-scale-in">
+            <div className={`item-modal-header ${selectedItemForDetails.type}`}>
+              <div className="header-icon">
+                {selectedItemForDetails.type === 'hotel' ? <Hotel size={32} /> :
+                  selectedItemForDetails.type === 'transport' ? <Plane size={32} /> : <MapPin size={32} />}
+              </div>
+              <div className="header-titles">
+                <span className="type-badge">{selectedItemForDetails.type}</span>
+                <h3 className="item-name">{selectedItemForDetails.name}</h3>
+              </div>
+              <button onClick={() => setSelectedItemForDetails(null)} className="close-modal-btn white"><X size={24} /></button>
+            </div>
+
+            <div className="item-modal-body">
+              <div className="info-grid-premium">
+                <div className={`info-box-pro ${selectedItemForDetails.type === 'hotel' ? 'checkin' : ''}`}>
+                  <div className="box-icon"><CalendarIcon size={20} /></div>
+                  <div className="box-content">
+                    <span className="box-label">{selectedItemForDetails.type === 'hotel' ? 'Check-in (Entrada)' : 'Fecha del servicio'}</span>
+                    <span className="box-value">
+                      {format(parseISO(selectedItemForDetails.date), 'EEEE, dd MMMM', { locale: es })}
+                      {selectedItemForDetails.type === 'hotel' && ` - ${selectedItemForDetails.time} hs`}
+                    </span>
+                  </div>
+                </div>
+
+                {selectedItemForDetails.type !== 'hotel' && (
+                  <div className="info-box-pro">
+                    <div className="box-icon"><Clock size={20} /></div>
+                    <div className="box-content">
+                      <span className="box-label">Horario previsto</span>
+                      <span className="box-value">{selectedItemForDetails.time} hs</span>
+                    </div>
+                  </div>
+                )}
+
+                {selectedItemForDetails.type === 'hotel' && selectedItemForDetails.end_date && (
+                  <div className="info-box-pro checkout">
+                    <div className="box-icon"><PlaneLanding size={20} /></div>
+                    <div className="box-content">
+                      <span className="box-label">Check-out (Salida)</span>
+                      <span className="box-value">{format(parseISO(selectedItemForDetails.end_date), 'dd/MM/yyyy')} - {selectedItemForDetails.end_time} hs</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="location-section-premium">
+                <h4 className="section-title-pro">Ubicación</h4>
+                {selectedItemForDetails.type === 'transport' ? (
+                  <div className="transport-route-pro">
+                    <div className="route-stop">
+                      <div className="stop-marker start"></div>
+                      <div className="stop-info">
+                        <span className="stop-name">{selectedItemForDetails.origin || 'Origen no especificado'}</span>
+                      </div>
+                    </div>
+                    <div className="route-line-pro"></div>
+                    <div className="route-stop">
+                      <div className="stop-marker end"></div>
+                      <div className="stop-info">
+                        <span className="stop-name">{selectedItemForDetails.destination || 'Destino no especificado'}</span>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="address-card-pro">
+                    <div className="address-icon"><MapPin size={20} /></div>
+                    <div className="address-text">
+                      <span className="address-value">
+                        {selectedItemForDetails.address || catalogFolders.flatMap(f => f.items).find(i => i.id === selectedItemForDetails.item_id)?.location || 'Solicitar dirección al prestador'}
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <button className="btn-modal-confirm" onClick={() => setSelectedItemForDetails(null)}>
+                Cerrar
+              </button>
+            </div>
           </div>
         </div>
       )}

@@ -367,6 +367,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  position: relative;
+  z-index: 10;
 }
 
 .btn-edit-excursion {
@@ -375,19 +377,19 @@
   color: var(--color-primary);
 }
 
-.btn-delete-folder:hover,
-.btn-delete-excursion:hover {
-  background: #ef4444;
-  color: white;
-  transform: scale(1.1) rotate(5deg);
-  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2);
+.folder-card .btn-delete-folder:hover,
+.excursion-item .btn-delete-excursion:hover {
+  background: #ef4444 !important;
+  color: white !important;
+  transform: scale(1.2) rotate(5deg) !important;
+  box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4) !important;
 }
 
-.btn-edit-excursion:hover {
-  background: var(--color-primary);
-  color: white;
-  transform: scale(1.1) rotate(-5deg);
-  box-shadow: 0 4px 12px rgba(31, 58, 77, 0.2);
+.excursion-item .btn-edit-excursion:hover {
+  background: var(--color-primary) !important;
+  color: white !important;
+  transform: scale(1.2) rotate(-5deg) !important;
+  box-shadow: 0 4px 15px rgba(31, 58, 77, 0.4) !important;
 }
 
 /* Ensure folder icon is always visible but subtle */

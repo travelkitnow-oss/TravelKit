@@ -78,7 +78,7 @@
   padding: 0.5rem;
 }
 
-.client-item {
+.tareas-page .client-item {
   width: 100%;
   display: flex;
   align-items: center;
@@ -93,17 +93,18 @@
   margin-bottom: 0.25rem;
 }
 
-.client-item:hover {
+.tareas-page .client-item:hover {
   background: rgba(0, 0, 0, 0.03);
 }
 
-.client-item.active {
+.tareas-page .client-item.active {
   background: var(--color-primary);
   color: #ffffff !important;
+  box-shadow: 0 4px 12px rgba(31, 58, 77, 0.2);
 }
 
-.client-item.active .client-name,
-.client-item.active .client-sub {
+.tareas-page .client-item.active .client-name,
+.tareas-page .client-item.active .client-sub {
   color: #ffffff !important;
 }
 
@@ -146,13 +147,13 @@
   text-overflow: ellipsis;
 }
 
-.client-item .chevron {
+.tareas-page .client-item .chevron {
   opacity: 0;
   transition: opacity 0.2s;
 }
 
-.client-item:hover .chevron,
-.client-item.active .chevron {
+.tareas-page .client-item:hover .chevron,
+.tareas-page .client-item.active .chevron {
   opacity: 0.5;
 }
 
@@ -287,25 +288,53 @@
 
 .billing-total-badge {
   text-align: right;
-  background: rgba(31, 58, 77, 0.1);
   padding: 1rem 1.5rem;
   border-radius: 12px;
   border: 1px solid rgba(31, 58, 77, 0.1);
+  min-width: 160px;
+}
+
+.billing-total-badge.collected {
+  background: rgba(16, 185, 129, 0.08);
+  border-color: rgba(16, 185, 129, 0.2);
+}
+
+.billing-total-badge.collected .amount {
+  color: #10b981;
+}
+
+.billing-total-badge.pending {
+  background: rgba(31, 58, 77, 0.05);
+  border-color: rgba(31, 58, 77, 0.1);
+}
+
+.billing-total-badge.pending .amount {
+  color: var(--color-primary);
+}
+
+.billing-total-badge.selected {
+  background: rgba(59, 130, 246, 0.08);
+  border-color: rgba(59, 130, 246, 0.2);
+  animation: scaleIn 0.3s ease;
+}
+
+.billing-total-badge.selected .amount {
+  color: #3b82f6;
 }
 
 .billing-total-badge .label {
   display: block;
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--color-primary);
+  letter-spacing: 0.1em;
+  color: var(--text-secondary);
+  font-weight: 700;
   margin-bottom: 0.25rem;
 }
 
 .billing-total-badge .amount {
-  font-size: 1.8rem;
+  font-size: 1.6rem;
   font-weight: 800;
-  color: var(--color-primary);
   font-family: var(--font-main);
 }
 
@@ -446,6 +475,223 @@
 
 .btn-delete-task:hover {
   opacity: 1;
+}
+
+.btn-cobrar-task {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  background: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--text-secondary);
+  transition: all 0.2s ease;
+}
+
+.btn-cobrar-task:hover {
+  border-color: #10b981;
+  color: #10b981;
+  background: rgba(16, 185, 129, 0.05);
+  transform: translateY(-1px);
+}
+
+.btn-cobrar-task.paid {
+  background: #10b981;
+  border-color: #10b981;
+  color: white;
+}
+
+.btn-cobrar-task.paid:hover {
+  background: #059669;
+  border-color: #059669;
+}
+
+.btn-cobrar-main {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: #10b981;
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 15px rgba(16, 185, 129, 0.2);
+}
+
+.btn-cobrar-main:hover {
+  background: #059669;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.3);
+}
+
+/* Payment Modal Selection List */
+.payment-selection-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  max-height: 250px;
+  overflow-y: auto;
+  padding: 0.5rem;
+  margin-bottom: 1.5rem;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  border-radius: 16px;
+  background: rgba(0, 0, 0, 0.01);
+}
+
+.payment-selection-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.875rem 1rem;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.payment-selection-item:hover {
+  border-color: var(--color-primary);
+  background: rgba(31, 58, 77, 0.02);
+}
+
+.payment-selection-item.selected {
+  border-color: #10b981;
+  background: rgba(16, 185, 129, 0.05);
+  box-shadow: 0 4px 10px rgba(16, 185, 129, 0.1);
+}
+
+.payment-selection-item .info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.payment-selection-item .name {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--color-primary);
+}
+
+.payment-selection-item .date {
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+}
+
+.payment-selection-item .price {
+  font-weight: 700;
+  color: var(--color-primary);
+}
+
+.payment-selection-item.selected .price {
+  color: #10b981;
+}
+
+.payment-summary-box {
+  background: #f8fafc;
+  padding: 1.25rem;
+  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+  margin-bottom: 1.5rem;
+}
+
+.payment-summary-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+
+.payment-summary-row:last-child {
+  margin-bottom: 0;
+  padding-top: 0.5rem;
+  border-top: 1px dashed #cbd5e1;
+  margin-top: 0.5rem;
+}
+
+.payment-summary-row .label {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+.payment-summary-row .value {
+  font-weight: 700;
+  color: var(--color-primary);
+}
+
+.payment-summary-row.total .value {
+  color: #10b981;
+  font-size: 1.1rem;
+}
+
+.paid-badge-mini {
+  background: rgba(16, 185, 129, 0.1);
+  color: #10b981;
+  font-size: 0.65rem;
+  font-weight: 800;
+  padding: 0.25rem 0.5rem;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.done-badge-mini {
+  background: rgba(31, 58, 77, 0.05);
+  color: var(--color-primary);
+  font-size: 0.6rem;
+  font-weight: 800;
+  padding: 0.15rem 0.4rem;
+  border-radius: 4px;
+  letter-spacing: 0.05em;
+  border: 1px solid rgba(31, 58, 77, 0.1);
+}
+
+.selected-tasks-summary {
+  background: #f8fafc;
+  padding: 1rem;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+}
+
+.selected-tasks-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-height: 120px;
+  overflow-y: auto;
+}
+
+.selected-task-pill {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.85rem;
+  padding: 0.4rem 0.75rem;
+  background: white;
+  border-radius: 8px;
+  border: 1px solid #f1f5f9;
+}
+
+.selected-task-pill strong {
+  color: var(--color-primary);
+}
+
+.pending-badge-mini {
+  background: rgba(148, 163, 184, 0.1);
+  color: #64748b;
+  font-size: 0.6rem;
+  font-weight: 800;
+  padding: 0.2rem 0.5rem;
+  border-radius: 6px;
+  letter-spacing: 0.05em;
+  border: 1px solid rgba(148, 163, 184, 0.1);
 }
 
 .notes-textarea {

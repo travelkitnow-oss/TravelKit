@@ -15,7 +15,8 @@ import {
   Calendar,
   MapPin,
   Clock,
-  Receipt
+  Receipt,
+  DollarSign
 } from 'lucide-react';
 import MDEditor from '@uiw/react-md-editor';
 import { supabase } from '../../../lib/supabase';
@@ -36,6 +37,8 @@ interface ClientTask {
   price: number;
   date: string;
   completed: boolean;
+  paid?: boolean;
+  paidAt?: string;
 }
 
 interface ClientNote {
@@ -68,6 +71,7 @@ interface Client {
   name: string;
   email?: string;
   phone?: string;
+  source?: string;
 }
 
 export default function TareasPage() {
@@ -79,6 +83,10 @@ export default function TareasPage() {
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [isAddingTask, setIsAddingTask] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [selectedTaskIndices, setSelectedTaskIndices] = useState<number[]>([]);
+  const [paymentAmount, setPaymentAmount] = useState<string>('');
+  const [paymentConcept, setPaymentConcept] = useState<string>('');
   const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | null>(null);
   const [services, setServices] = useState<ServiceItem[]>([]);
 
@@ -104,13 +112,31 @@ export default function TareasPage() {
     } else {
       setBillingData(null);
     }
+    // Reset selection when changing client
+    setSelectedTaskIndices([]);
   }, [selectedClientId]);
+
+  // Sync payment modal fields when selection changes
+  useEffect(() => {
+    if (showPaymentModal && billingData) {
+      const selectedTasks = selectedTaskIndices.map(i => billingData.tasks[i]);
+      const totalSelected = selectedTasks.reduce((sum, t) => sum + t.price, 0);
+      
+      // Only auto-update if the user hasn't manually edited (or just always update for better DX)
+      setPaymentAmount(totalSelected > 0 ? totalSelected.toString() : '');
+      setPaymentConcept(selectedTasks.length > 0 
+        ? `Cobro: ${selectedTasks.map(t => t.name).join(', ')}` 
+        : 'Pago a cuenta'
+      );
+    }
+  }, [selectedTaskIndices, showPaymentModal, billingData]);
 
   const fetchClients = async () => {
     setLoadingClients(true);
     const { data, error } = await supabase
       .from('clients')
-      .select('id, name, email, phone')
+      .select('id, name, email, phone, source')
+      .neq('source', 'agenda_session_only')
       .order('name', { ascending: true });
     
     if (error) console.error('Error fetching clients:', error);
@@ -237,6 +263,7 @@ export default function TareasPage() {
   };
 
   const filteredClients = clients.filter(c => 
+    c.source !== 'agenda_session_only' && 
     c.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -312,6 +339,73 @@ export default function TareasPage() {
     }, 1000);
   };
 
+  const handleToggleSelectTask = (index: number) => {
+    setSelectedTaskIndices(prev => 
+      prev.includes(index) ? prev.filter(i => i !== index) : [...prev, index]
+    );
+  };
+
+  const openPaymentModal = () => {
+    if (!billingData) return;
+    
+    const selectedTasks = selectedTaskIndices.map(i => billingData.tasks[i]);
+    const totalSelected = selectedTasks.reduce((sum, t) => sum + t.price, 0);
+    
+    setPaymentAmount(totalSelected.toString());
+    setPaymentConcept(selectedTasks.length > 0 
+      ? `Cobro de: ${selectedTasks.map(t => t.name).join(', ')}` 
+      : 'Pago a cuenta'
+    );
+    setShowPaymentModal(true);
+  };
+
+  const handleConfirmPayment = () => {
+    if (!billingData || !paymentAmount) return;
+    
+    const amount = parseFloat(paymentAmount);
+    const newTasks = [...billingData.tasks];
+    
+    const selectedTasks = selectedTaskIndices.map(i => billingData.tasks[i]);
+    const totalSelected = selectedTasks.reduce((sum, t) => sum + t.price, 0);
+
+    // Case 1: Full payment of selected tasks
+    if (selectedTaskIndices.length > 0 && Math.abs(amount - totalSelected) < 0.01) {
+      selectedTaskIndices.forEach(idx => {
+        newTasks[idx] = { 
+          ...newTasks[idx], 
+          completed: true, 
+          paid: true, 
+          paidAt: new Date().toISOString() 
+        };
+      });
+    } else {
+      // Case 2: Partial payment or custom amount
+      // We don't mark specific tasks as paid unless they exactly match (too complex for now)
+      // Instead we add a "Credit" task that reduces the total balance
+      newTasks.push({
+        serviceId: 'payment-record',
+        name: paymentConcept || 'Pago a cuenta',
+        price: -amount, // Negative price to subtract from "Total a cobrar"
+        date: new Date().toISOString(),
+        completed: true,
+        paid: true,
+        paidAt: new Date().toISOString()
+      });
+
+      // If they selected tasks but paid a different amount, maybe they still want to mark them as completed?
+      // For now, let's just keep them as unpaid so they still count towards the balance.
+    }
+
+    const updated: ClientBilling = { ...billingData, tasks: newTasks };
+    setBillingData(updated);
+    saveBilling(updated);
+    
+    setShowPaymentModal(false);
+    setSelectedTaskIndices([]);
+    setPaymentAmount('');
+    setPaymentConcept('');
+  };
+
   const handleAddNote = () => {
     const newNote: ClientNote = { id: Date.now().toString(), content: '', date: new Date().toISOString() };
     setEditingNoteId(newNote.id);
@@ -368,12 +462,6 @@ export default function TareasPage() {
       dateStr: depDate.toISOString().split('T')[0],
       isNextDay
     };
-  };
-
-  const calculateTotal = (tasks: ClientTask[]) => {
-    return tasks
-      .filter(t => t.completed)
-      .reduce((sum, t) => sum + t.price, 0);
   };
 
   const arrivalInfo = getCalculatedArrivalDateStr(billingData?.departureDate, billingData?.departureTime, billingData?.arrivalTime);
@@ -440,9 +528,19 @@ export default function TareasPage() {
                     <p>{selectedClient.email} • {selectedClient.phone}</p>
                   </div>
                 </div>
-                <div className="billing-total-badge">
-                  <span className="label">Total a Cobrar</span>
-                  <span className="amount">${calculateTotal(billingData.tasks).toLocaleString('es-AR')}</span>
+                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                  <div className="billing-total-badge collected">
+                    <span className="label">Cobrado</span>
+                    <span className="amount">${(billingData?.tasks?.filter(t => t.paid).reduce((sum, t) => sum + t.price, 0) || 0).toLocaleString('es-AR')}</span>
+                  </div>
+                  <div className="billing-total-badge pending">
+                    <span className="label">Falta cobrar</span>
+                    <span className="amount">${(billingData?.tasks?.filter(t => !t.paid).reduce((sum, t) => sum + t.price, 0) || 0).toLocaleString('es-AR')}</span>
+                  </div>
+                  <button className="btn-cobrar-main" onClick={openPaymentModal}>
+                    <DollarSign size={20} />
+                    Cobrar
+                  </button>
                 </div>
               </div>
 
@@ -678,14 +776,26 @@ export default function TareasPage() {
                               <Check size={14} />
                             </button>
                             <div className="task-details">
-                              <span className="task-name">{task.name}</span>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <span className="task-name">{task.name}</span>
+                                {task.completed && !task.paid && <span className="done-badge-mini">REALIZADA</span>}
+                              </div>
                               <span className="task-date">{new Date(task.date).toLocaleDateString()}</span>
                             </div>
                             <div className="task-price-row">
-                              <span className="task-price">${task.price.toLocaleString('es-AR')}</span>
-                              <button className="btn-delete-task" onClick={() => handleRemoveTask(idx)}>
-                                <Trash2 size={14} />
-                              </button>
+                              <span className="task-price" style={{ color: task.price < 0 ? '#10b981' : 'inherit' }}>
+                                {task.price < 0 ? '-' : ''}${Math.abs(task.price).toLocaleString('es-AR')}
+                              </span>
+                              <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+                                {task.paid ? (
+                                  <div className="paid-badge-mini"><Check size={10} /> PAGADO</div>
+                                ) : (
+                                  <div className="pending-badge-mini" style={{ fontSize: '0.65rem', fontWeight: 800, color: '#94a3b8' }}>PENDIENTE</div>
+                                )}
+                                <button className="btn-delete-task" onClick={() => handleRemoveTask(idx)}>
+                                  <Trash2 size={14} />
+                                </button>
+                              </div>
                             </div>
                           </div>
                         </div>
@@ -782,10 +892,10 @@ export default function TareasPage() {
                   )}
                   </div>
                   )}
-                </div>
               </div>
             </div>
-          ) : (
+          </div>
+        ) : (
             <div className="billing-empty-state">
               <div className="empty-state-content">
                 <div className="icon-circle">
@@ -793,16 +903,6 @@ export default function TareasPage() {
                 </div>
                 <h3>Panel de Gestión</h3>
                 <p>Selecciona un cliente de la lista de la izquierda para comenzar a gestionar sus tareas, vuelos y boletas de servicio.</p>
-                <div className="empty-state-stats">
-                  <div className="mini-stat">
-                    <strong>{clients.length}</strong>
-                    <span>Clientes</span>
-                  </div>
-                  <div className="mini-stat">
-                    <strong>{services.length}</strong>
-                    <span>Servicios</span>
-                  </div>
-                </div>
               </div>
             </div>
           )}
@@ -841,7 +941,7 @@ export default function TareasPage() {
                         height: '8px', 
                         borderRadius: '50%', 
                         background: 'var(--color-primary)' 
-                      }} />
+                      }}></div>
                       <span className="name" style={{ fontWeight: 600, fontSize: '1rem', color: 'var(--text-primary)' }}>{service.name}</span>
                     </div>
                     <span className="price" style={{ fontWeight: 800, color: 'var(--color-primary)', fontSize: '1.1rem' }}>${service.price.toLocaleString('es-AR')}</span>
@@ -852,6 +952,120 @@ export default function TareasPage() {
                   <p className="text-secondary m-0">No hay servicios configurados en 'Costos'.</p>
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showPaymentModal && (
+        <div className="modal-overlay animate-fade-in" style={{ zIndex: 1500 }}>
+          <div className="modal-content glass-card animate-scale-in" style={{ maxWidth: '600px', padding: 0, borderRadius: '24px', overflow: 'hidden' }}>
+            <div className="modal-header" style={{ padding: '1.25rem 2rem', background: 'var(--color-primary)', color: 'white', borderBottom: 'none' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <div style={{ background: 'rgba(255,255,255,0.2)', padding: '8px', borderRadius: '12px' }}>
+                  <DollarSign size={20} />
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, color: 'white', fontSize: '1.2rem' }}>Gestión de Cobro</h3>
+                  <p style={{ margin: 0, opacity: 0.8, fontSize: '0.75rem' }}>{selectedClient.name}</p>
+                </div>
+              </div>
+              <button onClick={() => setShowPaymentModal(false)} style={{ color: 'white', opacity: 0.7 }} className="close-modal-btn">
+                <X size={20} />
+              </button>
+            </div>
+
+            <div style={{ padding: '1.5rem 2rem' }}>
+              <label className="text-xs font-bold uppercase text-secondary mb-2 block" style={{ letterSpacing: '0.5px' }}>Servicios Pendientes</label>
+              
+              <div className="payment-selection-list custom-scrollbar" style={{ maxHeight: '180px', marginBottom: '1rem' }}>
+                {billingData.tasks.filter(t => !t.paid && t.price > 0).length > 0 ? (
+                  billingData.tasks.map((task, idx) => {
+                    if (task.paid || task.price <= 0) return null;
+                    const isSelected = selectedTaskIndices.includes(idx);
+                    return (
+                      <div 
+                        key={idx} 
+                        className={`payment-selection-item ${isSelected ? 'selected' : ''}`}
+                        onClick={() => handleToggleSelectTask(idx)}
+                        style={{ padding: '0.6rem 1rem' }}
+                      >
+                        <div className="info">
+                          <span className="name" style={{ fontSize: '0.85rem' }}>{task.name}</span>
+                          <span className="date" style={{ fontSize: '0.65rem' }}>{new Date(task.date).toLocaleDateString('es-AR')}</span>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                          <span className="price" style={{ fontSize: '0.95rem' }}>${task.price.toLocaleString('es-AR')}</span>
+                          <div style={{ 
+                            width: '18px', 
+                            height: '18px', 
+                            borderRadius: '5px', 
+                            border: isSelected ? 'none' : '2px solid #e2e8f0',
+                            background: isSelected ? '#10b981' : 'transparent',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            color: 'white'
+                          }}>
+                            {isSelected && <Check size={12} strokeWidth={3} />}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })
+                ) : (
+                  <div style={{ padding: '1.5rem', textAlign: 'center', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
+                    No hay servicios pendientes.
+                  </div>
+                )}
+              </div>
+
+              <div className="payment-summary-box" style={{ padding: '1rem', marginBottom: '1.25rem' }}>
+                <div className="payment-summary-row" style={{ marginBottom: '0.75rem' }}>
+                  <span className="label" style={{ fontSize: '0.75rem' }}>Total Seleccionado</span>
+                  <span className="value" style={{ fontSize: '0.95rem' }}>${selectedTaskIndices.reduce((sum, i) => sum + (billingData.tasks[i]?.price || 0), 0).toLocaleString('es-AR')}</span>
+                </div>
+                
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr', gap: '1rem' }}>
+                  <div className="form-group">
+                    <label className="text-xs font-bold uppercase text-secondary mb-1 block">Monto</label>
+                    <div className="input-with-icon">
+                      <DollarSign size={16} />
+                      <input 
+                        type="number" 
+                        className="form-input" 
+                        style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--color-primary)', height: '48px' }}
+                        value={paymentAmount}
+                        onChange={e => setPaymentAmount(e.target.value)}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="text-xs font-bold uppercase text-secondary mb-1 block">Concepto / Nota</label>
+                    <input 
+                      type="text" 
+                      className="form-input" 
+                      style={{ height: '48px', fontSize: '0.9rem' }}
+                      placeholder="Ej: Pago parcial..."
+                      value={paymentConcept}
+                      onChange={e => setPaymentConcept(e.target.value)}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <button 
+                className="btn btn-primary w-100 py-3" 
+                onClick={handleConfirmPayment} 
+                style={{ borderRadius: '14px', fontSize: '1.1rem', fontWeight: 700, boxShadow: '0 8px 16px rgba(31, 58, 77, 0.12)' }}
+              >
+                Registrar Cobro
+              </button>
+              
+              <p style={{ textAlign: 'center', marginTop: '0.75rem', fontSize: '0.7rem', color: '#94a3b8', marginBottom: 0 }}>
+                Si el monto es menor al total, se registrará como pago parcial.
+              </p>
             </div>
           </div>
         </div>

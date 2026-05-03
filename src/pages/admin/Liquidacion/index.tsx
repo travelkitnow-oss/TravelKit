@@ -9,7 +9,8 @@ import {
   Bus, 
   Calculator,
   Download,
-  CreditCard
+  CreditCard,
+  Trash2
 } from 'lucide-react';
 import jsPDF from 'jspdf';
 import { supabase } from '../../../lib/supabase';
@@ -59,8 +60,25 @@ export default function LiquidacionPage() {
   }, [selectedClientId]);
 
   const fetchClients = async () => {
-    const { data } = await supabase.from('clients').select('*').order('name');
+    const { data } = await supabase
+      .from('clients')
+      .select('*')
+      .neq('source', 'agenda_session_only')
+      .order('name');
     setClients(data || []);
+  };
+
+  const handleDeleteClient = async (e: React.MouseEvent, clientId: string, clientName: string) => {
+    e.stopPropagation();
+    if (!window.confirm(`¿Estás seguro de eliminar permanentemente a ${clientName} y toda su liquidación? Esta acción no se puede deshacer.`)) return;
+    
+    const { error } = await supabase.from('clients').delete().eq('id', clientId);
+    if (error) {
+      alert('Error al eliminar cliente: ' + error.message);
+    } else {
+      if (selectedClientId === clientId) setSelectedClientId(null);
+      fetchClients();
+    }
   };
 
   const fetchLiquidacionData = async (clientId: string) => {
@@ -330,7 +348,16 @@ export default function LiquidacionPage() {
                     <p>{client.email || 'Sin email'}</p>
                   </div>
                 </div>
-                <ChevronRight size={18} opacity={0.5} />
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <button 
+                    className="btn-icon-trash" 
+                    onClick={(e) => handleDeleteClient(e, client.id, client.name)}
+                    title="Eliminar liquidación"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                  <ChevronRight size={18} opacity={0.5} />
+                </div>
               </div>
             ))}
           </div>

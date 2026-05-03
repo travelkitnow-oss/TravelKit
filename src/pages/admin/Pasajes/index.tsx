@@ -81,6 +81,7 @@ export default function PasajesPage() {
     const { data, error } = await supabase
       .from('clients')
       .select('id, name, email, phone')
+      .neq('source', 'agenda_session_only')
       .order('name');
     
     if (error) console.error('Error fetching clients:', error);
