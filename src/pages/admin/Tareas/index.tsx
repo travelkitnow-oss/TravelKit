@@ -967,7 +967,7 @@ export default function TareasPage() {
                 </div>
                 <div>
                   <h3 style={{ margin: 0, color: 'white', fontSize: '1.2rem' }}>Gestión de Cobro</h3>
-                  <p style={{ margin: 0, opacity: 0.8, fontSize: '0.75rem' }}>{selectedClient.name}</p>
+                  <p style={{ margin: 0, opacity: 0.8, fontSize: '0.75rem' }}>{selectedClient?.name}</p>
                 </div>
               </div>
               <button onClick={() => setShowPaymentModal(false)} style={{ color: 'white', opacity: 0.7 }} className="close-modal-btn">
@@ -979,8 +979,8 @@ export default function TareasPage() {
               <label className="text-xs font-bold uppercase text-secondary mb-2 block" style={{ letterSpacing: '0.5px' }}>Servicios Pendientes</label>
               
               <div className="payment-selection-list custom-scrollbar" style={{ maxHeight: '180px', marginBottom: '1rem' }}>
-                {billingData.tasks.filter(t => !t.paid && t.price > 0).length > 0 ? (
-                  billingData.tasks.map((task, idx) => {
+                {billingData?.tasks.filter(t => !t.paid && t.price > 0).length ?? 0 > 0 ? (
+                  billingData?.tasks.map((task, idx) => {
                     if (task.paid || task.price <= 0) return null;
                     const isSelected = selectedTaskIndices.includes(idx);
                     return (
@@ -1023,7 +1023,7 @@ export default function TareasPage() {
               <div className="payment-summary-box" style={{ padding: '1rem', marginBottom: '1.25rem' }}>
                 <div className="payment-summary-row" style={{ marginBottom: '0.75rem' }}>
                   <span className="label" style={{ fontSize: '0.75rem' }}>Total Seleccionado</span>
-                  <span className="value" style={{ fontSize: '0.95rem' }}>${selectedTaskIndices.reduce((sum, i) => sum + (billingData.tasks[i]?.price || 0), 0).toLocaleString('es-AR')}</span>
+                  <span className="value" style={{ fontSize: '0.95rem' }}>${selectedTaskIndices.reduce((sum, i) => sum + (billingData?.tasks[i]?.price || 0), 0).toLocaleString('es-AR')}</span>
                 </div>
                 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr', gap: '1rem' }}>

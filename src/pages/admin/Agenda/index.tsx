@@ -10,7 +10,6 @@ import {
   Trash2,
   Calendar as CalendarIcon,
   Users,
-  DollarSign,
   Link2
 } from 'lucide-react';
 import { format } from 'date-fns';
