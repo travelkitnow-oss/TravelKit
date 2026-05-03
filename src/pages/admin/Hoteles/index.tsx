@@ -1,17 +1,18 @@
 import { useState, useEffect } from 'react';
-import { 
-  Folder, 
-  FolderPlus, 
-  Plus, 
-  Hotel as HotelIcon, 
-  Notebook, 
-  Trash2, 
+import {
+  Folder,
+  FolderPlus,
+  Plus,
+  Hotel as HotelIcon,
+  Notebook,
+  Trash2,
   ChevronLeft,
   Edit2,
   Link as LinkIcon,
   DollarSign,
   MapPin,
-  Info
+  Info,
+  Users
 } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import './Hoteles.css';
@@ -36,6 +37,7 @@ interface Hotel {
   half_board: boolean;
   all_inclusive: boolean;
   extra_services: string;
+  capacity: number;
 }
 
 interface HotelFolder {
@@ -59,7 +61,7 @@ export default function HotelesPage() {
   const [newFolderName, setNewFolderName] = useState('');
   const [newHotel, setNewHotel] = useState<Partial<Hotel>>({
     name: '', cost_usd: 0, address: '', description: '', notes: '', links: [],
-    nights: 1, breakfast: false, half_board: false, all_inclusive: false, extra_services: '', stars: 3
+    nights: 1, breakfast: false, half_board: false, all_inclusive: false, extra_services: '', stars: 3, capacity: 2
   });
 
   useEffect(() => {
@@ -110,17 +112,18 @@ export default function HotelesPage() {
           folder_id: i.folder_id,
           name: i.name,
           cost_usd: i.cost_usd,
-          address: i.address,
-          description: i.description,
-          notes: i.notes,
+          address: i.address || '',
+          description: i.description || '',
+          notes: i.notes || '',
           links: i.links || [],
-          nights: i.nights,
-          stars: i.stars,
-          breakfast: i.breakfast,
-          half_board: i.half_board,
-          all_inclusive: i.all_inclusive,
-          extra_services: i.extra_services
-        }))
+          nights: i.nights || 1,
+          stars: i.stars || 3,
+          breakfast: !!i.breakfast,
+          half_board: !!i.half_board,
+          all_inclusive: !!i.all_inclusive,
+          extra_services: i.extra_services || '',
+          capacity: i.capacity || 2
+        })) as Hotel[]
     }));
 
     setFolders(combined);
@@ -161,7 +164,7 @@ export default function HotelesPage() {
       folder_id: selectedFolderId,
       name: newHotel.name,
       cost_usd: Number(newHotel.cost_usd) || 0,
-      address: newHotel.address || '',
+      location: newHotel.address || '',
       description: newHotel.description || '',
       notes: newHotel.notes || '',
       links: newHotel.links || [],
@@ -170,20 +173,25 @@ export default function HotelesPage() {
       breakfast: !!newHotel.breakfast,
       half_board: !!newHotel.half_board,
       all_inclusive: !!newHotel.all_inclusive,
-      extra_services: newHotel.extra_services || ''
+      extra_services: newHotel.extra_services || '',
+      capacity: Number(newHotel.capacity) || 2
     };
 
     if (editingHotelId) {
       const { error } = await supabase.from('catalog_items').update(dbData).eq('id', editingHotelId);
-      if (error) alert('Error al actualizar hotel');
-      else {
+      if (error) {
+        console.error('Error updating hotel:', error);
+        alert('Error al actualizar hotel: ' + error.message);
+      } else {
         fetchFolders();
         setShowHotelModal(false);
       }
     } else {
       const { error } = await supabase.from('catalog_items').insert([dbData]);
-      if (error) alert('Error al guardar hotel');
-      else {
+      if (error) {
+        console.error('Error saving hotel:', error);
+        alert('Error al guardar hotel: ' + error.message);
+      } else {
         fetchFolders();
         setShowHotelModal(false);
       }
@@ -206,7 +214,7 @@ export default function HotelesPage() {
   };
 
   const openCreateModal = () => {
-    setNewHotel({ 
+    setNewHotel({
       name: '', cost_usd: 0, address: '', description: '', notes: '', links: [],
       nights: 1, breakfast: false, half_board: false, all_inclusive: false, extra_services: '', stars: 3
     });
@@ -339,7 +347,7 @@ export default function HotelesPage() {
                     </div>
 
                     <div className="hotel-content-compact">
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '0.75rem' }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem', marginBottom: '0.75rem' }}>
                         {hotel.address && (
                           <div className="info-box">
                             <MapPin size={14} style={{ marginRight: '0.5rem', verticalAlign: 'middle' }} />
@@ -349,6 +357,10 @@ export default function HotelesPage() {
                         <div className="info-box" style={{ background: 'rgba(200, 155, 90, 0.05)' }}>
                           <Notebook size={14} style={{ marginRight: '0.5rem', verticalAlign: 'middle' }} />
                           <strong>Estancia:</strong> {hotel.nights} noches
+                        </div>
+                        <div className="info-box" style={{ background: 'rgba(31, 58, 77, 0.05)' }}>
+                          <Users size={14} style={{ marginRight: '0.5rem', verticalAlign: 'middle' }} />
+                          <strong>Hab.:</strong> {hotel.capacity} pax
                         </div>
                       </div>
 
@@ -432,9 +444,9 @@ export default function HotelesPage() {
             </div>
             <div className="modal-body-scrollable">
               <div className="modal-form">
-                <div className="grid-2 gap-4">
+                <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
                   <div className="form-group">
-                    <label>Nombre del Hotel</label>
+                    <label className="text-xs font-semibold uppercase text-secondary" style={{ letterSpacing: '0.5px', marginBottom: '0.5rem', display: 'block' }}>Nombre del Hotel</label>
                     <div className="input-with-icon">
                       <HotelIcon size={16} />
                       <input
@@ -447,8 +459,8 @@ export default function HotelesPage() {
                     </div>
                   </div>
                   <div className="form-group">
-                    <label>Estrellas / Categoría</label>
-                    <select 
+                    <label className="text-xs font-semibold uppercase text-secondary" style={{ letterSpacing: '0.5px', marginBottom: '0.5rem', display: 'block' }}>Estrellas / Categoría</label>
+                    <select
                       className="form-input"
                       value={newHotel.stars || 3}
                       onChange={e => setNewHotel({ ...newHotel, stars: Number(e.target.value) })}
@@ -462,9 +474,9 @@ export default function HotelesPage() {
                   </div>
                 </div>
 
-                <div className="grid-2 gap-4">
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
                   <div className="form-group">
-                    <label>Costo Estancia Total (U$S)</label>
+                    <label className="text-xs font-semibold uppercase text-secondary" style={{ letterSpacing: '0.5px', marginBottom: '0.5rem', display: 'block' }}>Costo Estancia Total (U$S)</label>
                     <div className="input-with-icon">
                       <DollarSign size={16} />
                       <input
@@ -476,7 +488,7 @@ export default function HotelesPage() {
                     </div>
                   </div>
                   <div className="form-group">
-                    <label>Cantidad de Noches</label>
+                    <label className="text-xs font-semibold uppercase text-secondary" style={{ letterSpacing: '0.5px', marginBottom: '0.5rem', display: 'block' }}>Noches</label>
                     <div className="input-with-icon">
                       <Notebook size={16} />
                       <input
@@ -487,10 +499,22 @@ export default function HotelesPage() {
                       />
                     </div>
                   </div>
+                  <div className="form-group">
+                    <label className="text-xs font-semibold uppercase text-secondary" style={{ letterSpacing: '0.5px', marginBottom: '0.5rem', display: 'block' }}>Pax x Hab.</label>
+                    <div className="input-with-icon">
+                      <Users size={16} />
+                      <input
+                        type="number"
+                        className="form-input"
+                        value={newHotel.capacity || 2}
+                        onChange={e => setNewHotel({ ...newHotel, capacity: parseInt(e.target.value) })}
+                      />
+                    </div>
+                  </div>
                 </div>
 
-                <div className="form-group">
-                  <label>Dirección / Ubicación</label>
+                <div className="form-group mb-4">
+                  <label className="text-xs font-semibold uppercase text-secondary" style={{ letterSpacing: '0.5px', marginBottom: '0.5rem', display: 'block' }}>Dirección / Ubicación</label>
                   <div className="input-with-icon">
                     <MapPin size={16} />
                     <input
@@ -503,26 +527,26 @@ export default function HotelesPage() {
                   </div>
                 </div>
 
-                <div className="form-group">
-                  <label>Régimen de Comidas</label>
-                  <div style={{ display: 'flex', gap: '1.5rem', marginTop: '0.5rem', background: '#f8fafc', padding: '0.75rem', borderRadius: '12px' }}>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', margin: 0 }}>
-                      <input type="checkbox" checked={newHotel.breakfast} onChange={e => setNewHotel({...newHotel, breakfast: e.target.checked})} />
+                <div className="form-group mb-4">
+                  <label className="text-xs font-semibold uppercase text-secondary" style={{ letterSpacing: '0.5px', marginBottom: '0.5rem', display: 'block' }}>Régimen de Comidas</label>
+                  <div style={{ display: 'flex', gap: '1.5rem', marginTop: '0.5rem', background: '#f8fafc', padding: '1rem', borderRadius: '16px', border: '1px solid #edf2f7' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer', margin: 0, fontSize: '0.9rem', fontWeight: 600 }}>
+                      <input type="checkbox" style={{ width: '18px', height: '18px' }} checked={newHotel.breakfast} onChange={e => setNewHotel({ ...newHotel, breakfast: e.target.checked })} />
                       Desayuno
                     </label>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', margin: 0 }}>
-                      <input type="checkbox" checked={newHotel.half_board} onChange={e => setNewHotel({...newHotel, half_board: e.target.checked})} />
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer', margin: 0, fontSize: '0.9rem', fontWeight: 600 }}>
+                      <input type="checkbox" style={{ width: '18px', height: '18px' }} checked={newHotel.half_board} onChange={e => setNewHotel({ ...newHotel, half_board: e.target.checked })} />
                       Media Pensión
                     </label>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', margin: 0 }}>
-                      <input type="checkbox" checked={newHotel.all_inclusive} onChange={e => setNewHotel({...newHotel, all_inclusive: e.target.checked})} />
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer', margin: 0, fontSize: '0.9rem', fontWeight: 600 }}>
+                      <input type="checkbox" style={{ width: '18px', height: '18px' }} checked={newHotel.all_inclusive} onChange={e => setNewHotel({ ...newHotel, all_inclusive: e.target.checked })} />
                       All Inclusive
                     </label>
                   </div>
                 </div>
 
-                <div className="form-group">
-                  <label>Otros Servicios (Merienda, Snack Bar, etc.)</label>
+                <div className="form-group mb-4">
+                  <label className="text-xs font-semibold uppercase text-secondary" style={{ letterSpacing: '0.5px', marginBottom: '0.5rem', display: 'block' }}>Otros Servicios (Merienda, Snack Bar, etc.)</label>
                   <div className="input-with-icon">
                     <Info size={16} />
                     <input
@@ -551,10 +575,20 @@ export default function HotelesPage() {
               </div>
             </div>
 
-            <div className="modal-footer pt-4 mt-2">
-              <div style={{ display: 'flex', gap: '1rem' }}>
-                <button className="btn btn-outline w-100" onClick={() => setShowHotelModal(false)}>Cancelar</button>
-                <button className="btn btn-primary w-100" onClick={handleAddHotel}>
+            <div className="modal-footer pt-4" style={{ borderTop: '1px solid #eee', marginTop: '2rem' }}>
+              <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
+                <button 
+                  className="btn btn-outline" 
+                  style={{ minWidth: '160px', borderRadius: '50px', padding: '0.75rem 2rem' }} 
+                  onClick={() => setShowHotelModal(false)}
+                >
+                  Cancelar
+                </button>
+                <button 
+                  className="btn btn-primary" 
+                  style={{ minWidth: '200px', borderRadius: '50px', padding: '0.75rem 2rem' }} 
+                  onClick={handleAddHotel}
+                >
                   {editingHotelId ? 'Guardar Cambios' : 'Guardar Hotel'}
                 </button>
               </div>

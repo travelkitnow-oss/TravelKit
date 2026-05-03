@@ -1,12 +1,15 @@
 import { useState, useEffect } from 'react';
 import { 
   Plus, 
+  Check,
   CalendarClock, 
   X, 
   User, 
   XCircle,
   Clock,
-  Calendar as CalendarIcon
+  Trash2,
+  Calendar as CalendarIcon,
+  Users
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -20,7 +23,7 @@ interface Reservation {
   client: string;
   dest: string;
   time: string;
-  status: 'confirmed' | 'pending' | 'cancelled';
+  status: 'confirmed' | 'pending' | 'cancelled' | 'completed' | 'client_saved' | 'client_rejected';
   googleMeet?: string;
   email?: string;
   phone?: string;
@@ -43,9 +46,11 @@ export default function AgendaPage() {
   const [newResPhone, setNewResPhone] = useState('');
   const [newResTime, setNewResTime] = useState('');
   const [newResDate, setNewResDate] = useState<string>('');
+  const [newClientPax, setNewClientPax] = useState(2);
   const [attemptedSubmit, setAttemptedSubmit] = useState(false);
-
   const [deleteConfirmData, setDeleteConfirmData] = useState<{ dateStr: string, resId: string, client: string } | null>(null);
+  const [completedRes, setCompletedRes] = useState<Reservation | null>(null);
+  const [expandedResId, setExpandedResId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchReservations();
@@ -72,14 +77,64 @@ export default function AgendaPage() {
     setLoading(false);
   };
 
-  const selectedDateStr = selectedDate ? format(selectedDate, 'yyyy-MM-dd') : '';
+  const selectedDateStr = selectedDate ? format(selectedDate, "yyyy-MM-dd") : '';
   const dayReservations = allReservations.filter(r => r.date === selectedDateStr);
+  console.log('Selected date:', selectedDateStr, 'Reservations count:', dayReservations.length);
 
-  const handleCancelReservation = (dateStr: string, resId: string) => {
-    const res = allReservations.find(r => r.id === resId);
-    if (res) {
-      setDeleteConfirmData({ dateStr, resId, client: res.client });
+  const handleMarkCompleted = async (res: Reservation) => {
+    const { error } = await supabase.from('admin_meetings').update({ status: 'completed' }).eq('id', res.id);
+    if (!error) {
+      fetchReservations();
+      setCompletedRes(res);
+    } else {
+      console.error('Error marking completed:', error);
     }
+  };
+
+  const handleSaveNewClient = async (res: Reservation) => {
+    const { data: newClients, error } = await supabase.from('clients').insert([{ 
+      name: res.client,
+      email: res.email || '',
+      phone: res.phone || '',
+      source: 'agenda'
+    }]).select();
+    
+    if (error) {
+      alert('Error al guardar cliente');
+    } else {
+      const clientId = newClients && newClients[0] ? newClients[0].id : null;
+      if (clientId && res.dest && res.dest !== 'Por definir') {
+        await supabase.from('client_billing').insert([{
+          client_id: clientId,
+          destination: res.dest,
+          tasks: [],
+          notes: '',
+          passengers: newClientPax
+        }]);
+      }
+
+      await supabase.from('admin_meetings').update({ status: 'client_saved' }).eq('id', res.id);
+      alert('Cliente guardado correctamente');
+      fetchReservations();
+    }
+    setCompletedRes(null);
+  };
+
+  const handleDeleteClient = async (res: Reservation) => {
+    if (!window.confirm('¿Estás seguro de descartar este cliente?')) return;
+    await supabase.from('admin_meetings').update({ status: 'client_rejected' }).eq('id', res.id);
+    fetchReservations();
+    setCompletedRes(null);
+  };
+
+  const handlePermanentlyDelete = async (resId: string) => {
+    if (!window.confirm('¿Estás seguro de eliminar esta reunión de la vista?')) return;
+    const { error } = await supabase.from('admin_meetings').delete().eq('id', resId);
+    if (!error) fetchReservations();
+  };
+
+  const handleCancelReservation = async (dateStr: string, resId: string) => {
+    setDeleteConfirmData({ dateStr, resId, client: '' });
   };
 
   const confirmCancel = async () => {
@@ -100,7 +155,12 @@ export default function AgendaPage() {
       status: 'confirmed'
     }).eq('id', postponeData.res.id);
 
-    if (!error) fetchReservations();
+    if (!error) {
+      fetchReservations();
+      if (newPostponeDate !== selectedDateStr) {
+        setSelectedDate(new Date(newPostponeDate));
+      }
+    }
     setPostponeData(null);
     setAttemptedSubmit(false);
   };
@@ -126,7 +186,8 @@ export default function AgendaPage() {
     }]);
 
     if (error) {
-      alert('Error al agendar sesión');
+      console.error('Error adding session:', error);
+      alert('Error al agendar sesión: ' + error.message);
     } else {
       fetchReservations();
       setShowAddModal(false);
@@ -158,7 +219,6 @@ export default function AgendaPage() {
       </header>
 
       <div className="agenda-grid-2-col">
-        {/* Column 1: Calendar */}
         <div className="calendar-card glass-card">
           <div className="card-header">
             <h3>Calendario</h3>
@@ -173,7 +233,6 @@ export default function AgendaPage() {
           </div>
         </div>
 
-        {/* Column 2: Reservations */}
         <div className="glass-card reservations-panel">
           <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
@@ -192,28 +251,73 @@ export default function AgendaPage() {
             {loading ? (
               <div className="p-4 text-center"><div className="loader-premium"></div></div>
             ) : dayReservations.length > 0 ? (
-              <div className="reservations-list">
-                {dayReservations.map(res => (
-                  <div key={res.id} className={`reservation-item ${res.status === 'cancelled' ? 'cancelled-item' : ''}`}>
+              <div key={selectedDateStr} className="reservations-list">
+                {dayReservations.map(res => {
+                  const isExpanded = expandedResId === res.id;
+                  return (
+                  <div
+                    key={res.id}
+                    className={`reservation-item ${res.status === 'cancelled' ? 'cancelled-item' : ''}`}
+                    style={{ cursor: 'pointer' }}
+                    onClick={() => setExpandedResId(isExpanded ? null : res.id)}
+                  >
                     <div className="res-header">
-                      <span className="res-time">{res.time}</span>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <span className={`res-status ${res.status}`}>
-                          {res.status === 'confirmed' ? 'Confirmado' : res.status === 'cancelled' ? 'Cancelado' : 'Pendiente'}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                        <span className="res-time">{res.time}</span>
+                        <span className="text-sm" style={{ color: 'var(--color-secondary)' }}>
+                          <strong>{res.client}</strong>
                         </span>
-                        
-                        {res.status !== 'cancelled' && (
-                          <div className="res-actions" style={{ display: 'flex', gap: '0.25rem', marginLeft: '0.5rem' }}>
-                            <button 
-                              className="btn btn-sm btn-outline" 
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        {['completed', 'client_saved', 'client_rejected'].includes(res.status) ? (
+                          <>
+                            <span className="res-status" style={{ 
+                              backgroundColor: res.status === 'client_saved' ? 'rgba(16, 185, 129, 0.1)' : res.status === 'client_rejected' ? 'rgba(107, 114, 128, 0.1)' : 'rgba(59, 130, 246, 0.1)', 
+                              color: res.status === 'client_saved' ? '#10b981' : res.status === 'client_rejected' ? '#6b7280' : '#3b82f6' 
+                            }}>
+                              {res.status === 'client_saved' ? 'Cliente Guardado' : res.status === 'client_rejected' ? 'Cliente Descartado' : 'Completada'}
+                            </span>
+                            <div className="res-actions" style={{ marginLeft: '0.25rem' }} onClick={e => e.stopPropagation()}>
+                              <button 
+                                className="btn btn-sm btn-outline text-danger" 
+                                style={{ padding: '0.25rem', border: 'none' }}
+                                title="Eliminar de la vista"
+                                onClick={() => handlePermanentlyDelete(res.id)}
+                              >
+                                <Trash2 size={16} />
+                              </button>
+                            </div>
+                          </>
+                        ) : (
+                          <span className={`res-status ${res.status}`}>
+                            {res.status === 'confirmed' ? 'Confirmado' : res.status === 'cancelled' ? 'Cancelado' : 'Pendiente'}
+                          </span>
+                        )}
+
+                        {!['cancelled', 'completed', 'client_saved', 'client_rejected'].includes(res.status) && (
+                          <div
+                            className="res-actions"
+                            style={{ display: 'flex', gap: '0.25rem', marginLeft: '0.5rem' }}
+                            onClick={e => e.stopPropagation()}
+                          >
+                            <button
+                              className="btn btn-sm btn-outline"
+                              style={{ padding: '0.25rem' }}
+                              title="Marcar como completada"
+                              onClick={() => handleMarkCompleted(res)}
+                            >
+                              <Check size={16} />
+                            </button>
+                            <button
+                              className="btn btn-sm btn-outline"
                               style={{ padding: '0.25rem' }}
                               title="Posponer"
                               onClick={() => setPostponeData({ res, oldDate: selectedDateStr })}
                             >
                               <CalendarClock size={16} />
                             </button>
-                            <button 
-                              className="btn btn-sm btn-outline text-danger" 
+                            <button
+                              className="btn btn-sm btn-outline text-danger"
                               style={{ padding: '0.25rem' }}
                               title="Cancelar"
                               onClick={() => handleCancelReservation(selectedDateStr, res.id)}
@@ -222,21 +326,36 @@ export default function AgendaPage() {
                             </button>
                           </div>
                         )}
+                        {res.status === 'cancelled' && (
+                           <div className="res-actions" style={{ marginLeft: '0.25rem' }} onClick={e => e.stopPropagation()}>
+                              <button 
+                                className="btn btn-sm btn-outline text-danger" 
+                                style={{ padding: '0.25rem', border: 'none' }}
+                                title="Eliminar de la vista"
+                                onClick={() => handlePermanentlyDelete(res.id)}
+                              >
+                                <Trash2 size={16} />
+                              </button>
+                            </div>
+                        )}
                       </div>
                     </div>
-                    <div className="res-body">
-                      <h4>{res.client}</h4>
-                      <p className="text-sm text-secondary">Destino: {res.dest}</p>
-                      {res.email && <p className="text-xs text-secondary" style={{ marginTop: '0.25rem' }}>📧 {res.email}</p>}
-                      {res.phone && <p className="text-xs text-secondary">📞 {res.phone}</p>}
-                      {res.status === 'confirmed' && (
-                        <a href={res.googleMeet} target="_blank" rel="noreferrer" className="btn btn-sm btn-outline mt-2" style={{ width: '100%', justifyContent: 'center' }}>
-                          Unirse a la reunión
-                        </a>
-                      )}
-                    </div>
+
+                    {isExpanded && (
+                      <div className="res-body" onClick={e => e.stopPropagation()}>
+                        <p className="text-sm text-secondary">Destino: {res.dest}</p>
+                        {res.email && <p className="text-xs text-secondary" style={{ marginTop: '0.25rem' }}>📧 {res.email}</p>}
+                        {res.phone && <p className="text-xs text-secondary">📞 {res.phone}</p>}
+                        {res.status === 'confirmed' && (
+                          <a href={res.googleMeet} target="_blank" rel="noreferrer" className="btn btn-sm btn-outline mt-2" style={{ width: '100%', justifyContent: 'center' }}>
+                            Unirse a la reunión
+                          </a>
+                        )}
+                      </div>
+                    )}
                   </div>
-                ))}
+                  );
+                })}
               </div>
             ) : (
               <div className="empty-state">
@@ -248,7 +367,47 @@ export default function AgendaPage() {
         </div>
       </div>
 
-      {/* Modals: Add & Postpone (Same as before but with Supabase calls) */}
+
+      {/* Modal: completedRes actions */}
+      {completedRes && (
+        <div className="modal-overlay animate-fade-in" style={{ zIndex: 1500 }}>
+          <div className="modal-content glass-card animate-scale-in" style={{ maxWidth: '400px', padding: '2rem', borderRadius: '24px' }}>
+            <div className="modal-header">
+              <h3>Reunión completada</h3>
+              <button className="close-modal-btn" onClick={() => setCompletedRes(null)}>
+                <X size={20} />
+              </button>
+            </div>
+            <p style={{ marginBottom: '1.25rem' }}>Cliente: <strong>{completedRes.client}</strong></p>
+            
+            <div className="form-group mb-4">
+              <label className="text-xs font-semibold uppercase text-secondary">¿Cuántas personas viajan?</label>
+              <div className="input-with-icon" style={{ marginTop: '0.5rem' }}>
+                <Users size={16} />
+                <input 
+                  type="number" 
+                  min="1"
+                  className="form-input"
+                  value={newClientPax}
+                  onChange={e => setNewClientPax(parseInt(e.target.value) || 1)}
+                />
+              </div>
+            </div>
+
+            <p className="text-sm text-secondary">¿Querés agregar a este cliente a tu lista de clientes o eliminarlo?</p>
+            <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1.25rem' }}>
+              <button className="btn btn-primary w-100" onClick={() => handleSaveNewClient(completedRes)}>
+                Guardar cliente
+              </button>
+              <button className="btn btn-danger w-100" onClick={() => handleDeleteClient(completedRes)}>
+                Descartar cliente
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Nueva Sesión */}
       {showAddModal && (
         <div className="modal-overlay animate-fade-in" style={{ zIndex: 1300 }}>
           <div className="modal-content glass-card animate-scale-in" style={{ maxWidth: '450px', padding: '2.5rem', borderRadius: '24px' }}>

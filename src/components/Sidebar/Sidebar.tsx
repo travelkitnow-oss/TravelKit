@@ -15,7 +15,8 @@ import {
   Bus,
   Hotel,
   ChevronDown,
-  Briefcase
+  Briefcase,
+  Calculator
 } from 'lucide-react';
 import './Sidebar.css';
 
@@ -29,7 +30,7 @@ export default function Sidebar({ userEmail, handleLogout }: SidebarProps) {
   const [isViajeOpen, setIsViajeOpen] = useState(true);
 
   // Check if any sub-item is active to keep dropdown open if needed
-  const viajeRoutes = ['/excursiones', '/transportes', '/hoteles', '/agenda-clientes'];
+  const viajeRoutes = ['/excursiones', '/transportes', '/hoteles', '/agenda-clientes', '/pasajes'];
   const isAnyViajeActive = viajeRoutes.some(route => location.pathname === route);
 
   return (
@@ -103,10 +104,17 @@ export default function Sidebar({ userEmail, handleLogout }: SidebarProps) {
               Transportes
             </NavLink>
             <NavLink
-              to="/agenda-clientes"
+              to="/pasajes"
               className={({ isActive }) => `nav-item sub-item ${isActive ? 'active' : ''}`}
             >
               <Plane size={18} />
+              Pasajes
+            </NavLink>
+            <NavLink
+              to="/agenda-clientes"
+              className={({ isActive }) => `nav-item sub-item ${isActive ? 'active' : ''}`}
+            >
+              <CalendarIcon size={18} />
               Agenda del cliente
             </NavLink>
           </div>
@@ -125,6 +133,13 @@ export default function Sidebar({ userEmail, handleLogout }: SidebarProps) {
         >
           <DollarSign size={20} />
           Mis Ganancias
+        </NavLink>
+        <NavLink
+          to="/liquidacion"
+          className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
+        >
+          <Calculator size={20} />
+          Liquidación
         </NavLink>
         <NavLink
           to="/formulario"

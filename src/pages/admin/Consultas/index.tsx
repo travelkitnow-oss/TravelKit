@@ -113,19 +113,19 @@ export default function ConsultasPage() {
         <p>Gestiona y responde las solicitudes de tus viajeros desde un solo lugar.</p>
       </header>
       
-      <div className="filter-tabs-container">
-        <div className="filter-tabs">
-          <button className={`tab ${filter === 'todos' ? 'active' : ''}`} onClick={() => setFilter('todos')}>
-            Todos <span className="tab-count">{submissions.length}</span>
+      <div className="filter-pills-container">
+        <div className="filter-pills">
+          <button className={`pill ${filter === 'todos' ? 'active' : ''}`} onClick={() => setFilter('todos')}>
+            Todos <span className="pill-count">{submissions.length}</span>
           </button>
-          <button className={`tab ${filter === 'nuevo' ? 'active' : ''}`} onClick={() => setFilter('nuevo')}>
-            Nuevos <span className="tab-count nuevo">{submissions.filter(s => s.status === 'nuevo').length}</span>
+          <button className={`pill nuevo ${filter === 'nuevo' ? 'active' : ''}`} onClick={() => setFilter('nuevo')}>
+            Nuevos <span className="pill-count">{submissions.filter(s => s.status === 'nuevo').length}</span>
           </button>
-          <button className={`tab ${filter === 'aceptado' ? 'active' : ''}`} onClick={() => setFilter('aceptado')}>
-            Aceptados <span className="tab-count aceptado">{submissions.filter(s => s.status === 'aceptado').length}</span>
+          <button className={`pill aceptado ${filter === 'aceptado' ? 'active' : ''}`} onClick={() => setFilter('aceptado')}>
+            Aceptados <span className="pill-count">{submissions.filter(s => s.status === 'aceptado').length}</span>
           </button>
-          <button className={`tab ${filter === 'rechazado' ? 'active' : ''}`} onClick={() => setFilter('rechazado')}>
-            Rechazados <span className="tab-count rechazado">{submissions.filter(s => s.status === 'rechazado').length}</span>
+          <button className={`pill rechazado ${filter === 'rechazado' ? 'active' : ''}`} onClick={() => setFilter('rechazado')}>
+            Rechazados <span className="pill-count">{submissions.filter(s => s.status === 'rechazado').length}</span>
           </button>
         </div>
       </div>
@@ -156,8 +156,11 @@ export default function ConsultasPage() {
                   >
                     <div className="item-main">
                       <div className="item-header">
-                        <h4>{s.name}</h4>
-                        <span className="item-date">{format(new Date(s.created_at), 'dd/MM HH:mm')}</span>
+                        <div className="item-avatar">{s.name.charAt(0)}</div>
+                        <div className="item-info">
+                          <h4>{s.name}</h4>
+                          <span className="item-date">{format(new Date(s.created_at), 'dd MMM', { locale: es })}</span>
+                        </div>
                       </div>
                       <p className="item-email">{s.email}</p>
                       <div className="item-tags">
@@ -218,9 +221,24 @@ export default function ConsultasPage() {
                 </div>
               </div>
             ) : (
-              <div className="empty-details glass-card">
-                <MessageSquare size={48} className="text-tertiary mb-3" />
-                <h3>Selecciona una consulta</h3>
+              <div className="consultas-empty-state">
+                <div className="empty-state-content">
+                  <div className="icon-circle">
+                    <MessageSquare size={48} strokeWidth={1.5} />
+                  </div>
+                  <h3>Centro de Consultas</h3>
+                  <p>Selecciona una solicitud del listado para ver los detalles, respuestas del formulario y agendar una reunión.</p>
+                  <div className="empty-state-stats">
+                    <div className="mini-stat">
+                      <strong>{submissions.length}</strong>
+                      <span>Totales</span>
+                    </div>
+                    <div className="mini-stat">
+                      <strong>{submissions.filter(s => s.status === 'nuevo').length}</strong>
+                      <span>Nuevas</span>
+                    </div>
+                  </div>
+                </div>
               </div>
             )}
           </div>

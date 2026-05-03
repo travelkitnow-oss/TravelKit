@@ -13,7 +13,9 @@ import TareasPage from './pages/admin/Tareas';
 import ExcursionesPage from './pages/admin/Excursiones';
 import TransportesPage from './pages/admin/Transportes';
 import HotelesPage from './pages/admin/Hoteles';
+import PasajesPage from './pages/admin/Pasajes';
 import AgendaClientesPage from './pages/admin/AgendaClientes';
+import LiquidacionPage from './pages/admin/Liquidacion';
 import './App.css';
 
 function App() {
@@ -24,6 +26,7 @@ function App() {
       
       {/* Admin Routes */}
       <Route element={<AdminLayout />}>
+        <Route path="/pasajes" element={<PasajesPage />} />
         <Route path="/mi-agenda" element={<AgendaPage />} />
         <Route path="/consultas" element={<ConsultasPage />} />
         <Route path="/clientes" element={<ClientesPage />} />
@@ -35,6 +38,7 @@ function App() {
         <Route path="/hoteles" element={<HotelesPage />} />
         <Route path="/costos" element={<CostosPage />} />
         <Route path="/ganancias" element={<GananciasPage />} />
+        <Route path="/liquidacion" element={<LiquidacionPage />} />
         <Route path="/configuracion" element={<ConfiguracionPage />} />
         
         {/* Redirect from old dashboard or just to default */}

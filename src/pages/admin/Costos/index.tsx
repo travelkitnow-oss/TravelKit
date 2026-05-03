@@ -41,7 +41,8 @@ export default function CostosPage() {
     ]).select();
 
     if (error) {
-      alert('Error al guardar servicio');
+      console.error('Error saving service:', error);
+      alert('Error al guardar servicio: ' + error.message);
     } else if (data) {
       setServices([...services, data[0]]);
       setNewName('');
@@ -58,7 +59,8 @@ export default function CostosPage() {
       .eq('id', editingService.id);
 
     if (error) {
-      alert('Error al actualizar servicio');
+      console.error('Error updating service:', error);
+      alert('Error al actualizar servicio: ' + error.message);
     } else {
       setServices(services.map(s => s.id === editingService.id ? editingService : s));
       setEditingService(null);
@@ -69,7 +71,8 @@ export default function CostosPage() {
     if (isDeleting) {
       const { error } = await supabase.from('services').delete().eq('id', isDeleting);
       if (error) {
-        alert('Error al eliminar servicio');
+        console.error('Error deleting service:', error);
+        alert('Error al eliminar servicio: ' + error.message);
       } else {
         setServices(services.filter(s => s.id !== isDeleting));
         setIsDeleting(null);

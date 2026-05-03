@@ -11,7 +11,8 @@ import {
   ChevronLeft,
   RefreshCw,
   Edit2,
-  Link as LinkIcon
+  Link as LinkIcon,
+  Users
 } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import './Excursiones.css';
@@ -30,6 +31,8 @@ interface Excursion {
   description: string;
   notes: string;
   links: ExcursionLink[];
+  pricing_type: 'per_person' | 'per_group';
+  capacity: number;
 }
 
 interface ExcursionFolder {
@@ -53,7 +56,8 @@ export default function ExcursionesPage() {
   // Form States
   const [newFolderName, setNewFolderName] = useState('');
   const [newExcursion, setNewExcursion] = useState<Partial<Excursion>>({
-    name: '', cost_usd: 0, location: '', description: '', notes: '', links: []
+    name: '', cost_usd: 0, location: '', description: '', notes: '', links: [],
+    pricing_type: 'per_person', capacity: 1
   });
 
   useEffect(() => {
@@ -118,7 +122,9 @@ export default function ExcursionesPage() {
           location: i.location,
           description: i.description,
           notes: i.notes,
-          links: i.links || []
+          links: i.links || [],
+          pricing_type: i.pricing_type || 'per_person',
+          capacity: i.capacity || 1
         }))
     }));
 
@@ -163,7 +169,9 @@ export default function ExcursionesPage() {
       location: newExcursion.location || '',
       description: newExcursion.description || '',
       notes: newExcursion.notes || '',
-      links: newExcursion.links || []
+      links: newExcursion.links || [],
+      pricing_type: newExcursion.pricing_type || 'per_person',
+      capacity: Number(newExcursion.capacity) || 1
     };
 
     if (editingExcursionId) {
@@ -329,9 +337,15 @@ export default function ExcursionesPage() {
                     </div>
 
                     <div className="excursion-content-compact">
-                      <div className="info-box mb-3">
-                        <MapPin size={14} style={{ marginRight: '0.5rem', verticalAlign: 'middle' }} />
-                        <strong>Ubicación:</strong> {excursion.location || 'N/A'}
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '0.75rem' }}>
+                        <div className="info-box">
+                          <MapPin size={14} style={{ marginRight: '0.5rem', verticalAlign: 'middle' }} />
+                          <strong>Ubicación:</strong> {excursion.location || 'N/A'}
+                        </div>
+                        <div className="info-box" style={{ background: 'rgba(31, 58, 77, 0.05)' }}>
+                          <Users size={14} style={{ marginRight: '0.5rem', verticalAlign: 'middle' }} />
+                          <strong>{excursion.pricing_type === 'per_group' ? 'Grupo' : 'Por persona'}:</strong> {excursion.capacity} pax
+                        </div>
                       </div>
                       
                       <div className="info-box">
@@ -415,6 +429,33 @@ export default function ExcursionesPage() {
                       className="form-input"
                       value={newExcursion.cost_usd || 0}
                       onChange={e => setNewExcursion({ ...newExcursion, cost_usd: parseFloat(e.target.value) })}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid-2 gap-4">
+                <div className="form-group">
+                  <label>Tipo de Precio</label>
+                  <select
+                    className="form-input"
+                    value={newExcursion.pricing_type || 'per_person'}
+                    onChange={e => setNewExcursion({ ...newExcursion, pricing_type: e.target.value as 'per_person' | 'per_group' })}
+                  >
+                    <option value="per_person">💰 Por Persona</option>
+                    <option value="per_group">👥 Por Grupo (precio total)</option>
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label>{newExcursion.pricing_type === 'per_group' ? 'Máx. Personas en Grupo' : 'Cantidad de Personas'}</label>
+                  <div className="input-with-icon">
+                    <Users size={16} />
+                    <input
+                      type="number"
+                      min="1"
+                      className="form-input"
+                      value={newExcursion.capacity || 1}
+                      onChange={e => setNewExcursion({ ...newExcursion, capacity: parseInt(e.target.value) })}
                     />
                   </div>
                 </div>

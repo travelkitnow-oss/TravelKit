@@ -4,13 +4,12 @@ import {
   FolderPlus, 
   Plus, 
   Truck, 
-  Notebook, 
   Trash2, 
   ChevronLeft,
   Edit2,
   Link as LinkIcon,
   DollarSign,
-  Map
+  Users
 } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import './Transportes.css';
@@ -29,7 +28,10 @@ interface Transport {
   destination: string;
   description: string;
   notes: string;
+  company: string;
+  driver_name: string;
   links: TransportLink[];
+  capacity: number;
 }
 
 interface TransportFolder {
@@ -52,7 +54,8 @@ export default function TransportesPage() {
   // Form States
   const [newFolderName, setNewFolderName] = useState('');
   const [newTransport, setNewTransport] = useState<Partial<Transport>>({
-    name: '', cost_usd: 0, origin: '', destination: '', description: '', notes: '', links: []
+    name: '', cost_usd: 0, origin: '', destination: '', description: '', notes: '', links: [],
+    company: '', driver_name: '', capacity: 4
   });
 
   useEffect(() => {
@@ -103,11 +106,14 @@ export default function TransportesPage() {
           folder_id: i.folder_id,
           name: i.name,
           cost_usd: i.cost_usd,
-          origin: i.origin,
-          destination: i.destination,
-          description: i.description,
-          notes: i.notes,
-          links: i.links || []
+          origin: i.origin || '',
+          destination: i.destination || '',
+          description: i.description || '',
+          notes: i.notes || '',
+          company: i.company || '',
+          driver_name: i.driver_name || '',
+          links: i.links || [],
+          capacity: i.capacity || 4
         }))
     }));
 
@@ -153,7 +159,10 @@ export default function TransportesPage() {
       destination: newTransport.destination || '',
       description: newTransport.description || '',
       notes: newTransport.notes || '',
-      links: newTransport.links || []
+      company: newTransport.company || '',
+      driver_name: newTransport.driver_name || '',
+      links: newTransport.links || [],
+      capacity: Number(newTransport.capacity) || 4
     };
 
     if (editingTransportId) {
@@ -276,7 +285,7 @@ export default function TransportesPage() {
           </div>
 
           <div className="folder-detail-container">
-            <div className="transports-list">
+            <div className="transports-grid">
               {selectedFolder?.transports.length === 0 ? (
                 <div className="empty-state-card">
                   <Truck size={80} strokeWidth={1} />
@@ -314,25 +323,25 @@ export default function TransportesPage() {
                     </div>
 
                     <div className="transport-content-compact">
-                      <div className="grid-2 gap-4 mb-3">
-                        <div className="info-box">
-                          <Map size={14} style={{ marginRight: '0.5rem', verticalAlign: 'middle' }} />
-                          <strong>Origen:</strong> {transport.origin || 'N/A'}
+                      <div className="transport-grid-info">
+                        <div className="info-item">
+                          <strong>Origen:</strong> {transport.origin || '-'}
                         </div>
-                        <div className="info-box">
-                          <Map size={14} style={{ marginRight: '0.5rem', verticalAlign: 'middle' }} />
-                          <strong>Destino:</strong> {transport.destination || 'N/A'}
+                        <div className="info-item">
+                          <strong>Destino:</strong> {transport.destination || '-'}
+                        </div>
+                        <div className="info-item">
+                          <strong>Empresa:</strong> {transport.company || '-'}
+                        </div>
+                        <div className="info-item">
+                          <strong>Conductor:</strong> {transport.driver_name || '-'}
                         </div>
                       </div>
 
-                      <div className="info-box">
-                        <Notebook size={14} style={{ marginRight: '0.5rem', verticalAlign: 'middle' }} />
-                        <strong>Descripción:</strong> {transport.description || 'Sin descripción.'}
-                      </div>
-
-                      {transport.notes && (
-                        <div className="mt-2 text-sm" style={{ paddingLeft: '1rem', borderLeft: '2px solid var(--color-accent)' }}>
-                          <strong>Notas:</strong> {transport.notes}
+                      {(transport.description || transport.notes) && (
+                        <div className="transport-extra-info">
+                          {transport.description && <span><strong>D:</strong> {transport.description}</span>}
+                          {transport.notes && <span><strong>N:</strong> {transport.notes}</span>}
                         </div>
                       )}
                     </div>
@@ -389,6 +398,29 @@ export default function TransportesPage() {
 
               <div className="grid-2 gap-4">
                 <div className="form-group">
+                  <label>Empresa de Transporte</label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    value={newTransport.company || ''}
+                    onChange={e => setNewTransport({ ...newTransport, company: e.target.value })}
+                    placeholder="Ej: Alsa, Uber, etc."
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Nombre del Conductor</label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    value={newTransport.driver_name || ''}
+                    onChange={e => setNewTransport({ ...newTransport, driver_name: e.target.value })}
+                    placeholder="Ej: Juan Pérez"
+                  />
+                </div>
+              </div>
+
+              <div className="grid-2 gap-4">
+                <div className="form-group">
                   <label>Origen</label>
                   <input
                     type="text"
@@ -408,16 +440,31 @@ export default function TransportesPage() {
                 </div>
               </div>
 
-              <div className="form-group">
-                <label>Costo (U$S)</label>
-                <div className="input-with-icon">
-                  <DollarSign size={16} />
-                  <input
-                    type="number"
-                    className="form-input"
-                    value={newTransport.cost_usd || 0}
-                    onChange={e => setNewTransport({ ...newTransport, cost_usd: parseFloat(e.target.value) })}
-                  />
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <div className="form-group">
+                  <label>Costo (U$S)</label>
+                  <div className="input-with-icon">
+                    <DollarSign size={16} />
+                    <input
+                      type="number"
+                      className="form-input"
+                      value={newTransport.cost_usd || 0}
+                      onChange={e => setNewTransport({ ...newTransport, cost_usd: parseFloat(e.target.value) })}
+                    />
+                  </div>
+                </div>
+                <div className="form-group">
+                  <label>Capacidad (Pasajeros)</label>
+                  <div className="input-with-icon">
+                    <Users size={16} />
+                    <input
+                      type="number"
+                      min="1"
+                      className="form-input"
+                      value={newTransport.capacity || 4}
+                      onChange={e => setNewTransport({ ...newTransport, capacity: parseInt(e.target.value) })}
+                    />
+                  </div>
                 </div>
               </div>
 

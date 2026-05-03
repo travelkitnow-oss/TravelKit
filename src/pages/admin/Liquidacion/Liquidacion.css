@@ -1,0 +1,447 @@
+.liquidacion-page {
+  padding: 2.5rem;
+  width: 100%;
+  max-width: 1500px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 3rem;
+  background-color: #f8f9fa; /* Gris muy claro para mejor contraste */
+  min-height: 100vh;
+}
+
+/* ── SIDEBAR SELECTION (Reuse style from Agenda) ── */
+.liq-main-grid {
+  display: grid;
+  grid-template-columns: 350px 1fr;
+  gap: 2.5rem;
+  align-items: start;
+}
+
+.liq-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.search-box-premium {
+  position: relative;
+  width: 100%;
+}
+
+.search-box-premium svg {
+  position: absolute;
+  left: 1.25rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #94a3b8;
+}
+
+.search-box-premium input {
+  width: 100%;
+  padding: 1.1rem 1.25rem 1.1rem 3.5rem;
+  background: white;
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  border-radius: 18px;
+  font-size: 0.95rem;
+  outline: none;
+  transition: all 0.3s;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.02);
+}
+
+.search-box-premium input:focus {
+  border-color: #1F3A4D;
+  box-shadow: 0 10px 25px rgba(31, 58, 77, 0.08);
+}
+
+.clients-list-premium {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  max-height: 700px;
+  overflow-y: auto;
+  padding-right: 0.5rem;
+}
+
+.client-item-premium {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.25rem 1.5rem;
+  background: white;
+  border-radius: 20px;
+  border: 1px solid rgba(226, 232, 240, 0.5);
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.02);
+}
+
+.client-item-premium:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.04);
+  border-color: #B7C5CF;
+}
+
+.client-item-premium.active {
+  background: #1F3A4D;
+  color: white;
+  border-color: #1F3A4D;
+  box-shadow: 0 12px 30px rgba(31, 58, 77, 0.25);
+}
+
+.client-info-main {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+.client-avatar-mini {
+  width: 48px;
+  height: 48px;
+  background: #f1f5f9;
+  color: #1F3A4D;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 1.1rem;
+}
+
+.client-item-premium.active .client-avatar-mini {
+  background: rgba(255, 255, 255, 0.15);
+  color: white;
+}
+
+.client-text-liq h4 {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.client-text-liq p {
+  margin: 2px 0 0;
+  font-size: 0.8rem;
+  opacity: 0.6;
+}
+
+/* ── HERO TOTAL CARD ── */
+.total-cost-hero-premium {
+  background: #1F3A4D;
+  padding: 4rem;
+  border-radius: 40px;
+  color: white;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 25px 50px -12px rgba(31, 58, 77, 0.35);
+}
+
+.hero-bg-accent {
+  position: absolute;
+  right: -5%;
+  bottom: -10%;
+  opacity: 0.05;
+  transform: rotate(-15deg);
+}
+
+.hero-content-premium {
+  position: relative;
+  z-index: 2;
+}
+
+.hero-label-premium {
+  font-size: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 4px;
+  color: #C89B5A;
+  font-weight: 800;
+  margin-bottom: 1rem;
+  display: block;
+}
+
+.hero-amount-premium {
+  font-size: 6rem;
+  font-weight: 900;
+  margin: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 1.5rem;
+  color: #FFFFFF;
+}
+
+.hero-amount-premium span {
+  font-size: 2.5rem;
+  font-weight: 400;
+  opacity: 0.7;
+}
+
+.hero-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  background: rgba(16, 185, 129, 0.15);
+  color: #10b981;
+  padding: 0.75rem 1.5rem;
+  border-radius: 100px;
+  font-weight: 700;
+  font-size: 0.9rem;
+  margin-top: 2rem;
+  border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+/* ── INVOICE / BOLETA STYLE ── */
+.invoice-container {
+  display: flex;
+  justify-content: center;
+  padding: 1rem 0 4rem;
+}
+
+.invoice-receipt {
+  background: white;
+  width: 100%;
+  max-width: 850px;
+  padding: 4rem;
+  box-shadow: 0 30px 60px rgba(0,0,0,0.1);
+  position: relative;
+  border-radius: 4px;
+}
+
+.invoice-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding-bottom: 3rem;
+  border-bottom: 2px solid #f1f5f9;
+  margin-bottom: 3rem;
+}
+
+.agency-brand {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.brand-logo-large {
+  width: 90px;
+  height: 90px;
+  object-fit: cover;
+  border-radius: 20px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+}
+
+.brand-text h2 {
+  margin: 0;
+  font-size: 2.4rem; /* Más grande */
+  color: #1F3A4D;
+  font-weight: 800;
+  letter-spacing: -1.5px;
+}
+
+.brand-text span {
+  font-size: 0.95rem; /* Más grande */
+  color: #6E8898;
+  text-transform: uppercase;
+  letter-spacing: 3px;
+  font-weight: 700;
+}
+
+.invoice-meta {
+  text-align: right;
+  display: flex;
+  flex-direction: column;
+}
+
+.meta-label {
+  font-size: 0.75rem;
+  color: #64748b; /* Oscurecido para mejor contraste */
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  font-weight: 700;
+}
+
+.btn-download-receipt {
+  margin-top: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: #1F3A4D;
+  color: white;
+  border: none;
+  padding: 0.75rem 1.25rem;
+  border-radius: 10px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.btn-download-receipt:hover {
+  background: #C89B5A;
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(200, 155, 90, 0.3);
+}
+
+.invoice-client-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #f1f5f9; /* Ligeramente más oscuro para contrastar con la boleta */
+  padding: 2.5rem;
+  border-radius: 20px;
+  margin-bottom: 3rem;
+}
+
+.box-label {
+  font-size: 0.8rem;
+  color: #475569; /* Oscurecido */
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  margin-bottom: 0.5rem;
+  display: block;
+  font-weight: 700;
+}
+
+.client-data-box h3 {
+  margin: 0;
+  font-size: 1.6rem;
+  color: #1F3A4D;
+  font-weight: 800;
+}
+
+.client-data-box p {
+  margin: 4px 0 0;
+  color: #334155; /* Oscurecido */
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+
+.invoice-total-summary {
+  text-align: right;
+}
+
+.total-label {
+  font-size: 0.9rem;
+  color: #a37c46; /* Dorado más oscuro para contraste */
+  font-weight: 800;
+  letter-spacing: 2px;
+}
+
+.total-value {
+  margin: 0;
+  font-size: 3.5rem;
+  font-weight: 900;
+  color: #1F3A4D;
+  letter-spacing: -1.5px;
+}
+
+.receipt-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 4rem;
+}
+
+.receipt-table th {
+  text-align: left;
+  padding: 1.25rem 0;
+  color: #475569; /* Oscurecido */
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  font-weight: 800;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.category-header td {
+  padding: 2.5rem 0 1.25rem;
+  font-size: 1rem;
+  font-weight: 900; /* Más peso */
+  color: #1F3A4D;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.service-row td {
+  padding: 1.25rem 0;
+  border-bottom: 1px solid #f8fafc;
+  color: #1e293b; /* Casi negro para máximo contraste */
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+.receipt-table .text-right {
+  font-weight: 700;
+  color: #1F3A4D;
+}
+
+.invoice-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  padding-top: 3rem;
+  border-top: 2px solid #f1f5f9;
+}
+
+.footer-notes p {
+  margin: 4px 0;
+  font-size: 0.8rem;
+  color: #94a3b8;
+  font-style: italic;
+}
+
+.footer-total-final {
+  text-align: right;
+}
+
+.final-label {
+  font-size: 0.9rem;
+  font-weight: 800;
+  color: #1F3A4D;
+  margin-bottom: 0.5rem;
+}
+
+.final-value {
+  font-size: 2.5rem;
+  font-weight: 900;
+  color: #C89B5A;
+}
+
+.receipt-cut-line {
+  position: absolute;
+  bottom: -15px;
+  left: 0;
+  width: 100%;
+  height: 30px;
+  background-image: radial-gradient(circle, transparent, transparent 10px, white 10px, white);
+  background-size: 30px 30px;
+  background-position: 0 -15px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.liq-empty-state {
+  padding: 8rem 0;
+  text-align: center;
+  background: white;
+  border-radius: 40px;
+  border: 2px dashed #B7C5CF;
+}
+
+.liq-empty-state h3 {
+  font-size: 1.8rem;
+  color: #1F3A4D;
+  margin-bottom: 1rem;
+}
+
+.liq-empty-state p {
+  color: #6E8898;
+  max-width: 400px;
+  margin: 0 auto;
+}
