@@ -1,7 +1,7 @@
-:root {
-  --color-primary: #1e293b;
-  --color-accent: #3b82f6;
-  --color-success: #10b981;
+.pasajes-page {
+  --color-primary-local: #1e293b;
+  --color-accent-local: #3b82f6;
+  --color-success-local: #10b981;
   --radius-xl: 24px;
   --shadow-premium: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
 }
@@ -61,11 +61,11 @@
   transition: all 0.2s ease; margin-bottom: 0.4rem; text-align: left;
 }
 .client-item:hover { background: #f1f5f9; }
-.client-item.active { background: var(--color-primary); color: white; }
+.client-item.active { background: var(--color-primary-local); color: white; }
 
 .client-avatar {
   width: 38px; height: 38px; border-radius: 10px; background: #e2e8f0;
-  display: flex; align-items: center; justify-content: center; font-weight: 700; color: var(--color-primary);
+  display: flex; align-items: center; justify-content: center; font-weight: 700; color: var(--color-primary-local);
 }
 .client-item.active .client-avatar { background: rgba(255, 255, 255, 0.2); color: white; }
 
@@ -84,7 +84,7 @@
 .empty-state-content-pro { max-width: 400px; }
 .icon-badge {
   width: 70px; height: 70px; background: #f1f5f9; border-radius: 20px;
-  display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem; color: #3b82f6;
+  display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem; color: var(--color-accent-local);
 }
 
 .empty-state-content-pro h3 { font-size: 1.5rem; font-weight: 700; margin-bottom: 0.5rem; }
@@ -92,7 +92,7 @@
 
 /* Tarjetas y otros */
 .client-header-card { background: white; padding: 1.5rem 2rem; border-radius: var(--radius-xl); box-shadow: var(--shadow-premium); border: 1px solid #f1f5f9; }
-.client-large-avatar { width: 56px; height: 56px; border-radius: 16px; background: #f1f5f9; color: var(--color-primary); display: flex; align-items: center; justify-content: center; }
+.client-large-avatar { width: 56px; height: 56px; border-radius: 16px; background: #f1f5f9; color: var(--color-primary-local); display: flex; align-items: center; justify-content: center; }
 
 .tickets-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 1.5rem; margin-top: 1.5rem; }
 .ticket-card { background: white; border-radius: var(--radius-xl); padding: 1.5rem; position: relative; border: 1px solid #f1f5f9; box-shadow: var(--shadow-premium); }
@@ -100,14 +100,14 @@
 .price-info-card { background: #f8fafc; border-radius: 16px; padding: 1rem; border: 1px solid #e2e8f0; }
 .price-row { display: flex; justify-content: space-between; align-items: center; }
 .price-label { font-size: 0.7rem; color: #64748b; text-transform: uppercase; font-weight: 700; }
-.price-value { font-weight: 800; color: var(--color-primary); font-size: 1.1rem; }
+.price-value { font-weight: 800; color: var(--color-primary-local); font-size: 1.1rem; }
 .price-row.individual { margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px dashed #cbd5e1; }
-.price-row.individual .price-value { color: var(--color-success); }
+.price-row.individual .price-value { color: var(--color-success-local); }
 
-.ticket-file-link { display: flex; align-items: center; gap: 0.75rem; padding: 0.8rem; background: #f1f5f9; border-radius: 12px; text-decoration: none; color: var(--color-primary); font-size: 0.85rem; font-weight: 600; }
+.ticket-file-link { display: flex; align-items: center; gap: 0.75rem; padding: 0.8rem; background: #f1f5f9; border-radius: 12px; text-decoration: none; color: var(--color-primary-local); font-size: 0.85rem; font-weight: 600; }
 
 .file-upload-label-simple { display: inline-block; padding: 0.8rem 1.5rem; background: #f1f5f9; border-radius: 12px; cursor: pointer; font-weight: 600; font-size: 0.9rem; color: #64748b; transition: all 0.2s; }
-.file-upload-label-simple:hover { background: #e2e8f0; color: var(--color-primary); }
+.file-upload-label-simple:hover { background: #e2e8f0; color: var(--color-primary-local); }
 
 @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 .animate-fade-in { animation: fadeIn 0.5s ease; }
