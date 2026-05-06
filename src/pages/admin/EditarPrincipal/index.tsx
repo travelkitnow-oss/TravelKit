@@ -67,7 +67,7 @@ export default function EditarPrincipal() {
       allQuills.forEach(qlContainer => {
         try {
           // @ts-ignore
-          const quill = ReactQuill.Quill.find(qlContainer);
+          const quill = ReactQuill.Quill.find(qlContainer) as any;
           if (quill && !quill.__customSelectionTracker) {
             quill.__customSelectionTracker = true;
             quill.__lastValidRange = null;

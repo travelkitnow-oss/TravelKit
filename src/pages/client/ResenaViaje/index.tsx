@@ -18,7 +18,7 @@ export default function ResenaViajePage() {
     // Check if the user already submitted a review
     const checkReview = async () => {
       if (!clientId) return;
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from('client_reviews')
         .select('*')
         .eq('client_id', clientId)
