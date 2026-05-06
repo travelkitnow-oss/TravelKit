@@ -203,40 +203,59 @@ export default function CostosPage() {
 
       {showAddModal && (
         <div className="modal-overlay animate-fade-in" style={{ zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div className="modal-content animate-scale-in" style={{ maxWidth: '450px' }}>
-            <div className="modal-header">
-              <h3>Nueva Tarea / Costo</h3>
-              <button onClick={() => setShowAddModal(false)} className="close-modal-btn">
+          <div className="modal-content animate-scale-in" style={{ maxWidth: '420px', padding: 0, overflow: 'hidden' }}>
+            <div className="modal-header-v2" style={{ background: 'var(--color-primary)', padding: '1.5rem 2rem', color: 'white', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                <div style={{ background: 'rgba(255,255,255,0.15)', padding: '8px', borderRadius: '10px' }}>
+                  <Package size={20} color="white" />
+                </div>
+                <h3 style={{ margin: 0, color: 'white', fontSize: '1.2rem' }}>Nueva Tarea / Costo</h3>
+              </div>
+              <button onClick={() => setShowAddModal(false)} style={{ background: 'none', border: 'none', color: 'white', opacity: 0.7, cursor: 'pointer' }}>
                 <X size={20} />
               </button>
             </div>
             
-            <div className="modal-body">
-              <div className="form-group">
-                <label>Nombre del Servicio</label>
-                <input 
-                  type="text" 
-                  className="form-input" 
-                  placeholder="Ej: Armado de itinerario"
-                  value={newName}
-                  onChange={e => setNewName(e.target.value)}
-                />
+            <div className="modal-body" style={{ padding: '2rem' }}>
+              <div className="form-group mb-4">
+                <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--text-secondary)', marginBottom: '0.5rem', letterSpacing: '0.5px' }}>Nombre del Servicio</label>
+                <div className="input-with-icon" style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                  <Briefcase size={18} style={{ position: 'absolute', left: '1rem', color: 'var(--color-primary)', opacity: 0.5 }} />
+                  <input 
+                    type="text" 
+                    className="form-input" 
+                    style={{ paddingLeft: '3rem', width: '100%' }}
+                    placeholder="Ej: Armado de itinerario"
+                    value={newName}
+                    onChange={e => setNewName(e.target.value)}
+                  />
+                </div>
               </div>
-              <div className="form-group">
-                <label>Precio</label>
-                <input 
-                  type="number" 
-                  className="form-input" 
-                  placeholder="0.00"
-                  value={newPrice}
-                  onChange={e => setNewPrice(e.target.value)}
-                />
+              <div className="form-group mb-4">
+                <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--text-secondary)', marginBottom: '0.5rem', letterSpacing: '0.5px' }}>Precio Sugerido</label>
+                <div className="input-with-icon" style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                  <DollarSign size={18} style={{ position: 'absolute', left: '1rem', color: '#10b981' }} />
+                  <input 
+                    type="number" 
+                    className="form-input" 
+                    style={{ paddingLeft: '3rem', width: '100%', fontWeight: 700, fontSize: '1.1rem', color: 'var(--color-primary)' }}
+                    placeholder="0.00"
+                    value={newPrice}
+                    onChange={e => setNewPrice(e.target.value)}
+                  />
+                </div>
+              </div>
+              
+              <div style={{ background: 'rgba(212, 175, 55, 0.05)', padding: '1rem', borderRadius: '12px', border: '1px solid rgba(212, 175, 55, 0.1)', marginTop: '1.5rem' }}>
+                <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: 1.4 }}>
+                  <strong>Nota:</strong> Los servicios cargados aquí aparecerán como opción en el panel de tareas de cada cliente.
+                </p>
               </div>
             </div>
-
-            <div className="modal-footer">
-              <button className="btn btn-outline w-100" onClick={() => setShowAddModal(false)}>Cancelar</button>
-              <button className="btn btn-primary w-100" onClick={handleAddService}>Guardar</button>
+ 
+            <div className="modal-footer" style={{ padding: '1.5rem 2rem', background: '#f8fafc', display: 'flex', gap: '1rem' }}>
+              <button className="btn btn-outline w-100" style={{ margin: 0 }} onClick={() => setShowAddModal(false)}>Cancelar</button>
+              <button className="btn btn-primary w-100" style={{ margin: 0 }} onClick={handleAddService}>Guardar Servicio</button>
             </div>
           </div>
         </div>

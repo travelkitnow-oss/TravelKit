@@ -7,7 +7,8 @@ import {
   Compass,
   Settings,
   MapPin,
-  Star
+  Star,
+  Receipt
 } from 'lucide-react';
 import './Sidebar.css'; // Reusing base sidebar styles
 
@@ -34,6 +35,11 @@ export default function ClientSidebar({ clientName, handleLogout }: ClientSideba
           <CreditCard size={20} />
           <span>Mi Liquidación</span>
         </NavLink>
+        
+        <NavLink to="/portal/servicios" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
+          <Receipt size={20} />
+          <span>Servicios Contratados</span>
+        </NavLink>
 
         <NavLink to="/portal/encuesta" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
           <MapPin size={20} />
@@ -43,6 +49,11 @@ export default function ClientSidebar({ clientName, handleLogout }: ClientSideba
         <NavLink to="/portal/resena" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
           <Star size={20} />
           <span>Dejar Reseña</span>
+        </NavLink>
+
+        <NavLink to="/portal/historial" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
+          <History size={20} />
+          <span>Mi Historial</span>
         </NavLink>
 
         <NavLink to="/portal/configuracion" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>

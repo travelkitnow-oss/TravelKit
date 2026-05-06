@@ -271,9 +271,11 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1.5rem 0 0;
-  border-top: 1px solid #f1f5f9;
-  width: 100%;
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid rgba(0,0,0,0.05);
+  flex-wrap: wrap;
+  gap: 1rem;
 }
 
 .passengers-count {
@@ -289,7 +291,30 @@
 
 .action-buttons-group {
   display: flex;
-  gap: 1rem;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.btn-finish-trip-red {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1rem;
+  background-color: #fef2f2;
+  color: #ef4444;
+  border: 1px solid #fee2e2;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-finish-trip-red:hover {
+  background-color: #ef4444;
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2);
 }
 
 .btn-action-add {

@@ -11,6 +11,7 @@ import {
   ClipboardList,
   Receipt,
   Plane,
+  Landmark,
   Map,
   Bus,
   Hotel,
@@ -19,7 +20,8 @@ import {
   Calculator,
   Compass,
   ShieldCheck,
-  Star
+  Star,
+  History
 } from 'lucide-react';
 import './Sidebar.css';
 
@@ -32,6 +34,8 @@ export default function Sidebar({ userEmail, handleLogout }: SidebarProps) {
   const location = useLocation();
   const [isViajeOpen, setIsViajeOpen] = useState(false);
   const [isFormulariosOpen, setIsFormulariosOpen] = useState(false);
+  const [isMonetizacionOpen, setIsMonetizacionOpen] = useState(false);
+  const [isPrincipalOpen, setIsPrincipalOpen] = useState(false);
 
   // Check if any sub-item is active to keep dropdown open if needed
   const viajeRoutes = ['/excursiones', '/transportes', '/hoteles', '/agenda-clientes', '/pasajes'];
@@ -39,6 +43,12 @@ export default function Sidebar({ userEmail, handleLogout }: SidebarProps) {
 
   const formulariosRoutes = ['/formulario', '/viaje-ideal', '/respuestas-viaje-ideal'];
   const isAnyFormularioActive = formulariosRoutes.some(route => location.pathname === route);
+
+  const monetizacionRoutes = ['/ganancias', '/datos-bancarios', '/liquidacion'];
+  const isAnyMonetizacionActive = monetizacionRoutes.some(route => location.pathname === route);
+
+  const principalRoutes = ['/destinos', '/editar-principal'];
+  const isAnyPrincipalActive = principalRoutes.some(route => location.pathname === route);
 
   return (
     <aside className="sidebar">
@@ -48,6 +58,7 @@ export default function Sidebar({ userEmail, handleLogout }: SidebarProps) {
       </div>
 
       <nav className="sidebar-nav">
+        {/* 1. Consultas */}
         <NavLink
           to="/consultas"
           className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
@@ -55,6 +66,8 @@ export default function Sidebar({ userEmail, handleLogout }: SidebarProps) {
           <MessageSquare size={20} />
           Consultas
         </NavLink>
+
+        {/* 2. Mi Agenda */}
         <NavLink
           to="/mi-agenda"
           className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
@@ -62,6 +75,8 @@ export default function Sidebar({ userEmail, handleLogout }: SidebarProps) {
           <CalendarIcon size={20} />
           Mi Agenda
         </NavLink>
+
+        {/* 3. Costos */}
         <NavLink
           to="/costos"
           className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
@@ -69,6 +84,17 @@ export default function Sidebar({ userEmail, handleLogout }: SidebarProps) {
           <Receipt size={20} />
           Costos
         </NavLink>
+
+        {/* 4. Clientes */}
+        <NavLink
+          to="/clientes"
+          className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
+        >
+          <Users size={20} />
+          Clientes
+        </NavLink>
+
+        {/* 5. Tareas */}
         <NavLink
           to="/tareas"
           className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
@@ -77,7 +103,7 @@ export default function Sidebar({ userEmail, handleLogout }: SidebarProps) {
           Tareas
         </NavLink>
 
-        {/* --- DROPDOWN VIAJE --- */}
+        {/* 6. Viaje (Dropdown) */}
         <div className={`nav-dropdown ${isAnyViajeActive ? 'child-active' : ''}`}>
           <button 
             className={`nav-item dropdown-toggle ${isViajeOpen ? 'open' : ''}`}
@@ -126,44 +152,44 @@ export default function Sidebar({ userEmail, handleLogout }: SidebarProps) {
             </NavLink>
           </div>
         </div>
-        <NavLink
-          to="/clientes"
-          className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
-        >
-          <Users size={20} />
-          Clientes
-        </NavLink>
-        <NavLink
-          to="/ganancias"
-          className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
-        >
-          <DollarSign size={20} />
-          Mis Ganancias
-        </NavLink>
-        <NavLink
-          to="/liquidacion"
-          className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
-        >
-          <Calculator size={20} />
-          Liquidación
-        </NavLink>
-        
-        <NavLink
-          to="/resenas"
-          className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
-        >
-          <Star size={20} />
-          Reseñas
-        </NavLink>
-        <NavLink
-          to="/destinos"
-          className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
-        >
-          <Map size={20} />
-          Recomendaciones
-        </NavLink>
 
-        {/* --- DROPDOWN FORMULARIOS --- */}
+        {/* 7. Monetizacion (Dropdown) */}
+        <div className={`nav-dropdown ${isAnyMonetizacionActive ? 'child-active' : ''}`}>
+          <button 
+            className={`nav-item dropdown-toggle ${isMonetizacionOpen ? 'open' : ''}`}
+            onClick={() => setIsMonetizacionOpen(!isMonetizacionOpen)}
+          >
+            <DollarSign size={20} />
+            <span>Monetización</span>
+            <ChevronDown size={16} className="chevron" />
+          </button>
+          
+          <div className={`dropdown-content ${isMonetizacionOpen ? 'show' : ''}`}>
+            <NavLink
+              to="/ganancias"
+              className={({ isActive }) => `nav-item sub-item ${isActive ? 'active' : ''}`}
+            >
+              <DollarSign size={18} />
+              Mis Ganancias
+            </NavLink>
+            <NavLink
+              to="/datos-bancarios"
+              className={({ isActive }) => `nav-item sub-item ${isActive ? 'active' : ''}`}
+            >
+              <Landmark size={18} />
+              Datos Bancarios
+            </NavLink>
+            <NavLink
+              to="/liquidacion"
+              className={({ isActive }) => `nav-item sub-item ${isActive ? 'active' : ''}`}
+            >
+              <Calculator size={18} />
+              Liquidación
+            </NavLink>
+          </div>
+        </div>
+
+        {/* 8. Formularios (Dropdown) */}
         <div className={`nav-dropdown ${isAnyFormularioActive ? 'child-active' : ''}`}>
           <button 
             className={`nav-item dropdown-toggle ${isFormulariosOpen ? 'open' : ''}`}
@@ -199,14 +225,54 @@ export default function Sidebar({ userEmail, handleLogout }: SidebarProps) {
           </div>
         </div>
 
+        {/* 9. Pagina Principal (Dropdown) */}
+        <div className={`nav-dropdown ${isAnyPrincipalActive ? 'child-active' : ''}`}>
+          <button 
+            className={`nav-item dropdown-toggle ${isPrincipalOpen ? 'open' : ''}`}
+            onClick={() => setIsPrincipalOpen(!isPrincipalOpen)}
+          >
+            <Compass size={20} />
+            <span>Pagina Principal</span>
+            <ChevronDown size={16} className="chevron" />
+          </button>
+          
+          <div className={`dropdown-content ${isPrincipalOpen ? 'show' : ''}`}>
+            <NavLink
+              to="/destinos"
+              className={({ isActive }) => `nav-item sub-item ${isActive ? 'active' : ''}`}
+            >
+              <Map size={18} />
+              Recomendaciones
+            </NavLink>
+            <NavLink
+              to="/editar-principal"
+              className={({ isActive }) => `nav-item sub-item ${isActive ? 'active' : ''}`}
+            >
+              <LinkIcon size={18} />
+              Editar Principal
+            </NavLink>
+          </div>
+        </div>
+
+        {/* 10. Reseñas */}
         <NavLink
-          to="/editar-principal"
+          to="/resenas"
           className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
         >
-          <Map size={20} />
-          Editar Principal
+          <Star size={20} />
+          Reseñas
         </NavLink>
-        
+
+        {/* 11. Historial de Viajes */}
+        <NavLink
+          to="/historial"
+          className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
+        >
+          <History size={20} />
+          Historial de Viajes
+        </NavLink>
+
+        {/* 12. Gestion de Usuarios */}
         <NavLink
           to="/gestion-usuarios"
           className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}

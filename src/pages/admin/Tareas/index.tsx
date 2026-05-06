@@ -152,7 +152,7 @@ export default function TareasPage() {
       ...s,
       type: 'generic',
       capacity: 1,
-      pricing_type: 'per_group'
+      pricing_type: 'fixed'
     }));
 
     setServices(mappedGeneric);
@@ -265,6 +265,8 @@ export default function TareasPage() {
 
     if (service.pricing_type === 'per_person') {
       finalPrice = service.price * passengers;
+    } else if (service.pricing_type === 'fixed') {
+      finalPrice = service.price;
     } else if (service.type === 'hotel' || service.type === 'transport' || service.pricing_type === 'per_group') {
       const cap = service.capacity || 1;
       const unitsNeeded = Math.ceil(passengers / cap);
@@ -776,12 +778,14 @@ export default function TareasPage() {
                                 <span className="task-price">
                                   ${Math.abs(task.price).toLocaleString('es-AR')}
                                 </span>
-                                <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
-                                  {task.paid ? (
-                                    <div className="paid-badge-mini"><Check size={10} /> PAGADO</div>
-                                  ) : (
-                                    <div className="pending-badge-mini" style={{ fontSize: '0.65rem', fontWeight: 800, color: '#94a3b8' }}>PENDIENTE</div>
-                                  )}
+                                  <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+                                    {task.paid ? (
+                                      <div className="paid-badge-mini"><Check size={10} /> PAGADO</div>
+                                    ) : task.payment_status === 'requested' ? (
+                                      <div className="pending-badge-mini" style={{ background: '#fffbeb', color: '#92400e', border: '1px solid #fde68a', fontSize: '0.65rem', fontWeight: 800 }}>SOLICITUD PENDIENTE</div>
+                                    ) : (
+                                      <div className="pending-badge-mini" style={{ fontSize: '0.65rem', fontWeight: 800, color: '#94a3b8' }}>PENDIENTE</div>
+                                    )}
                                   <button className="btn-delete-task" onClick={() => handleRemoveTask(idx)}>
                                     <Trash2 size={14} />
                                   </button>
@@ -926,7 +930,6 @@ export default function TareasPage() {
         </div>
       </div>
 
-      {/* Modal Agregar Tarea */}
       {isAddingTask && (
         <div className="modal-overlay animate-fade-in" style={{ zIndex: 1400 }}>
           <div className="modal-content glass-card animate-scale-in" style={{ maxWidth: '420px', padding: 0, borderRadius: '20px', overflow: 'hidden' }}>

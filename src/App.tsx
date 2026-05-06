@@ -22,12 +22,16 @@ import RespuestasViajeIdealPage from './pages/admin/RespuestasViajeIdeal';
 import GestionUsuariosPage from './pages/admin/GestionUsuarios';
 import ResenasPage from './pages/admin/Resenas';
 import DestinosPage from './pages/admin/Destinos';
+import DatosBancariosPage from './pages/admin/DatosBancarios';
 import ClientLayout from './pages/client/Layout/ClientLayout';
 import LiquidacionClientePage from './pages/client/LiquidacionCliente';
 import AgendaViajePage from './pages/client/AgendaViaje';
 import ClientConfigPage from './pages/client/Configuracion';
 import EncuestaViajePage from './pages/client/EncuestaViaje';
 import ResenaViajePage from './pages/client/ResenaViaje';
+import ServiciosContratadosPage from './pages/client/ServiciosContratados';
+import HistorialViajesAdminPage from './pages/admin/HistorialViajes';
+import HistorialViajesClientePage from './pages/client/HistorialViajes';
 import './App.css';
 
 function App() {
@@ -56,6 +60,8 @@ function App() {
         <Route path="/respuestas-viaje-ideal" element={<RespuestasViajeIdealPage />} />
         <Route path="/resenas" element={<ResenasPage />} />
         <Route path="/destinos" element={<DestinosPage />} />
+        <Route path="/datos-bancarios" element={<DatosBancariosPage />} />
+        <Route path="/historial" element={<HistorialViajesAdminPage />} />
         <Route path="/gestion-usuarios" element={<GestionUsuariosPage />} />
         <Route path="/configuracion" element={<AdminConfigPage />} />
         
@@ -69,7 +75,9 @@ function App() {
         <Route path="agenda" element={<AgendaViajePage />} />
         <Route path="liquidacion" element={<LiquidacionClientePage />} />
         <Route path="encuesta" element={<EncuestaViajePage />} />
+        <Route path="servicios" element={<ServiciosContratadosPage />} />
         <Route path="resena" element={<ResenaViajePage />} />
+        <Route path="historial" element={<HistorialViajesClientePage />} />
         <Route path="configuracion" element={<ClientConfigPage />} />
       </Route>
       

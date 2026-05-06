@@ -11,7 +11,9 @@ import {
   PieChart,
   BarChart3,
   Download,
-  X
+  X,
+  CreditCard,
+  Check
 } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import './Ganancias.css';
@@ -21,6 +23,7 @@ export default function GananciasPage() {
   const [period, setPeriod] = useState('este-mes');
   const [stats, setStats] = useState<any[]>([]);
   const [recentTransactions, setRecentTransactions] = useState<any[]>([]);
+  const [paymentRequests, setPaymentRequests] = useState<any[]>([]);
   const [chartData, setChartData] = useState<any[]>([]);
   const [pieData, setPieData] = useState<any[]>([]);
 
@@ -34,13 +37,15 @@ export default function GananciasPage() {
 
     let totalIncome = 0;
     const confirmedTransactions: any[] = [];
+    const pendingRequests: any[] = [];
     const revenueByMonth: { [key: string]: number } = {};
     const revenueByService: { [key: string]: number } = {};
 
     (billingData || []).forEach(b => {
-      if (b.tasks && Array.isArray(b.tasks)) {
-        b.tasks.forEach((t: any, idx: number) => {
-          if (t.paid) {
+      const bTasks = b.tasks as any[];
+      if (bTasks && Array.isArray(bTasks)) {
+        bTasks.forEach((t: any, idx: number) => {
+          if (t.paid || t.payment_status === 'paid') {
             const amount = Math.abs(Number(t.price) || 0);
             totalIncome += amount;
             
@@ -48,7 +53,6 @@ export default function GananciasPage() {
             const monthKey = paidDate.toLocaleString('es-AR', { month: 'short' });
             revenueByMonth[monthKey] = (revenueByMonth[monthKey] || 0) + amount;
             
-            // For pie chart, clean up names or use categories
             const serviceName = t.name.split('] ').pop() || t.name;
             revenueByService[serviceName] = (revenueByService[serviceName] || 0) + amount;
 
@@ -63,6 +67,16 @@ export default function GananciasPage() {
               date: paidDate.toLocaleDateString(),
               status: 'completado',
               timestamp: paidDate.getTime()
+            });
+          } else if (t.payment_status === 'requested') {
+            pendingRequests.push({
+              id: `${b.client_id}-${idx}`,
+              clientId: b.client_id,
+              taskIndex: idx,
+              client: (b.clients as any)?.name || 'Cliente desconocido',
+              service: t.name,
+              amount: t.price,
+              date: t.date
             });
           }
         });
@@ -136,8 +150,9 @@ export default function GananciasPage() {
       { label: 'Tasa de Conversión', value: '64%', change: '+5%', isUp: true, icon: TrendingUp },
     ]);
 
-    // 5. Update Recent Transactions
+    // 5. Update data states
     setRecentTransactions(confirmedTransactions.slice(0, 10));
+    setPaymentRequests(pendingRequests);
 
     // 6. Set Chart Data
     const months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
@@ -168,11 +183,43 @@ export default function GananciasPage() {
     fetchFinancialData();
   }, []);
 
+  const handleConfirmPayment = async (request: any) => {
+    try {
+      const { data: billing } = await supabase.from('client_billing').select('tasks').eq('client_id', request.clientId).single();
+      if (!billing) return;
+
+      const tasks = [...(billing.tasks as any[])];
+      tasks[request.taskIndex] = {
+        ...tasks[request.taskIndex],
+        paid: true,
+        completed: true,
+        payment_status: 'paid',
+        paidAt: new Date().toISOString()
+      };
+
+      await supabase.from('client_billing').update({ tasks }).eq('client_id', request.clientId);
+      fetchFinancialData();
+    } catch (e) { console.error(e); }
+  };
+
+  const handleRejectPayment = async (request: any) => {
+    if (!window.confirm('¿Rechazar solicitud? El servicio volverá a estar pendiente.')) return;
+    try {
+      const { data: billing } = await supabase.from('client_billing').select('tasks').eq('client_id', request.clientId).single();
+      if (!billing) return;
+
+      const tasks = [...(billing.tasks as any[])];
+      tasks[request.taskIndex].payment_status = 'pending';
+
+      await supabase.from('client_billing').update({ tasks }).eq('client_id', request.clientId);
+      fetchFinancialData();
+    } catch (e) { console.error(e); }
+  };
+
   const handleDeleteActivity = async (tx: any) => {
     if (!window.confirm('¿Estás seguro de que quieres eliminar este registro de cobro? El servicio volverá a estar pendiente de pago.')) return;
 
     try {
-      // 1. Fetch current billing data to get the latest tasks array
       const { data: billing, error: fetchError } = await supabase
         .from('client_billing')
         .select('tasks')
@@ -185,28 +232,24 @@ export default function GananciasPage() {
       const task = tasks[tx.taskIndex];
 
       if (task) {
-        // If it was a "payment-record" OR a session charge that was duplicated, we remove it entirely
         if (task.serviceId === 'payment-record' || task.name.includes('Sesión Inicial')) {
           tasks.splice(tx.taskIndex, 1);
         } else {
-          // If it was a regular service marked as paid, we mark it as unpaid
           tasks[tx.taskIndex] = {
             ...task,
             paid: false,
+            payment_status: 'pending',
             paidAt: null,
             completed: false
           };
         }
 
-        // 2. Update Supabase
         const { error: updateError } = await supabase
           .from('client_billing')
           .update({ tasks })
           .eq('client_id', tx.clientId);
 
         if (updateError) throw updateError;
-
-        // 3. Refresh data
         fetchFinancialData();
       }
     } catch (error: any) {
@@ -262,15 +305,11 @@ export default function GananciasPage() {
             ))}
           </div>
 
-          <div className="ganancias-main-grid">
+          <div className="ganancias-main-grid mt-4">
             <div className="glass-card main-chart-card">
               <div className="card-header border-bottom">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <h3><BarChart3 size={20} className="text-primary" /> Rendimiento de Ingresos</h3>
-                  <select className="form-input-sm">
-                    <option>Mensual</option>
-                    <option>Semanal</option>
-                  </select>
                 </div>
               </div>
               <div className="card-body chart-placeholder">
@@ -315,10 +354,47 @@ export default function GananciasPage() {
             </div>
           </div>
 
+          <div className="glass-card mt-4">
+            <div className="card-header border-bottom">
+              <h3><CreditCard size={20} className="text-primary" /> Solicitudes de Pago</h3>
+            </div>
+            <div className="card-body p-0">
+              {paymentRequests.length === 0 ? (
+                <div className="p-5 text-center text-muted">No hay solicitudes de pago pendientes.</div>
+              ) : (
+              <div className="payment-requests-list">
+                {paymentRequests.map(req => (
+                  <div key={req.id} className="payment-request-card">
+                    <div className="req-client-info">
+                      <div className="client-avatar-md">{req.client.charAt(0)}</div>
+                      <div className="req-details">
+                        <span className="req-client-name">{req.client}</span>
+                        <span className="req-service-name">{req.service}</span>
+                      </div>
+                    </div>
+                    <div className="req-amount">
+                      <span className="amount-label">Monto a confirmar</span>
+                      <span className="amount-value">${req.amount.toLocaleString('es-AR')}</span>
+                    </div>
+                    <div className="req-actions">
+                      <button className="btn-confirm-req" onClick={() => handleConfirmPayment(req)}>
+                        <Check size={16} /> Confirmar Cobro
+                      </button>
+                      <button className="btn-reject-req" onClick={() => handleRejectPayment(req)}>
+                        <X size={16} />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              )}
+            </div>
+          </div>
+
           <div className="glass-card transactions-card mt-4">
             <div className="card-header border-bottom">
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <h3>Actividad Reciente</h3>
+                <h3>Actividad Reciente (Pagos Confirmados)</h3>
                 <button className="btn-link">Ver todas <ChevronRight size={16} /></button>
               </div>
             </div>

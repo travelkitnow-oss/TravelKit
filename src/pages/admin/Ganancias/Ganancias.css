@@ -264,7 +264,146 @@
   color: #10b981;
 }
 
+/* Payment Requests Premium Styles */
+.payment-requests-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.payment-request-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid var(--color-bg);
+  transition: background 0.2s;
+}
+
+.payment-request-card:hover {
+  background-color: rgba(0,0,0,0.01);
+}
+
+.req-client-info {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex: 1;
+}
+
+.client-avatar-md {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: var(--color-primary);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+
+.req-details {
+  display: flex;
+  flex-direction: column;
+}
+
+.req-client-name {
+  font-weight: 700;
+  color: var(--color-primary);
+  font-size: 1rem;
+}
+
+.req-service-name {
+  font-size: 0.8rem;
+  color: var(--color-tertiary);
+}
+
+.req-amount {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  margin: 0 2rem;
+}
+
+.amount-label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-tertiary);
+  font-weight: 600;
+}
+
+.amount-value {
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: #10b981;
+}
+
+.req-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.btn-confirm-req {
+  background-color: #10b981;
+  color: white;
+  border: none;
+  padding: 0.6rem 1.2rem;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-confirm-req:hover {
+  background-color: #059669;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
+}
+
+.btn-reject-req {
+  background-color: #fef2f2;
+  color: #ef4444;
+  border: 1px solid #fee2e2;
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-reject-req:hover {
+  background-color: #ef4444;
+  color: white;
+}
+
 @media (max-width: 768px) {
+  .payment-request-card {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+  .req-amount {
+    margin: 0;
+    align-items: flex-start;
+  }
+  .req-actions {
+    width: 100%;
+  }
+  .btn-confirm-req {
+    flex: 1;
+    justify-content: center;
+  }
+  
   .ganancias-main-grid {
     grid-template-columns: 1fr;
   }

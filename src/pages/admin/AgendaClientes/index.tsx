@@ -16,7 +16,9 @@ import {
   Plus,
   QrCode,
   Folder,
-  ChevronDown
+  ChevronDown,
+  Archive,
+  AlertTriangle
 } from 'lucide-react';
 import {
   format,
@@ -59,6 +61,7 @@ export default function AgendaClientesPage() {
   const [billingData, setBillingData] = useState<Record<string, any>>({});
   const [scheduledItems, setScheduledItems] = useState<any[]>([]);
   const [catalogFolders, setCatalogFolders] = useState<any[]>([]);
+  const [showFinishConfirm, setShowFinishConfirm] = useState(false);
 
   useEffect(() => {
     fetchInitialData();
@@ -145,6 +148,57 @@ export default function AgendaClientesPage() {
     const { error } = await supabase.from('scheduled_items').delete().eq('id', id);
     if (error) alert('Error al eliminar ítem');
     else setScheduledItems(scheduledItems.filter(item => item.id !== id));
+  };
+
+  const handleFinishTrip = async () => {
+    if (!selectedClientData) return;
+    
+    try {
+      // 1. Prepare data for history
+      const historyData = {
+        client_id: selectedClientId,
+        trip_name: selectedClientData.dates?.destination ? `Viaje a ${selectedClientData.dates.destination}` : 'Viaje Finalizado',
+        destination: selectedClientData.dates?.destination || 'N/A',
+        start_date: selectedClientData.dates?.departure_date || null,
+        end_date: selectedClientData.dates?.return_date || null,
+        itinerary_data: scheduledItems,
+        billing_data: selectedClientData.dates || {},
+        created_at: new Date().toISOString()
+      };
+
+      // 2. Insert into travel_history
+      const { error: historyError } = await supabase.from('travel_history').insert([historyData]);
+      if (historyError) throw historyError;
+
+      // 3. Clear current data
+      await supabase.from('scheduled_items').delete().eq('client_id', selectedClientId);
+      
+      await supabase.from('client_billing').update({
+        tasks: [],
+        notes: '[]',
+        departure_date: null,
+        return_date: null,
+        destination: null,
+        origin: null,
+        departure_time: null,
+        arrival_time: null,
+        return_departure_time: null,
+        return_arrival_time: null,
+        arrival_date: null,
+        return_arrival_date: null,
+        return_origin: null,
+        return_destination: null,
+        passengers: 1
+      }).eq('client_id', selectedClientId);
+
+      setShowFinishConfirm(false);
+      alert('Viaje finalizado y archivado con éxito.');
+      setSelectedClientId(null);
+      fetchInitialData();
+    } catch (error: any) {
+      console.error('Error finishing trip:', error);
+      alert('Error al finalizar el viaje.');
+    }
   };
 
   const renderHeader = () => {
@@ -238,17 +292,16 @@ export default function AgendaClientesPage() {
     const client = selectedClientData;
     const b = client.dates || {};
 
-    // Palette
     const c = {
-      deepBlue: [31, 58, 77],    // #1F3A4D
-      grayBlue: [110, 136, 152], // #6E8898
-      lightBlue: [183, 197, 207], // #B7C5CF
-      gold: [200, 155, 90],      // #C89B5A
-      beige: [233, 223, 210],    // #E9DFD2
+      deepBlue: [31, 58, 77],
+      grayBlue: [110, 136, 152],
+      lightBlue: [183, 197, 207],
+      gold: [200, 155, 90],
+      beige: [233, 223, 210],
       white: [255, 255, 255],
-      green: [16, 185, 129],     // Hospedaje
-      orange: [200, 155, 90],    // Excursion (Dorado)
-      blue: [59, 130, 246]       // Traslado
+      green: [16, 185, 129],
+      orange: [200, 155, 90],
+      blue: [59, 130, 246]
     };
 
     const tripDuration = b.departure_date && b.return_date
@@ -262,11 +315,9 @@ export default function AgendaClientesPage() {
     };
 
     const drawHeader = () => {
-      // Header Background
       doc.setFillColor(c.beige[0], c.beige[1], c.beige[2]);
       doc.rect(0, 0, 210, 55, 'F');
 
-      // Logo (Left)
       try {
         doc.addImage(logo, 'JPEG', 15, 5, 45, 45);
       } catch (e) {
@@ -275,7 +326,6 @@ export default function AgendaClientesPage() {
         doc.text("Travel Kit", 15, 25);
       }
 
-      // Title & Tagline
       doc.setTextColor(c.deepBlue[0], c.deepBlue[1], c.deepBlue[2]);
       doc.setFontSize(24);
       doc.setFont("helvetica", "bold");
@@ -290,7 +340,6 @@ export default function AgendaClientesPage() {
       doc.setLineWidth(0.5);
       doc.line(65, 30, 135, 30);
 
-      // Passenger Info
       doc.setTextColor(c.deepBlue[0], c.deepBlue[1], c.deepBlue[2]);
       doc.setFontSize(16);
       doc.setFont("helvetica", "bold");
@@ -300,7 +349,6 @@ export default function AgendaClientesPage() {
       doc.setTextColor(c.grayBlue[0], c.grayBlue[1], c.grayBlue[2]);
       doc.text(client.email || '', 65, 46);
 
-      // Destination Badge (Right)
       if (b.destination) {
         doc.setFillColor(c.gold[0], c.gold[1], c.gold[2]);
         doc.roundedRect(155, 18, 45, 12, 2, 2, 'F');
@@ -310,7 +358,6 @@ export default function AgendaClientesPage() {
         doc.text(b.destination.toUpperCase(), 177.5, 26, { align: "center" });
       }
 
-      // Separator Line
       doc.setDrawColor(c.gold[0], c.gold[1], c.gold[2]);
       doc.setLineWidth(1);
       doc.line(0, 55, 210, 55);
@@ -319,18 +366,15 @@ export default function AgendaClientesPage() {
     drawHeader();
     let yPos = 70;
 
-    // Summary Card
     doc.setFillColor(255, 255, 255);
     doc.roundedRect(15, yPos, 180, 50, 3, 3, 'F');
     doc.setDrawColor(c.lightBlue[0], c.lightBlue[1], c.lightBlue[2]);
     doc.setLineWidth(0.2);
     doc.roundedRect(15, yPos, 180, 50, 3, 3, 'D');
 
-    // Summary Card Gold Left Bar
     doc.setFillColor(c.gold[0], c.gold[1], c.gold[2]);
     doc.rect(15, yPos + 5, 2.5, 40, 'F');
 
-    // Summary Content (3 Columns)
     doc.setFontSize(7);
     doc.setTextColor(c.grayBlue[0], c.grayBlue[1], c.grayBlue[2]);
     doc.setFont("helvetica", "bold");
@@ -360,11 +404,9 @@ export default function AgendaClientesPage() {
     doc.setTextColor(c.deepBlue[0], c.deepBlue[1], c.deepBlue[2]);
     doc.text(`${tripDuration} noches`, 150, yPos + 22);
 
-    // Divider in summary
     doc.setDrawColor(c.lightBlue[0], c.lightBlue[1], c.lightBlue[2]);
     doc.line(35, yPos + 32, 175, yPos + 32);
 
-    // Counts
     doc.setFontSize(7);
     doc.setTextColor(c.grayBlue[0], c.grayBlue[1], c.grayBlue[2]);
     doc.text("EXCURSIONES", 45, yPos + 38, { align: "center" });
@@ -379,7 +421,6 @@ export default function AgendaClientesPage() {
 
     yPos += 70;
 
-    // Body Title
     doc.setFontSize(12);
     doc.setTextColor(c.deepBlue[0], c.deepBlue[1], c.deepBlue[2]);
     doc.setFont("helvetica", "bold");
@@ -390,7 +431,6 @@ export default function AgendaClientesPage() {
 
     yPos += 15;
 
-    // Group items by day
     const groupedItems = scheduledItems.reduce((acc: any, item) => {
       const dateKey = item.date;
       if (!acc[dateKey]) acc[dateKey] = [];
@@ -407,7 +447,6 @@ export default function AgendaClientesPage() {
         yPos = 70;
       }
 
-      // Day Header
       doc.setFillColor(248, 250, 252);
       doc.rect(15, yPos, 180, 10, 'F');
       doc.setFillColor(c.gold[0], c.gold[1], c.gold[2]);
@@ -433,7 +472,7 @@ export default function AgendaClientesPage() {
         const typeColor = item.type === 'hotel' ? c.green : item.type === 'transport' ? c.blue : c.orange;
         const typeLabel = item.type === 'hotel' ? 'HOSPEDAJE' : item.type === 'transport' ? 'TRASLADO' : 'EXCURSION';
 
-        doc.setFillColor(248, 255, 255); // Very light background
+        doc.setFillColor(248, 255, 255);
         doc.rect(15, yPos, 180, 25, 'F');
         doc.setFillColor(typeColor[0], typeColor[1], typeColor[2]);
         doc.rect(15, yPos, 2.5, 25, 'F');
@@ -646,6 +685,9 @@ export default function AgendaClientesPage() {
                 <button className="btn-action-add excursion" onClick={() => setAddingType('excursion')}>
                   <Plus size={16} /> Agregar Excursión
                 </button>
+                <button className="btn-finish-trip-red" onClick={() => setShowFinishConfirm(true)}>
+                  <Archive size={16} /> Finalizar Viaje
+                </button>
               </div>
             </div>
           </div>
@@ -767,6 +809,41 @@ export default function AgendaClientesPage() {
               </div>
             </div>
           </div>
+
+          {showFinishConfirm && (
+            <div className="modal-overlay">
+              <div className="modal-content glass-card confirm-finish-modal" style={{ maxWidth: '450px', padding: 0, overflow: 'hidden' }}>
+                <div style={{ background: '#ef4444', padding: '1.5rem', display: 'flex', alignItems: 'center', gap: '1rem', color: 'white' }}>
+                  <AlertTriangle size={24} />
+                  <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 800 }}>Confirmar Finalización</h3>
+                </div>
+                <div style={{ padding: '2rem' }}>
+                  <p style={{ color: 'var(--color-primary)', fontSize: '1rem', lineHeight: '1.5', margin: '0 0 1.5rem 0' }}>
+                    ¿Estás seguro de que deseas finalizar el viaje de <strong>{selectedClientData.name}</strong>?
+                  </p>
+                  <p style={{ color: 'var(--color-secondary)', fontSize: '0.9rem', lineHeight: '1.5', background: '#fff7ed', padding: '1rem', borderRadius: '8px', borderLeft: '4px solid #f97316' }}>
+                    Toda la información actual (itinerario, fechas y pagos) se guardará en el historial y el cliente quedará listo para un nuevo viaje.
+                  </p>
+                  <div style={{ display: 'flex', gap: '1rem', marginTop: '2rem' }}>
+                    <button 
+                      className="btn-cancel-modal" 
+                      onClick={() => setShowFinishConfirm(false)}
+                      style={{ flex: 1, padding: '0.75rem', borderRadius: '8px', border: '1px solid #e2e8f0', background: 'white', fontWeight: 700, cursor: 'pointer' }}
+                    >
+                      Cancelar
+                    </button>
+                    <button 
+                      className="btn-confirm-finish" 
+                      onClick={handleFinishTrip}
+                      style={{ flex: 1, padding: '0.75rem', borderRadius: '8px', border: 'none', background: '#ef4444', color: 'white', fontWeight: 800, cursor: 'pointer' }}
+                    >
+                      Finalizar Viaje
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </>
       )}
 
