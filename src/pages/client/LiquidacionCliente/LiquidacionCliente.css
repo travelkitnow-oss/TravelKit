@@ -1,0 +1,239 @@
+.liquidacion-cliente-page {
+  padding: 2rem;
+  background-color: #E9DFD2;
+  min-height: 100vh;
+  width: 100%;
+}
+
+.invoice-receipt.premium-shadow {
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 10px 40px rgba(31, 58, 77, 0.08);
+  max-width: 800px;
+  margin: 0 auto;
+  position: relative;
+  overflow: hidden;
+}
+
+.invoice-receipt.premium-shadow::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 6px;
+  background: linear-gradient(to right, var(--color-primary), #C89B5A);
+  z-index: 10;
+}
+
+.premium-invoice-header {
+  padding: 1.5rem 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.agency-brand {
+  display: flex;
+  align-items: center;
+}
+
+.brand-text {
+  margin-left: 1rem;
+}
+
+.brand-text h2 {
+  margin: 0;
+  color: var(--color-primary);
+  font-weight: 900;
+  font-size: 1.5rem;
+}
+
+.brand-text span {
+  font-size: 0.7rem;
+  color: var(--color-primary);
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  opacity: 0.7;
+}
+
+.btn-download-premium {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1.25rem;
+  background: transparent;
+  color: var(--color-primary);
+  border: 1px solid var(--color-primary);
+  border-radius: 100px;
+  font-weight: 700;
+  font-size: 0.8rem;
+  transition: all 0.3s;
+  cursor: pointer;
+}
+
+.btn-download-premium:hover {
+  background: var(--color-primary);
+  color: white;
+}
+
+.premium-client-data {
+  margin: 1.5rem 2rem;
+  padding: 1.25rem 1.5rem;
+  background: #f8fafc;
+  border-radius: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.client-info-pro {
+  display: flex;
+  flex-direction: column;
+}
+
+.client-info-pro .label-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--color-primary);
+  margin-bottom: 0.4rem;
+  opacity: 0.8;
+}
+
+.client-info-pro .label-wrap span {
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+}
+
+.client-info-pro h3 {
+  font-size: 1.4rem;
+  color: var(--color-primary);
+  font-family: 'Playfair Display', serif;
+  font-weight: 800;
+  margin: 0;
+}
+
+.premium-total-badge {
+  text-align: right;
+}
+
+.premium-total-badge .label {
+  display: block;
+  font-size: 0.65rem;
+  font-weight: 800;
+  color: var(--color-primary);
+  letter-spacing: 0.1em;
+  margin-bottom: 0.4rem;
+  opacity: 0.8;
+}
+
+.premium-total-badge .value {
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: var(--color-primary);
+  line-height: 1;
+  font-family: 'Outfit', sans-serif;
+  margin: 0;
+}
+
+.invoice-table-container {
+  padding: 0 2rem;
+}
+
+.premium-receipt-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.premium-receipt-table th {
+  text-align: left;
+  padding: 0 0 0.85rem 0;
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--color-primary);
+  border-bottom: 2px solid #f1f5f9;
+  font-weight: 800;
+}
+
+.premium-category-row td {
+  padding: 1rem 0 0.5rem;
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: var(--color-primary);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.premium-category-row td svg {
+  color: var(--color-primary);
+  opacity: 0.7;
+}
+
+.premium-service-row td {
+  padding: 0.5rem 0;
+  border-bottom: 1px dashed rgba(31, 58, 77, 0.1);
+  color: #475569;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.premium-service-row:last-child td {
+  border-bottom: none;
+}
+
+.premium-price-cell {
+  text-align: right;
+  font-weight: 600;
+  color: var(--color-primary);
+  font-family: 'Outfit', sans-serif;
+}
+
+.premium-invoice-footer {
+  margin-top: 1.5rem;
+  padding: 1.5rem 2rem;
+  background: #f8fafc;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.footer-total-final-premium {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.footer-total-final-premium .label {
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: var(--color-primary);
+  letter-spacing: 0.1em;
+  margin-bottom: 0.5rem;
+  text-align: center;
+  opacity: 0.8;
+  white-space: nowrap;
+}
+
+.footer-total-final-premium .value {
+  font-size: 2rem;
+  font-weight: 800;
+  color: #C89B5A;
+  line-height: 1;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.liq-loader-premium {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 60vh;
+}

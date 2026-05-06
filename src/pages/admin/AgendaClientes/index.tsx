@@ -14,7 +14,9 @@ import {
   MapPin,
   PlaneLanding,
   Plus,
-  QrCode
+  QrCode,
+  Folder,
+  ChevronDown
 } from 'lucide-react';
 import {
   format,
@@ -40,12 +42,15 @@ export default function AgendaClientesPage() {
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [addingType, setAddingType] = useState<'excursion' | 'transport' | 'hotel' | null>(null);
+  const [isSelectorOpen, setIsSelectorOpen] = useState(false);
+  const [expandedFolderId, setExpandedFolderId] = useState<string | null>(null);
   const [newSchedule, setNewSchedule] = useState({
     date: '',
     time: '14:00',
     itemId: '',
     endDate: '',
-    endTime: '10:00'
+    endTime: '10:00',
+    reservationCode: ''
   });
   const [selectedDayForDetails, setSelectedDayForDetails] = useState<Date | null>(null);
   const [selectedItemForDetails, setSelectedItemForDetails] = useState<any | null>(null);
@@ -84,7 +89,7 @@ export default function AgendaClientesPage() {
   };
 
   const fetchClientData = async (clientId: string) => {
-    const { data: bData } = await supabase.from('client_billing').select('*').eq('client_id', clientId).single();
+    const { data: bData } = await supabase.from('client_billing').select('*').eq('client_id', clientId).maybeSingle();
     if (bData) {
       setBillingData(prev => ({ ...prev, [clientId]: bData }));
     }
@@ -122,14 +127,16 @@ export default function AgendaClientesPage() {
       end_time: addingType === 'hotel' ? newSchedule.endTime : null,
       origin: itemDetails?.origin || null,
       destination: itemDetails?.destination || null,
+      reservation_code: newSchedule.reservationCode || null
     }]).select();
 
     if (error) {
       alert('Error al agendar ítem');
     } else if (data) {
       setScheduledItems([...scheduledItems, data[0]]);
-      setNewSchedule({ date: '', time: '14:00', itemId: '', endDate: '', endTime: '10:00' });
+      setNewSchedule({ date: '', time: '14:00', itemId: '', endDate: '', endTime: '10:00', reservationCode: '' });
       setAddingType(null);
+      setIsSelectorOpen(false);
     }
   };
 
@@ -466,6 +473,13 @@ export default function AgendaClientesPage() {
         doc.setFont("helvetica", "bold");
         doc.text(typeLabel, 190, yPos + 10, { align: "right" });
 
+        if (item.reservation_code) {
+          doc.setTextColor(c.deepBlue[0], c.deepBlue[1], c.deepBlue[2]);
+          doc.setFontSize(8);
+          doc.setFont("helvetica", "normal");
+          doc.text(`Reserva: ${item.reservation_code}`, 190, yPos + 16, { align: "right" });
+        }
+
         yPos += 30;
       });
       yPos += 5;
@@ -758,33 +772,96 @@ export default function AgendaClientesPage() {
 
       {addingType && (
         <div className="modal-overlay">
-          <div className="modal-content glass-card p-6" style={{ maxWidth: addingType === 'hotel' ? '650px' : '450px', width: '95%' }}>
-            <div className="modal-header-premium mb-6">
+          <div className="modal-content glass-card" style={{ maxWidth: addingType === 'hotel' ? '650px' : '450px', width: '95%', padding: '0', overflow: 'hidden' }}>
+            <div style={{ background: 'linear-gradient(135deg, var(--color-primary) 0%, #0f2132 100%)', padding: '1.5rem 2rem', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                <div className={`icon-badge ${addingType}`}>
-                  {addingType === 'hotel' ? <Hotel size={24} /> : addingType === 'transport' ? <Plane size={24} /> : <MapPin size={24} />}
+                <div style={{ background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(8px)', padding: '0.6rem', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  {addingType === 'hotel' ? <Hotel size={20} color="white" /> : addingType === 'transport' ? <Plane size={20} color="white" /> : <MapPin size={20} color="white" />}
                 </div>
-                <h3 className="m-0 modal-title-premium">
+                <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 800, color: 'white', lineHeight: 1.2 }}>
                   {addingType === 'hotel' ? 'Agendar Estadía de Hotel' :
                     addingType === 'transport' ? 'Agendar Transporte' :
                       `Agendar Excursión`}
                 </h3>
               </div>
-              <button onClick={() => setAddingType(null)} className="close-modal-btn"><X size={24} /></button>
+              <button 
+                onClick={() => {
+                  setAddingType(null);
+                  setIsSelectorOpen(false);
+                }}
+                style={{ background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'white', transition: 'all 0.2s' }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.25)'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.12)'; }}
+              >
+                <X size={16} />
+              </button>
             </div>
 
-            <div className="form-group mb-6">
-              <label className="text-xs font-bold uppercase text-secondary mb-2 display-block">Seleccionar del Catálogo</label>
-              <select className="form-input" value={newSchedule.itemId} onChange={e => setNewSchedule({ ...newSchedule, itemId: e.target.value })}>
-                <option value="">-- Seleccionar --</option>
-                {catalogFolders.filter(f => f.type === addingType).map(folder => (
-                  <optgroup key={folder.id} label={folder.name}>
-                    {folder.items.map((item: any) => (
-                      <option key={item.id} value={item.id}>{item.name}</option>
-                    ))}
-                  </optgroup>
-                ))}
-              </select>
+            <div style={{ padding: '2rem' }}>
+              <div className="form-group mb-3">
+              <label className="text-xs font-bold uppercase text-secondary mb-1 display-block">Seleccionar del Catálogo</label>
+              
+              <div className="custom-item-selector">
+                <div 
+                  className="selector-header" 
+                  onClick={() => setIsSelectorOpen(!isSelectorOpen)}
+                  style={{ padding: '0.5rem 0.8rem', fontSize: '0.85rem', borderRadius: '8px' }}
+                >
+                  <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontWeight: 600 }}>
+                    {catalogFolders.flatMap(f => f.items).find((i: any) => i.id === newSchedule.itemId)?.name || '-- Seleccionar del Catálogo --'}
+                  </span>
+                  <ChevronDown size={14} color="var(--color-primary)" opacity={0.5} />
+                </div>
+
+                {isSelectorOpen && (
+                  <div className="selector-dropdown custom-scrollbar">
+                    {catalogFolders.filter(f => f.type === addingType).length === 0 ? (
+                      <div className="p-3 text-center text-secondary text-sm">No hay carpetas creadas</div>
+                    ) : (
+                      catalogFolders.filter(f => f.type === addingType).map(folder => (
+                        <div key={folder.id} className="selector-folder">
+                          <div 
+                            className="folder-header" 
+                            onClick={() => setExpandedFolderId(expandedFolderId === folder.id ? null : folder.id)}
+                            style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem', minHeight: '36px', background: expandedFolderId === folder.id ? 'rgba(31,58,77,0.03)' : 'transparent', borderBottom: '1px solid rgba(0,0,0,0.02)' }}
+                          >
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <Folder size={12} className="text-primary" fill="rgba(31,58,77,0.15)" />
+                              <span className="folder-name" style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '250px', fontSize: '0.8rem', fontWeight: 600 }}>{folder.name}</span>
+                            </div>
+                            {expandedFolderId === folder.id ? <ChevronDown size={12} opacity={0.4} /> : <ChevronRight size={12} opacity={0.4} />}
+                          </div>
+                          
+                          {expandedFolderId === folder.id && (
+                            <div className="folder-items">
+                              {folder.items.length === 0 ? (
+                                <div className="empty-items" style={{ padding: '0.75rem 1rem 0.75rem 2.5rem', fontSize: '0.8rem', color: '#94a3b8', fontStyle: 'italic' }}>Carpeta vacía</div>
+                              ) : (
+                                folder.items.map((item: any) => (
+                                    <div 
+                                      key={item.id} 
+                                      className={`item-row ${newSchedule.itemId === item.id ? 'selected' : ''}`}
+                                      onClick={() => {
+                                        setNewSchedule({ ...newSchedule, itemId: item.id });
+                                        setIsSelectorOpen(false);
+                                      }}
+                                      style={{ padding: '0.3rem 0.8rem 0.3rem 1.8rem', fontSize: '0.8rem', minHeight: '32px' }}
+                                    >
+                                      <div className="item-icon-small">
+                                        {addingType === 'hotel' ? <Hotel size={10} /> : addingType === 'transport' ? <Plane size={10} /> : <MapPin size={10} />}
+                                      </div>
+                                      <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.name}</span>
+                                    </div>
+                                ))
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      ))
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
 
             {addingType === 'hotel' ? (
@@ -839,12 +916,33 @@ export default function AgendaClientesPage() {
               </div>
             )}
 
-            <button className="btn btn-primary w-100 mt-6 py-3" onClick={handleScheduleItem} style={{ borderRadius: '50px', fontSize: '1rem' }}>
-              Confirmar en Agenda
-            </button>
+            <div className="form-group mb-4 mt-4">
+              <label className="text-xs font-bold uppercase text-secondary mb-2 display-block">Código de Reserva (Opcional)</label>
+              <div className="input-with-icon">
+                <QrCode size={16} />
+                <input 
+                  type="text" 
+                  className="form-input" 
+                  placeholder="Ej: ABC1234" 
+                  value={newSchedule.reservationCode} 
+                  onChange={e => setNewSchedule({ ...newSchedule, reservationCode: e.target.value.toUpperCase() })} 
+                />
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1.5rem', paddingTop: '1.5rem', borderTop: '1px solid rgba(0,0,0,0.05)' }}>
+              <button 
+                className="btn btn-primary" 
+                onClick={handleScheduleItem}
+                style={{ borderRadius: '12px', padding: '0.75rem 2rem' }}
+              >
+                Confirmar en Agenda
+              </button>
+            </div>
           </div>
         </div>
-      )}
+      </div>
+    )}
 
       {selectedDayForDetails && (
         <div className="modal-overlay">
@@ -961,6 +1059,16 @@ export default function AgendaClientesPage() {
                     <div className="box-content">
                       <span className="box-label">Check-out (Salida)</span>
                       <span className="box-value">{format(parseISO(selectedItemForDetails.end_date), 'dd/MM/yyyy')} - {selectedItemForDetails.end_time} hs</span>
+                    </div>
+                  </div>
+                )}
+
+                {selectedItemForDetails.reservation_code && (
+                  <div className="info-box-pro">
+                    <div className="box-icon"><QrCode size={20} /></div>
+                    <div className="box-content">
+                      <span className="box-label">Código de Reserva</span>
+                      <span className="box-value font-bold text-primary">{selectedItemForDetails.reservation_code}</span>
                     </div>
                   </div>
                 )}

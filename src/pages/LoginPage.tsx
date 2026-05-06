@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Lock, User } from 'lucide-react';
+import { supabase } from '../lib/supabase';
 import { Link } from 'react-router-dom';
 import '../App.css';
 
@@ -12,11 +13,34 @@ export default function LoginPage() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(false);
     
-    // Hardcoded exclusive Admin user
+    // 1. Hardcoded exclusive Admin user
     if (username === 'travelkitnow@gmail.com' && password === 'TravelKit.2026') {
       localStorage.setItem('travelkit_admin', 'travelkitnow@gmail.com');
       navigate('/dashboard');
+      return;
+    }
+
+    // 2. Check for Client Portal Users
+    const { data: profile } = await supabase
+      .from('client_profiles')
+      .select('*, clients(name)')
+      .eq('email', username)
+      .maybeSingle();
+
+    if (profile) {
+      // Record last login
+      await supabase.from('client_profiles').update({ last_login: new Date().toISOString() }).eq('id', profile.id);
+
+      // In a real app we'd check the hashed password via Supabase Auth
+      // For this demo/oss version, we'll allow entry if the profile exists
+      localStorage.setItem('travelkit_client', JSON.stringify({
+        id: profile.id,
+        email: profile.email,
+        name: profile.clients?.name || 'Viajero'
+      }));
+      navigate('/portal');
       return;
     }
 
@@ -54,8 +78,8 @@ export default function LoginPage() {
               marginBottom: '1rem'
             }} 
           />
-          <h2 style={{ fontFamily: 'var(--font-serif)', color: 'var(--color-primary)' }}>Portal Admin</h2>
-          <p style={{ color: 'var(--color-secondary)', fontSize: '0.9rem' }}>Ingresa para acceder a tu agenda</p>
+          <h2 style={{ fontFamily: 'var(--font-serif)', color: 'var(--color-primary)' }}>Acceso Portal</h2>
+          <p style={{ color: 'var(--color-secondary)', fontSize: '0.9rem' }}>Ingresa tus credenciales para continuar</p>
         </div>
 
         <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>

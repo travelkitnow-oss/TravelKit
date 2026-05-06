@@ -1,0 +1,161 @@
+.resena-cliente-page {
+  padding: 2rem;
+  background-color: #E9DFD2;
+  min-height: 100vh;
+  width: 100%;
+}
+
+.resena-card-premium {
+  max-width: 600px;
+  margin: 0 auto;
+  background: white;
+  border-radius: 24px;
+  padding: 3rem;
+  box-shadow: 0 20px 50px rgba(31, 58, 77, 0.05);
+  border: 1px solid rgba(226, 232, 240, 0.8);
+}
+
+.resena-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.rating-section {
+  text-align: center;
+}
+
+.rating-section label {
+  display: block;
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: var(--color-primary);
+  margin-bottom: 0.75rem;
+}
+
+.stars-input {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.star-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 50%;
+  transition: transform 0.2s;
+}
+
+.star-btn:hover {
+  transform: scale(1.1);
+}
+
+.form-group-pro {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.form-group-pro label {
+  font-size: 0.85rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--color-primary);
+  margin-bottom: 0;
+}
+
+.pro-textarea {
+  width: 100%;
+  padding: 0.8rem;
+  border: 2px solid #f1f5f9;
+  border-radius: 16px;
+  background: #f8fafc;
+  font-family: inherit;
+  font-size: 0.95rem;
+  color: var(--color-primary);
+  resize: vertical;
+  transition: all 0.3s;
+}
+
+.pro-textarea:focus {
+  outline: none;
+  border-color: #C89B5A;
+  background: white;
+  box-shadow: 0 0 0 4px rgba(200, 155, 90, 0.1);
+}
+
+.btn-submit-resena {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 1.25rem;
+  background: var(--color-primary);
+  color: white;
+  border: none;
+  border-radius: 16px;
+  font-weight: 800;
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: all 0.3s;
+  margin-top: 0.5rem;
+}
+
+.btn-submit-resena:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px rgba(31, 58, 77, 0.2);
+}
+
+.btn-submit-resena:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.resena-success {
+  padding: 2rem 0;
+}
+
+.success-icon {
+  color: #10b981;
+  margin-bottom: 1.5rem;
+}
+
+.resena-success h2 {
+  font-size: 2rem;
+  color: var(--color-primary);
+  font-family: 'Playfair Display', serif;
+  font-weight: 900;
+  margin-bottom: 1rem;
+}
+
+.resena-success p {
+  color: #64748b;
+  font-size: 1.1rem;
+  line-height: 1.6;
+  margin-bottom: 2rem;
+}
+
+.submitted-review {
+  background: #f8fafc;
+  padding: 2rem;
+  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+}
+
+.stars-display {
+  display: flex;
+  justify-content: center;
+  gap: 0.25rem;
+  margin-bottom: 1rem;
+}
+
+.review-comment {
+  font-style: italic;
+  color: var(--color-primary) !important;
+  font-weight: 500;
+  margin: 0 !important;
+}

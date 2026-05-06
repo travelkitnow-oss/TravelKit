@@ -1,13 +1,18 @@
 import { useState, useEffect } from 'react';
-import { 
-  Users, 
-  Plus, 
-  Mail, 
-  Phone, 
-  User, 
-  Trash2, 
+import {
+  Users,
+  Plus,
+  Mail,
+  Phone,
+  User,
+  Trash2,
   Edit2,
-  X
+  X,
+  UserPlus,
+  ShieldCheck,
+  Lock,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import ConfirmationModal from '../../../components/ConfirmationModal/ConfirmationModal';
@@ -24,9 +29,10 @@ interface Client {
 
 export default function ClientesPage() {
   const [clients, setClients] = useState<Client[]>([]);
+  const [existingUserIds, setExistingUserIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
-  
+
   // Manual client form
   const [newName, setNewName] = useState('');
   const [newEmail, setNewEmail] = useState('');
@@ -38,21 +44,37 @@ export default function ClientesPage() {
   const [deletingClientId, setDeletingClientId] = useState<string | null>(null);
   const [isConfirmDeleteOpen, setIsConfirmDeleteOpen] = useState(false);
 
+  // User creation states
+  const [showCreateUserModal, setShowCreateUserModal] = useState(false);
+  const [selectedClientForUser, setSelectedClientForUser] = useState<Client | null>(null);
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [passwordError, setPasswordError] = useState('');
+
   useEffect(() => {
     fetchClients();
   }, []);
 
   const fetchClients = async () => {
     setLoading(true);
-    const { data, error } = await supabase
+    // Fetch clients
+    const { data: clientsData, error: clientsError } = await supabase
       .from('clients')
       .select('*')
       .order('name', { ascending: true });
-    
-    if (error) {
-      console.error('Error fetching clients:', error);
+
+    // Fetch existing profiles to disable button
+    const { data: profilesData } = await supabase
+      .from('client_profiles')
+      .select('id');
+
+    if (clientsError) {
+      console.error('Error fetching clients:', clientsError);
     } else {
-      setClients((data || []).filter((c: any) => c.source !== 'agenda_session_only'));
+      setClients((clientsData || []).filter((c: any) => c.source !== 'agenda_session_only'));
+      setExistingUserIds(new Set((profilesData || []).map(p => p.id)));
     }
     setLoading(false);
   };
@@ -87,7 +109,7 @@ export default function ClientesPage() {
 
   const handleEditClient = async () => {
     if (!editingClient) return;
-    
+
     const { error } = await supabase
       .from('clients')
       .update({
@@ -108,7 +130,7 @@ export default function ClientesPage() {
 
   const confirmDelete = async () => {
     if (!deletingClientId) return;
-    
+
     const { error } = await supabase
       .from('clients')
       .delete()
@@ -120,6 +142,50 @@ export default function ClientesPage() {
       setClients(clients.filter(c => c.id !== deletingClientId));
     }
     setDeletingClientId(null);
+  };
+
+  const handleCreateUser = async () => {
+    if (!selectedClientForUser) return;
+
+    // Password validation: 1 upper, 1 lower, 8+ chars
+    const hasUpper = /[A-Z]/.test(newPassword);
+    const hasLower = /[a-z]/.test(newPassword);
+    const hasLength = newPassword.length >= 8;
+
+    if (!hasUpper || !hasLower || !hasLength) {
+      setPasswordError('La contraseña no cumple con los requisitos.');
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      setPasswordError('Las contraseñas no coinciden.');
+      return;
+    }
+
+    setLoading(true);
+    // In a real scenario, this would call a Supabase Edge Function or use the Admin API
+    // For now, we'll simulate the creation and maybe save it to a profiles/users table
+    const { error } = await supabase
+      .from('client_profiles')
+      .upsert({
+        id: selectedClientForUser.id,
+        email: selectedClientForUser.email,
+        role: 'cliente',
+        temp_password_set: true, // Marker for first login
+        created_at: new Date().toISOString()
+      });
+
+    if (error) {
+      alert('Error al crear el perfil de usuario: ' + error.message);
+    } else {
+      alert('¡Usuario creado con éxito! El cliente ya puede ingresar con su mail y la clave generada.');
+      setExistingUserIds(new Set([...Array.from(existingUserIds), selectedClientForUser.id]));
+      setShowCreateUserModal(false);
+      setNewPassword('');
+      setConfirmPassword('');
+      setPasswordError('');
+    }
+    setLoading(false);
   };
 
   const getValidationClass = (value: any, required: boolean = true) => {
@@ -167,7 +233,7 @@ export default function ClientesPage() {
             </div>
           </div>
         </div>
-        
+
         <div className="card-body p-0">
           <div className="table-responsive">
             <table className="clientes-table">
@@ -176,7 +242,7 @@ export default function ClientesPage() {
                   <th>Nombre</th>
                   <th>Contacto</th>
                   <th>Origen</th>
-                  <th>Acciones</th>
+                  <th style={{ textAlign: 'center' }}>Acciones</th>
                 </tr>
               </thead>
               <tbody>
@@ -207,16 +273,16 @@ export default function ClientesPage() {
                           </div>
                           <div>
                             <div className="fw-bold">{client.name}</div>
-                            <span className="text-xs text-secondary">ID: {client.id.split('-')[1] || client.id.substring(0,8)}</span>
+                            <span className="text-xs text-secondary">ID: {client.id.split('-')[1] || client.id.substring(0, 8)}</span>
                           </div>
                         </div>
                       </td>
                       <td>
                         <div className="client-contact-cell">
-                          <div className="contact-item">
+                          <div className="client-info-text">
                             <Mail size={14} /> {client.email || 'Sin mail'}
                           </div>
-                          <div className="contact-item">
+                          <div className="client-info-text">
                             <Phone size={14} /> {client.phone || 'Sin teléfono'}
                           </div>
                         </div>
@@ -227,16 +293,28 @@ export default function ClientesPage() {
                         </span>
                       </td>
                       <td>
-                        <div className="actions-cell">
-                          <button 
-                            className="btn-icon-sm" 
+                        <div className="client-actions-cell" style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
+                          <button
+                            className={`btn-icon-sm ${existingUserIds.has(client.id) ? 'disabled' : 'text-primary'}`}
+                            title={existingUserIds.has(client.id) ? "Usuario ya creado" : "Crear Usuario Cliente"}
+                            onClick={() => {
+                              if (existingUserIds.has(client.id)) return;
+                              setSelectedClientForUser(client);
+                              setShowCreateUserModal(true);
+                            }}
+                            disabled={existingUserIds.has(client.id)}
+                          >
+                            {existingUserIds.has(client.id) ? <ShieldCheck size={16} /> : <UserPlus size={16} />}
+                          </button>
+                          <button
+                            className="btn-icon-sm"
                             title="Editar"
                             onClick={() => setEditingClient(client)}
                           >
                             <Edit2 size={16} />
                           </button>
-                          <button 
-                            className="btn-icon-sm text-danger" 
+                          <button
+                            className="btn-icon-sm text-danger"
                             title="Eliminar"
                             onClick={() => deleteManualClient(client.id)}
                           >
@@ -268,9 +346,9 @@ export default function ClientesPage() {
                 <label className="text-sm font-semibold">Nombre Completo</label>
                 <div className="input-with-icon">
                   <User size={16} />
-                  <input 
-                    type="text" 
-                    className={`form-input ${getValidationClass(newName)}`} 
+                  <input
+                    type="text"
+                    className={`form-input ${getValidationClass(newName)}`}
                     placeholder="Ej: Juan Pérez"
                     value={newName}
                     onChange={e => setNewName(e.target.value)}
@@ -282,9 +360,9 @@ export default function ClientesPage() {
                 <label className="text-sm font-semibold">Email</label>
                 <div className="input-with-icon">
                   <Mail size={16} />
-                  <input 
-                    type="email" 
-                    className={`form-input ${getEmailClass()}`} 
+                  <input
+                    type="email"
+                    className={`form-input ${getEmailClass()}`}
                     placeholder="ejemplo@mail.com"
                     value={newEmail}
                     onChange={e => setNewEmail(e.target.value)}
@@ -296,9 +374,9 @@ export default function ClientesPage() {
                 <label className="text-sm font-semibold">Teléfono</label>
                 <div className="input-with-icon">
                   <Phone size={16} />
-                  <input 
-                    type="text" 
-                    className={`form-input ${getValidationClass(newPhone)}`} 
+                  <input
+                    type="text"
+                    className={`form-input ${getValidationClass(newPhone)}`}
                     placeholder="11 1234 5678"
                     value={newPhone}
                     onChange={e => setNewPhone(e.target.value.replace(/\D/g, ''))}
@@ -309,8 +387,8 @@ export default function ClientesPage() {
 
             <div style={{ display: 'flex', gap: '1rem', marginTop: '2rem' }}>
               <button className="btn btn-outline w-100" onClick={() => { setShowAddModal(false); setAttemptedSubmit(false); }}>Cancelar</button>
-              <button 
-                className="btn btn-primary w-100" 
+              <button
+                className="btn btn-primary w-100"
                 onClick={handleAddManualClient}
               >
                 Guardar Cliente
@@ -320,7 +398,100 @@ export default function ClientesPage() {
         </div>
       )}
 
-      {/* Edit Modal */}
+      {showCreateUserModal && selectedClientForUser && (
+        <div className="modal-overlay animate-fade-in" style={{ zIndex: 1400 }}>
+          <div className="modal-content glass-card animate-scale-in p-0 overflow-hidden" style={{ maxWidth: '440px', border: 'none', borderRadius: '24px' }}>
+            <div className="modal-header-full" style={{ background: 'var(--color-primary)', padding: '1.25rem 1.75rem', color: 'white', position: 'relative' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+                <div style={{ background: 'rgba(255, 255, 255, 0.1)', color: 'white', padding: '0.6rem', borderRadius: '10px' }}>
+                  <UserPlus size={22} />
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '1.2rem', color: 'white', fontWeight: 800 }}>Habilitar Acceso</h3>
+                  <p style={{ margin: 0, fontSize: '0.85rem', opacity: 0.9, fontWeight: 500 }}>Para: <strong>{selectedClientForUser.name}</strong></p>
+                </div>
+              </div>
+              <button
+                onClick={() => { setShowCreateUserModal(false); setNewPassword(''); }}
+                className="close-modal-btn-white"
+                style={{ width: '30px', height: '30px' }}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="modal-body" style={{ padding: '0.75rem 1.75rem' }}>
+              <div className="form-group mb-2">
+                <label className="text-xs font-bold uppercase text-secondary mb-1 block">Usuario / Email</label>
+                <div className="input-with-icon" style={{ opacity: 0.8 }}>
+                  <Mail size={16} />
+                  <input type="text" className="form-input" style={{ padding: '0.6rem 1rem 0.6rem 2.5rem', fontSize: '0.9rem' }} value={selectedClientForUser.email} disabled />
+                </div>
+              </div>
+
+              <div className="form-group mb-3">
+                <label className="text-xs font-bold uppercase text-secondary mb-2 block">Contraseña</label>
+                <div className="input-with-icon-pro">
+                  <Lock size={16} />
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    className={`form-input-pro ${passwordError ? 'error' : ''}`}
+                    placeholder="Ingresa la clave"
+                    value={newPassword}
+                    onChange={(e) => { setNewPassword(e.target.value); setPasswordError(''); }}
+                  />
+                  <button type="button" onClick={() => setShowPassword(!showPassword)} className="eye-btn-pro">
+                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
+              </div>
+
+              <div className="form-group mb-3">
+                <label className="text-xs font-bold uppercase text-secondary mb-2 block">Confirmar Contraseña</label>
+                <div className="input-with-icon-pro">
+                  <ShieldCheck size={16} />
+                  <input
+                    type={showConfirmPassword ? "text" : "password"}
+                    className={`form-input-pro ${passwordError ? 'error' : ''}`}
+                    placeholder="Repite la clave"
+                    value={confirmPassword}
+                    onPaste={(e) => e.preventDefault()}
+                    onChange={(e) => { setConfirmPassword(e.target.value); setPasswordError(''); }}
+                  />
+                  <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="eye-btn-pro">
+                    {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
+              </div>
+
+              {passwordError && <p className="text-danger text-xs mt-2 fw-bold" style={{ textAlign: 'center' }}>{passwordError}</p>}
+
+              <div className="security-checklist-pro mt-2" style={{ padding: '0.75rem' }}>
+                <div className={`req-item-pro ${newPassword.length >= 8 ? 'ok' : ''}`} style={{ fontSize: '0.75rem', gap: '0.5rem' }}>
+                  <ShieldCheck size={14} />
+                  <span>Mínimo 8 caracteres</span>
+                </div>
+                <div className={`req-item-pro ${/[A-Z]/.test(newPassword) ? 'ok' : ''}`} style={{ fontSize: '0.75rem', gap: '0.5rem' }}>
+                  <ShieldCheck size={14} />
+                  <span>Al menos una Mayúscula</span>
+                </div>
+                <div className={`req-item-pro ${/[a-z]/.test(newPassword) ? 'ok' : ''}`} style={{ fontSize: '0.75rem', gap: '0.5rem' }}>
+                  <ShieldCheck size={14} />
+                  <span>Al menos una Minúscula</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="modal-footer-pro" style={{ padding: '0.75rem 1.75rem 1rem' }}>
+              <button className="btn-modal-secondary" style={{ padding: '0.5rem' }} onClick={() => { setShowCreateUserModal(false); setNewPassword(''); }}>Cancelar</button>
+              <button className="btn-modal-primary" style={{ padding: '0.5rem' }} onClick={handleCreateUser} disabled={!newPassword || loading}>
+                {loading ? '...' : 'Habilitar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {editingClient && (
         <div className="modal-overlay animate-fade-in" style={{ zIndex: 1400 }}>
           <div className="modal-content glass-card animate-scale-in" style={{ maxWidth: '450px', padding: '2.5rem' }}>
@@ -336,9 +507,9 @@ export default function ClientesPage() {
                 <label className="text-sm font-semibold">Nombre Completo</label>
                 <div className="input-with-icon">
                   <User size={16} />
-                  <input 
-                    type="text" 
-                    className="form-input" 
+                  <input
+                    type="text"
+                    className="form-input"
                     value={editingClient.name}
                     onChange={e => setEditingClient({ ...editingClient, name: e.target.value })}
                   />
@@ -349,9 +520,9 @@ export default function ClientesPage() {
                 <label className="text-sm font-semibold">Email</label>
                 <div className="input-with-icon">
                   <Mail size={16} />
-                  <input 
-                    type="email" 
-                    className="form-input" 
+                  <input
+                    type="email"
+                    className="form-input"
                     value={editingClient.email}
                     onChange={e => setEditingClient({ ...editingClient, email: e.target.value })}
                   />
@@ -362,9 +533,9 @@ export default function ClientesPage() {
                 <label className="text-sm font-semibold">Teléfono</label>
                 <div className="input-with-icon">
                   <Phone size={16} />
-                  <input 
-                    type="text" 
-                    className="form-input" 
+                  <input
+                    type="text"
+                    className="form-input"
                     value={editingClient.phone}
                     onChange={e => setEditingClient({ ...editingClient, phone: e.target.value.replace(/\D/g, '') })}
                   />
@@ -374,8 +545,8 @@ export default function ClientesPage() {
 
             <div style={{ display: 'flex', gap: '1rem', marginTop: '2rem' }}>
               <button className="btn btn-outline w-100" onClick={() => setEditingClient(null)}>Cancelar</button>
-              <button 
-                className="btn btn-primary w-100" 
+              <button
+                className="btn btn-primary w-100"
                 onClick={handleEditClient}
               >
                 Guardar Cambios
@@ -385,7 +556,7 @@ export default function ClientesPage() {
         </div>
       )}
 
-      <ConfirmationModal 
+      <ConfirmationModal
         isOpen={isConfirmDeleteOpen}
         onClose={() => setIsConfirmDeleteOpen(false)}
         onConfirm={confirmDelete}

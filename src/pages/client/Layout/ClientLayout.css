@@ -1,0 +1,21 @@
+.client-layout {
+  display: flex;
+  min-height: 100vh;
+  background-color: var(--color-bg);
+}
+
+.client-main {
+  flex: 1;
+  overflow-y: auto;
+  height: 100vh;
+}
+
+.client-content {
+  padding: 0;
+}
+
+@media (max-width: 1024px) {
+  .client-layout {
+    flex-direction: column;
+  }
+}

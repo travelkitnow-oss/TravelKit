@@ -24,11 +24,7 @@ export default function GananciasPage() {
   const [chartData, setChartData] = useState<any[]>([]);
   const [pieData, setPieData] = useState<any[]>([]);
 
-  useEffect(() => {
-    fetchFinancialData();
-  }, []);
-
-  const fetchFinancialData = async () => {
+  async function fetchFinancialData() {
     setLoading(true);
     
     // 1. Fetch Billing and join with Clients
@@ -73,12 +69,60 @@ export default function GananciasPage() {
       }
     });
 
+    // 2. Fetch Meetings and extract session payments
+    const { data: meetingsData } = await supabase.from('admin_meetings').select('*');
+    const sessionsCount = meetingsData?.filter(m => m.status === 'confirmed').length || 0;
+
+    (meetingsData || []).forEach((m) => {
+      if (m.advance_paid) {
+        const amount = (Number(m.paid_amount) || 50000) / (m.final_paid ? 2 : 1);
+        totalIncome += amount;
+        
+        const paidDate = m.created_at ? new Date(m.created_at) : new Date();
+        const monthKey = paidDate.toLocaleString('es-AR', { month: 'short' });
+        revenueByMonth[monthKey] = (revenueByMonth[monthKey] || 0) + amount;
+        revenueByService['Sesión Inicial'] = (revenueByService['Sesión Inicial'] || 0) + amount;
+
+        confirmedTransactions.push({
+          id: `meeting-${m.id}-adv`,
+          clientId: m.client_id || 'lead',
+          taskIndex: -1,
+          client: m.client_name,
+          service: 'Adelanto 50% - Sesión Inicial',
+          amount: `$${amount.toLocaleString('es-AR')}`,
+          numericAmount: amount,
+          date: paidDate.toLocaleDateString(),
+          status: 'completado',
+          timestamp: paidDate.getTime()
+        });
+      }
+
+      if (m.final_paid) {
+        const amount = (Number(m.paid_amount) || 50000) / 2;
+        totalIncome += amount;
+        
+        const paidDate = m.created_at ? new Date(m.created_at) : new Date();
+        const monthKey = paidDate.toLocaleString('es-AR', { month: 'short' });
+        revenueByMonth[monthKey] = (revenueByMonth[monthKey] || 0) + amount;
+        revenueByService['Sesión Inicial'] = (revenueByService['Sesión Inicial'] || 0) + amount;
+
+        confirmedTransactions.push({
+          id: `meeting-${m.id}-fin`,
+          clientId: m.client_id || 'lead',
+          taskIndex: -1,
+          client: m.client_name,
+          service: 'Pago Final 50% - Sesión Inicial',
+          amount: `$${amount.toLocaleString('es-AR')}`,
+          numericAmount: amount,
+          date: paidDate.toLocaleDateString(),
+          status: 'completado',
+          timestamp: paidDate.getTime() + 1000 // slightly after advance
+        });
+      }
+    });
+
     // Sort transactions by date (newest first)
     confirmedTransactions.sort((a, b) => b.timestamp - a.timestamp);
-
-    // 2. Fetch Meetings
-    const { data: meetingsData } = await supabase.from('admin_meetings').select('*').eq('status', 'confirmed');
-    const sessionsCount = meetingsData?.length || 0;
 
     // 3. Fetch Clients
     const { data: clientsData } = await supabase.from('clients').select('id, name, created_at').order('created_at', { ascending: false });
@@ -118,7 +162,11 @@ export default function GananciasPage() {
     })));
 
     setLoading(false);
-  };
+  }
+
+  useEffect(() => {
+    fetchFinancialData();
+  }, []);
 
   const handleDeleteActivity = async (tx: any) => {
     if (!window.confirm('¿Estás seguro de que quieres eliminar este registro de cobro? El servicio volverá a estar pendiente de pago.')) return;

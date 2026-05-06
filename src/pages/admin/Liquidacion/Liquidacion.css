@@ -115,7 +115,7 @@
 
 .client-text-liq h4 {
   margin: 0;
-  font-size: 1.05rem;
+  font-size: 1rem;
   font-weight: 700;
 }
 
@@ -123,6 +123,11 @@
   margin: 2px 0 0;
   font-size: 0.8rem;
   opacity: 0.6;
+}
+
+.client-item-premium.active .client-text-liq h4,
+.client-item-premium.active .client-text-liq p {
+  color: white;
 }
 
 .btn-icon-trash {
@@ -230,49 +235,49 @@
 .invoice-receipt {
   background: white;
   width: 100%;
-  max-width: 850px;
-  padding: 4rem;
-  box-shadow: 0 30px 60px rgba(0,0,0,0.1);
+  max-width: 800px;
+  padding: 3rem;
+  box-shadow: 0 15px 35px rgba(0,0,0,0.06);
   position: relative;
-  border-radius: 4px;
+  border-radius: 16px;
 }
 
 .invoice-header {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  padding-bottom: 3rem;
+  padding-bottom: 2rem;
   border-bottom: 2px solid #f1f5f9;
-  margin-bottom: 3rem;
+  margin-bottom: 2rem;
 }
 
 .agency-brand {
   display: flex;
   align-items: center;
-  gap: 1.5rem;
+  gap: 1.2rem;
 }
 
 .brand-logo-large {
-  width: 90px;
-  height: 90px;
+  width: 70px;
+  height: 70px;
   object-fit: cover;
-  border-radius: 20px;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+  border-radius: 16px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
 }
 
 .brand-text h2 {
   margin: 0;
-  font-size: 2.4rem; /* Más grande */
+  font-size: 1.8rem;
   color: #1F3A4D;
   font-weight: 800;
-  letter-spacing: -1.5px;
+  letter-spacing: -1px;
 }
 
 .brand-text span {
-  font-size: 0.95rem; /* Más grande */
+  font-size: 0.85rem;
   color: #6E8898;
   text-transform: uppercase;
-  letter-spacing: 3px;
+  letter-spacing: 2px;
   font-weight: 700;
 }
 
@@ -316,33 +321,34 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: #f1f5f9; /* Ligeramente más oscuro para contrastar con la boleta */
-  padding: 2.5rem;
-  border-radius: 20px;
-  margin-bottom: 3rem;
+  background: #f8fafc;
+  padding: 1.5rem 2rem;
+  border-radius: 16px;
+  margin-bottom: 2rem;
+  border: 1px solid #f1f5f9;
 }
 
 .box-label {
-  font-size: 0.8rem;
-  color: #475569; /* Oscurecido */
+  font-size: 0.75rem;
+  color: #64748b;
   text-transform: uppercase;
   letter-spacing: 1.5px;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.4rem;
   display: block;
   font-weight: 700;
 }
 
 .client-data-box h3 {
   margin: 0;
-  font-size: 1.6rem;
+  font-size: 1.3rem;
   color: #1F3A4D;
   font-weight: 800;
 }
 
 .client-data-box p {
   margin: 4px 0 0;
-  color: #334155; /* Oscurecido */
-  font-size: 0.95rem;
+  color: #475569;
+  font-size: 0.9rem;
   font-weight: 500;
 }
 
@@ -351,31 +357,31 @@
 }
 
 .total-label {
-  font-size: 0.9rem;
-  color: #a37c46; /* Dorado más oscuro para contraste */
+  font-size: 0.8rem;
+  color: #a37c46;
   font-weight: 800;
-  letter-spacing: 2px;
+  letter-spacing: 1.5px;
 }
 
 .total-value {
   margin: 0;
-  font-size: 3.5rem;
+  font-size: 2.2rem;
   font-weight: 900;
   color: #1F3A4D;
-  letter-spacing: -1.5px;
+  letter-spacing: -1px;
 }
 
 .receipt-table {
   width: 100%;
   border-collapse: collapse;
-  margin-bottom: 4rem;
+  margin-bottom: 3rem;
 }
 
 .receipt-table th {
   text-align: left;
-  padding: 1.25rem 0;
-  color: #475569; /* Oscurecido */
-  font-size: 0.85rem;
+  padding: 1rem 0;
+  color: #64748b;
+  font-size: 0.8rem;
   text-transform: uppercase;
   letter-spacing: 1.5px;
   font-weight: 800;
@@ -383,21 +389,21 @@
 }
 
 .category-header td {
-  padding: 2.5rem 0 1.25rem;
-  font-size: 1rem;
-  font-weight: 900; /* Más peso */
+  padding: 1.5rem 0 0.75rem;
+  font-size: 0.95rem;
+  font-weight: 800;
   color: #1F3A4D;
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.5rem;
   border-bottom: 1px solid #f1f5f9;
 }
 
 .service-row td {
-  padding: 1.25rem 0;
+  padding: 0.85rem 0;
   border-bottom: 1px solid #f8fafc;
-  color: #1e293b; /* Casi negro para máximo contraste */
-  font-size: 1rem;
+  color: #334155;
+  font-size: 0.95rem;
   font-weight: 500;
 }
 
@@ -410,13 +416,13 @@
   display: flex;
   justify-content: space-between;
   align-items: flex-end;
-  padding-top: 3rem;
+  padding-top: 2rem;
   border-top: 2px solid #f1f5f9;
 }
 
 .footer-notes p {
   margin: 4px 0;
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   color: #94a3b8;
   font-style: italic;
 }
@@ -426,14 +432,14 @@
 }
 
 .final-label {
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   font-weight: 800;
   color: #1F3A4D;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.4rem;
 }
 
 .final-value {
-  font-size: 2.5rem;
+  font-size: 1.8rem;
   font-weight: 900;
   color: #C89B5A;
 }

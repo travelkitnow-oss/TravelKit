@@ -145,21 +145,9 @@ export default function TareasPage() {
   };
 
   const fetchServices = async () => {
-    // Fetch generic services
+    // Solo traemos servicios de la tabla 'services' (Costos)
     const { data: genericServices } = await supabase.from('services').select('*').order('name');
     
-    // Fetch catalog items (Hotels, Transports, Excursions)
-    const { data: catalogItems } = await supabase.from('catalog_items').select('*, catalog_folders(type)');
-
-    const mappedCatalog: ServiceItem[] = (catalogItems || []).map(i => ({
-      id: i.id,
-      name: `[${(i.catalog_folders as any)?.type?.toUpperCase() || 'CAT'}] ${i.name}`,
-      price: i.cost_usd || i.price || 0,
-      type: (i.catalog_folders as any)?.type,
-      capacity: i.capacity || (i.catalog_folders as any)?.type === 'hotel' ? 2 : 1,
-      pricing_type: i.pricing_type || ((i.catalog_folders as any)?.type === 'excursion' ? 'per_person' : 'per_group')
-    }));
-
     const mappedGeneric: ServiceItem[] = (genericServices || []).map(s => ({
       ...s,
       type: 'generic',
@@ -167,7 +155,7 @@ export default function TareasPage() {
       pricing_type: 'per_group'
     }));
 
-    setServices([...mappedGeneric, ...mappedCatalog]);
+    setServices(mappedGeneric);
   };
 
   const fetchBilling = async (clientId: string) => {
@@ -385,7 +373,7 @@ export default function TareasPage() {
       newTasks.push({
         serviceId: 'payment-record',
         name: paymentConcept || 'Pago a cuenta',
-        price: -amount, // Negative price to subtract from "Total a cobrar"
+        price: amount, // Positive price
         date: new Date().toISOString(),
         completed: true,
         paid: true,
@@ -531,11 +519,11 @@ export default function TareasPage() {
                 <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
                   <div className="billing-total-badge collected">
                     <span className="label">Cobrado</span>
-                    <span className="amount">${(billingData?.tasks?.filter(t => t.paid).reduce((sum, t) => sum + t.price, 0) || 0).toLocaleString('es-AR')}</span>
+                    <span className="amount">${((billingData?.tasks?.filter(t => t.serviceId !== 'payment-record' && t.paid).reduce((sum, t) => sum + Math.abs(t.price), 0) || 0) + (billingData?.tasks?.filter(t => t.serviceId === 'payment-record').reduce((sum, t) => sum + Math.abs(t.price), 0) || 0)).toLocaleString('es-AR')}</span>
                   </div>
                   <div className="billing-total-badge pending">
                     <span className="label">Falta cobrar</span>
-                    <span className="amount">${(billingData?.tasks?.filter(t => !t.paid).reduce((sum, t) => sum + t.price, 0) || 0).toLocaleString('es-AR')}</span>
+                    <span className="amount">${Math.max(0, (billingData?.tasks?.filter(t => t.serviceId !== 'payment-record').reduce((sum, t) => sum + Math.abs(t.price), 0) || 0) - ((billingData?.tasks?.filter(t => t.serviceId !== 'payment-record' && t.paid).reduce((sum, t) => sum + Math.abs(t.price), 0) || 0) + (billingData?.tasks?.filter(t => t.serviceId === 'payment-record').reduce((sum, t) => sum + Math.abs(t.price), 0) || 0))).toLocaleString('es-AR')}</span>
                   </div>
                   <button className="btn-cobrar-main" onClick={openPaymentModal}>
                     <DollarSign size={20} />
@@ -766,47 +754,76 @@ export default function TareasPage() {
                   {expandedSection === 'tareas' && (
                     <div className="tasks-list animate-fade-in">
                     {billingData.tasks.length > 0 ? (
-                      billingData.tasks.map((task, idx) => (
-                        <div key={idx} className={`task-item ${task.completed ? 'completed' : ''}`}>
-                          <div className="task-main-row">
-                            <button 
-                              className={`task-check ${task.completed ? 'active' : ''}`}
-                              onClick={() => handleToggleComplete(idx)}
-                            >
-                              <Check size={14} />
-                            </button>
-                            <div className="task-details">
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                <span className="task-name">{task.name}</span>
-                                {task.completed && !task.paid && <span className="done-badge-mini">REALIZADA</span>}
+                      billingData.tasks.map((task, idx) => {
+                        if (task.serviceId === 'payment-record') return null;
+                        return (
+                          <div key={idx} className={`task-item ${task.completed ? 'completed' : ''}`}>
+                            <div className="task-main-row">
+                              <button 
+                                className={`task-check ${task.completed ? 'active' : ''}`}
+                                onClick={() => handleToggleComplete(idx)}
+                              >
+                                <Check size={14} />
+                              </button>
+                              <div className="task-details">
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                  <span className="task-name">{task.name}</span>
+                                  {task.completed && !task.paid && <span className="done-badge-mini">REALIZADA</span>}
+                                </div>
+                                <span className="task-date">{new Date(task.date).toLocaleDateString()}</span>
                               </div>
-                              <span className="task-date">{new Date(task.date).toLocaleDateString()}</span>
-                            </div>
-                            <div className="task-price-row">
-                              <span className="task-price" style={{ color: task.price < 0 ? '#10b981' : 'inherit' }}>
-                                {task.price < 0 ? '-' : ''}${Math.abs(task.price).toLocaleString('es-AR')}
-                              </span>
-                              <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
-                                {task.paid ? (
-                                  <div className="paid-badge-mini"><Check size={10} /> PAGADO</div>
-                                ) : (
-                                  <div className="pending-badge-mini" style={{ fontSize: '0.65rem', fontWeight: 800, color: '#94a3b8' }}>PENDIENTE</div>
-                                )}
-                                <button className="btn-delete-task" onClick={() => handleRemoveTask(idx)}>
-                                  <Trash2 size={14} />
-                                </button>
+                              <div className="task-price-row">
+                                <span className="task-price">
+                                  ${Math.abs(task.price).toLocaleString('es-AR')}
+                                </span>
+                                <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+                                  {task.paid ? (
+                                    <div className="paid-badge-mini"><Check size={10} /> PAGADO</div>
+                                  ) : (
+                                    <div className="pending-badge-mini" style={{ fontSize: '0.65rem', fontWeight: 800, color: '#94a3b8' }}>PENDIENTE</div>
+                                  )}
+                                  <button className="btn-delete-task" onClick={() => handleRemoveTask(idx)}>
+                                    <Trash2 size={14} />
+                                  </button>
+                                </div>
                               </div>
                             </div>
                           </div>
-                        </div>
-                      ))
+                        );
+                      })
                     ) : (
-                      <div className="empty-state">
-                        <FileText size={40} />
-                        <p>No hay tareas cargadas</p>
-                      </div>
-                    )}
-                  </div>
+                        <div className="empty-state">
+                          <FileText size={40} />
+                          <p>No hay tareas cargadas</p>
+                        </div>
+                      )}
+
+                      {/* Pagos a cuenta separados */}
+                      {billingData.tasks.some(t => t.serviceId === 'payment-record') && (
+                        <div className="payments-list" style={{ marginTop: '1.5rem', borderTop: '1px solid rgba(0,0,0,0.05)', paddingTop: '1.5rem' }}>
+                          <h4 style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', marginBottom: '1rem', letterSpacing: '0.5px' }}>
+                            Pagos Parciales Registrados
+                          </h4>
+                          {billingData.tasks.map((task, idx) => {
+                            if (task.serviceId !== 'payment-record') return null;
+                            return (
+                              <div key={idx} className="payment-item animate-fade-in" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem 1.25rem', background: 'rgba(16, 185, 129, 0.08)', borderRadius: '14px', marginBottom: '0.5rem', border: '1px solid rgba(16, 185, 129, 0.15)' }}>
+                                <div>
+                                  <span style={{ fontSize: '0.95rem', fontWeight: 700, color: '#064e3b' }}>{task.name}</span>
+                                  <span style={{ fontSize: '0.75rem', color: '#047857', display: 'block', opacity: 0.8 }}>{new Date(task.date).toLocaleDateString()}</span>
+                                </div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                  <span style={{ fontWeight: 900, color: '#059669', fontSize: '1.1rem' }}>+${Math.abs(task.price).toLocaleString('es-AR')}</span>
+                                  <button className="btn-delete-task" style={{ background: 'white' }} onClick={() => handleRemoveTask(idx)}>
+                                    <Trash2 size={14} />
+                                  </button>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
                   )}
                 </div>
 
@@ -912,44 +929,56 @@ export default function TareasPage() {
       {/* Modal Agregar Tarea */}
       {isAddingTask && (
         <div className="modal-overlay animate-fade-in" style={{ zIndex: 1400 }}>
-          <div className="modal-content glass-card animate-scale-in" style={{ maxWidth: '500px', padding: '2.5rem', borderRadius: '24px' }}>
-            <div className="modal-header" style={{ marginBottom: '1.5rem', borderBottom: 'none', paddingBottom: 0 }}>
+          <div className="modal-content glass-card animate-scale-in" style={{ maxWidth: '420px', padding: 0, borderRadius: '20px', overflow: 'hidden' }}>
+            <div style={{ padding: '1.5rem', background: 'var(--color-primary)', color: 'white', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                <div className="icon-bg" style={{ width: '40px', height: '40px', padding: '8px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <Plus size={20} />
+                <div style={{ background: 'rgba(255,255,255,0.15)', padding: '6px', borderRadius: '8px' }}>
+                  <Plus size={18} color="white" />
                 </div>
-                <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 700, fontFamily: 'var(--font-family, system-ui, sans-serif)', color: 'var(--text-primary)' }}>Agregar Servicio</h3>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 700, color: 'white' }}>Agregar Servicio</h3>
+                  <p style={{ margin: 0, fontSize: '0.75rem', opacity: 0.8 }}>Selecciona para añadir a la cuenta</p>
+                </div>
               </div>
-              <button onClick={() => setIsAddingTask(false)} className="close-modal-btn">
-                <X size={20} />
+              <button onClick={() => setIsAddingTask(false)} style={{ background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '50%', padding: '6px', cursor: 'pointer', color: 'white' }}>
+                <X size={18} />
               </button>
             </div>
             
-            <p className="text-secondary mb-4" style={{ fontSize: '0.95rem' }}>Selecciona el servicio que deseas agregar a la cuenta del cliente:</p>
-
-            <div className="services-grid" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '50vh', overflowY: 'auto', paddingRight: '0.5rem' }}>
-              {services.length > 0 ? (
-                services.map(service => (
-                  <button 
-                    key={service.id} 
-                    className="service-pick-card"
-                    onClick={() => handleAddTask(service)}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                      <div style={{ 
-                        width: '8px', 
-                        height: '8px', 
-                        borderRadius: '50%', 
-                        background: 'var(--color-primary)' 
-                      }}></div>
-                      <span className="name" style={{ fontWeight: 600, fontSize: '1rem', color: 'var(--text-primary)' }}>{service.name}</span>
-                    </div>
-                    <span className="price" style={{ fontWeight: 800, color: 'var(--color-primary)', fontSize: '1.1rem' }}>${service.price.toLocaleString('es-AR')}</span>
-                  </button>
-                ))
+            <div className="custom-scrollbar" style={{ padding: '1.25rem', maxHeight: '50vh', overflowY: 'auto' }}>
+              {services.filter(s => !s.name.startsWith('[')).length > 0 ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  {services.filter(s => !s.name.startsWith('[')).map(service => (
+                    <button 
+                      key={service.id} 
+                      onClick={() => handleAddTask(service)}
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        padding: '1rem',
+                        background: 'rgba(0,0,0,0.02)',
+                        border: '1px solid rgba(0,0,0,0.05)',
+                        borderRadius: '12px',
+                        cursor: 'pointer',
+                        transition: 'all 0.15s ease',
+                        width: '100%',
+                        textAlign: 'left'
+                      }}
+                      onMouseOver={(e) => { e.currentTarget.style.background = 'rgba(16, 185, 129, 0.05)'; e.currentTarget.style.borderColor = 'rgba(16, 185, 129, 0.2)'; }}
+                      onMouseOut={(e) => { e.currentTarget.style.background = 'rgba(0,0,0,0.02)'; e.currentTarget.style.borderColor = 'rgba(0,0,0,0.05)'; }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                        <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--color-primary)' }}></div>
+                        <span style={{ fontWeight: 600, fontSize: '0.95rem', color: 'var(--text-primary)' }}>{service.name}</span>
+                      </div>
+                      <span style={{ fontWeight: 800, color: 'var(--color-primary)', fontSize: '1rem' }}>${service.price.toLocaleString('es-AR')}</span>
+                    </button>
+                  ))}
+                </div>
               ) : (
-                <div className="p-5 text-center" style={{ background: 'rgba(0,0,0,0.02)', borderRadius: '16px' }}>
-                  <p className="text-secondary m-0">No hay servicios configurados en 'Costos'.</p>
+                <div style={{ padding: '2rem', textAlign: 'center', background: 'rgba(0,0,0,0.02)', borderRadius: '12px' }}>
+                  <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.85rem' }}>No hay servicios definidos en Costos.</p>
                 </div>
               )}
             </div>
@@ -959,95 +988,103 @@ export default function TareasPage() {
 
       {showPaymentModal && (
         <div className="modal-overlay animate-fade-in" style={{ zIndex: 1500 }}>
-          <div className="modal-content glass-card animate-scale-in" style={{ maxWidth: '600px', padding: 0, borderRadius: '24px', overflow: 'hidden' }}>
-            <div className="modal-header" style={{ padding: '1.25rem 2rem', background: 'var(--color-primary)', color: 'white', borderBottom: 'none' }}>
+          <div className="modal-content glass-card animate-scale-in" style={{ maxWidth: '480px', padding: 0, borderRadius: '20px', overflow: 'hidden' }}>
+            <div style={{ padding: '1.25rem 1.5rem', background: 'var(--color-primary)', color: 'white', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                <div style={{ background: 'rgba(255,255,255,0.2)', padding: '8px', borderRadius: '12px' }}>
+                <div style={{ background: 'rgba(16, 185, 129, 0.2)', color: '#10b981', padding: '8px', borderRadius: '10px', display: 'flex' }}>
                   <DollarSign size={20} />
                 </div>
                 <div>
-                  <h3 style={{ margin: 0, color: 'white', fontSize: '1.2rem' }}>Gestión de Cobro</h3>
-                  <p style={{ margin: 0, opacity: 0.8, fontSize: '0.75rem' }}>{selectedClient?.name}</p>
+                  <h3 style={{ margin: 0, color: 'white', fontSize: '1.1rem', fontWeight: 700 }}>Registrar Cobro</h3>
+                  <p style={{ margin: '0 0 0 0', color: 'rgba(255,255,255,0.7)', fontSize: '0.8rem', fontWeight: 500 }}>Cliente: {selectedClient?.name}</p>
                 </div>
               </div>
-              <button onClick={() => setShowPaymentModal(false)} style={{ color: 'white', opacity: 0.7 }} className="close-modal-btn">
-                <X size={20} />
+              <button onClick={() => setShowPaymentModal(false)} style={{ background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '50%', padding: '6px', cursor: 'pointer', color: 'white' }}>
+                <X size={18} />
               </button>
             </div>
 
-            <div style={{ padding: '1.5rem 2rem' }}>
-              <label className="text-xs font-bold uppercase text-secondary mb-2 block" style={{ letterSpacing: '0.5px' }}>Servicios Pendientes</label>
-              
-              <div className="payment-selection-list custom-scrollbar" style={{ maxHeight: '180px', marginBottom: '1rem' }}>
-                {billingData?.tasks.filter(t => !t.paid && t.price > 0).length ?? 0 > 0 ? (
-                  billingData?.tasks.map((task, idx) => {
-                    if (task.paid || task.price <= 0) return null;
-                    const isSelected = selectedTaskIndices.includes(idx);
-                    return (
-                      <div 
-                        key={idx} 
-                        className={`payment-selection-item ${isSelected ? 'selected' : ''}`}
-                        onClick={() => handleToggleSelectTask(idx)}
-                        style={{ padding: '0.6rem 1rem' }}
-                      >
-                        <div className="info">
-                          <span className="name" style={{ fontSize: '0.85rem' }}>{task.name}</span>
-                          <span className="date" style={{ fontSize: '0.65rem' }}>{new Date(task.date).toLocaleDateString('es-AR')}</span>
-                        </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                          <span className="price" style={{ fontSize: '0.95rem' }}>${task.price.toLocaleString('es-AR')}</span>
-                          <div style={{ 
-                            width: '18px', 
-                            height: '18px', 
-                            borderRadius: '5px', 
-                            border: isSelected ? 'none' : '2px solid #e2e8f0',
-                            background: isSelected ? '#10b981' : 'transparent',
+            <div style={{ padding: '1.25rem 1.5rem' }}>
+              <div style={{ marginBottom: '1rem' }}>
+                <label style={{ fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--text-secondary)', letterSpacing: '0.5px', marginBottom: '0.5rem', display: 'block' }}>Servicios Pendientes a Cobrar</label>
+                
+                <div className="custom-scrollbar" style={{ maxHeight: '180px', display: 'flex', flexDirection: 'column', gap: '0.5rem', overflowY: 'auto' }}>
+                  {billingData?.tasks.filter(t => !t.paid && t.price > 0 && t.serviceId !== 'payment-record').length ?? 0 > 0 ? (
+                    billingData?.tasks.map((task, idx) => {
+                      if (task.paid || task.price <= 0 || task.serviceId === 'payment-record') return null;
+                      const isSelected = selectedTaskIndices.includes(idx);
+                      return (
+                        <div 
+                          key={idx} 
+                          onClick={() => handleToggleSelectTask(idx)}
+                          style={{ 
+                            padding: '0.75rem 1rem', 
+                            borderRadius: '12px', 
+                            border: isSelected ? '2px solid #10b981' : '1px solid rgba(0,0,0,0.08)',
+                            background: isSelected ? 'rgba(16, 185, 129, 0.04)' : 'white',
+                            cursor: 'pointer',
                             display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            color: 'white'
-                          }}>
-                            {isSelected && <Check size={12} strokeWidth={3} />}
+                            justifyContent: 'space-between',
+                            alignItems: 'center'
+                          }}
+                        >
+                          <div>
+                            <span style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-primary)', display: 'block' }}>{task.name}</span>
+                            <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 500 }}>{new Date(task.date).toLocaleDateString('es-AR')}</span>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                            <span style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--text-primary)' }}>${task.price.toLocaleString('es-AR')}</span>
+                            <div style={{ 
+                              width: '20px', 
+                              height: '20px', 
+                              borderRadius: '5px', 
+                              border: isSelected ? 'none' : '2px solid #cbd5e1',
+                              background: isSelected ? '#10b981' : 'transparent',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              color: 'white'
+                            }}>
+                              {isSelected && <Check size={14} strokeWidth={3} />}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    );
-                  })
-                ) : (
-                  <div style={{ padding: '1.5rem', textAlign: 'center', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
-                    No hay servicios pendientes.
-                  </div>
-                )}
+                      );
+                    })
+                  ) : (
+                    <div style={{ padding: '1.25rem', textAlign: 'center', background: 'rgba(0,0,0,0.02)', borderRadius: '12px' }}>
+                      <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.85rem' }}>No hay servicios pendientes.</p>
+                    </div>
+                  )}
+                </div>
               </div>
 
-              <div className="payment-summary-box" style={{ padding: '1rem', marginBottom: '1.25rem' }}>
-                <div className="payment-summary-row" style={{ marginBottom: '0.75rem' }}>
-                  <span className="label" style={{ fontSize: '0.75rem' }}>Total Seleccionado</span>
-                  <span className="value" style={{ fontSize: '0.95rem' }}>${selectedTaskIndices.reduce((sum, i) => sum + (billingData?.tasks[i]?.price || 0), 0).toLocaleString('es-AR')}</span>
+              <div style={{ background: 'rgba(0,0,0,0.02)', borderRadius: '16px', padding: '1rem', marginBottom: '1.25rem', border: '1px solid rgba(0,0,0,0.05)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', paddingBottom: '0.75rem', borderBottom: '1px dashed rgba(0,0,0,0.1)' }}>
+                  <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Total Seleccionado</span>
+                  <span style={{ fontSize: '1.2rem', fontWeight: 900, color: 'var(--color-primary)' }}>${selectedTaskIndices.reduce((sum, i) => sum + (billingData?.tasks[i]?.price || 0), 0).toLocaleString('es-AR')}</span>
                 </div>
                 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr', gap: '1rem' }}>
-                  <div className="form-group">
-                    <label className="text-xs font-bold uppercase text-secondary mb-1 block">Monto</label>
-                    <div className="input-with-icon">
-                      <DollarSign size={16} />
+                  <div style={{ margin: 0 }}>
+                    <label style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-secondary)', marginBottom: '0.4rem', display: 'block' }}>Monto a Cobrar</label>
+                    <div style={{ display: 'flex', alignItems: 'center', background: 'white', borderRadius: '10px', border: '1px solid rgba(0,0,0,0.1)', padding: '0 10px' }}>
+                      <DollarSign size={16} color="var(--color-primary)" />
                       <input 
                         type="number" 
-                        className="form-input" 
-                        style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--color-primary)', height: '48px' }}
+                        style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--color-primary)', height: '42px', border: 'none', background: 'transparent', width: '100%', outline: 'none', paddingLeft: '5px' }}
                         value={paymentAmount}
                         onChange={e => setPaymentAmount(e.target.value)}
                       />
                     </div>
                   </div>
 
-                  <div className="form-group">
-                    <label className="text-xs font-bold uppercase text-secondary mb-1 block">Concepto / Nota</label>
+                  <div style={{ margin: 0 }}>
+                    <label style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-secondary)', marginBottom: '0.4rem', display: 'block' }}>Concepto</label>
                     <input 
                       type="text" 
-                      className="form-input" 
-                      style={{ height: '48px', fontSize: '0.9rem' }}
-                      placeholder="Ej: Pago parcial..."
+                      style={{ height: '44px', fontSize: '0.9rem', borderRadius: '10px', border: '1px solid rgba(0,0,0,0.1)', background: 'white', padding: '0 10px', width: '100%', boxSizing: 'border-box', outline: 'none' }}
+                      placeholder="Ej: Seña"
                       value={paymentConcept}
                       onChange={e => setPaymentConcept(e.target.value)}
                     />
@@ -1056,16 +1093,26 @@ export default function TareasPage() {
               </div>
 
               <button 
-                className="btn btn-primary w-100 py-3" 
                 onClick={handleConfirmPayment} 
-                style={{ borderRadius: '14px', fontSize: '1.1rem', fontWeight: 700, boxShadow: '0 8px 16px rgba(31, 58, 77, 0.12)' }}
+                style={{ 
+                  width: '100%', 
+                  borderRadius: '12px', 
+                  fontSize: '1rem', 
+                  fontWeight: 700, 
+                  padding: '1rem', 
+                  background: 'var(--color-primary)',
+                  color: 'white',
+                  border: 'none',
+                  cursor: 'pointer',
+                  boxShadow: '0 4px 12px rgba(31, 58, 77, 0.2)', 
+                  display: 'flex', 
+                  justifyContent: 'center', 
+                  alignItems: 'center', 
+                  gap: '0.5rem'
+                }}
               >
-                Registrar Cobro
+                <Check size={18} /> Confirmar y Registrar
               </button>
-              
-              <p style={{ textAlign: 'center', marginTop: '0.75rem', fontSize: '0.7rem', color: '#94a3b8', marginBottom: 0 }}>
-                Si el monto es menor al total, se registrará como pago parcial.
-              </p>
             </div>
           </div>
         </div>

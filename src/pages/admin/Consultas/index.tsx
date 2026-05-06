@@ -1,6 +1,19 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect } from 'react';
-import { Inbox as InboxIcon, User, Mail, Phone, Calendar, Trash2, MessageSquare, ChevronRight, Check, X } from 'lucide-react';
+import { 
+  Inbox as InboxIcon, 
+  User, 
+  Mail, 
+  Phone, 
+  Calendar, 
+  Trash2, 
+  MessageSquare, 
+  ChevronRight, 
+  Check, 
+  X,
+  Clock,
+  Search
+} from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { supabase } from '../../../lib/supabase';
@@ -24,6 +37,7 @@ export default function ConsultasPage() {
   const [loading, setLoading] = useState(true);
   const [selectedSubmission, setSelectedSubmission] = useState<Submission | null>(null);
   const [filter, setFilter] = useState<'todos' | 'nuevo' | 'aceptado' | 'rechazado'>('todos');
+  const [searchTerm, setSearchTerm] = useState('');
 
   const [confirmConfig, setConfirmConfig] = useState<{
     isOpen: boolean;
@@ -35,24 +49,24 @@ export default function ConsultasPage() {
     isOpen: false, title: '', message: '', onConfirm: () => {}, type: 'danger'
   });
 
-  useEffect(() => {
-    fetchSubmissions();
-  }, []);
-
-  const fetchSubmissions = async () => {
+  async function fetchSubmissions() {
     setLoading(true);
     const { data, error } = await supabase.from('form_submissions').select('*').order('created_at', { ascending: false });
     if (!error) setSubmissions(data || []);
     setLoading(false);
-  };
+  }
+
+  useEffect(() => {
+    fetchSubmissions();
+  }, []);
 
   const updateStatus = async (id: string, newStatus: Submission['status']) => {
     const { error } = await supabase.from('form_submissions').update({ status: newStatus }).eq('id', id);
     if (!error) {
-      setSubmissions(submissions.map(s => s.id === id ? { ...s, status: newStatus } : s));
-      if (selectedSubmission?.id === id) {
-        setSelectedSubmission({ ...selectedSubmission, status: newStatus });
-      }
+      setSubmissions(prev => prev.map(s => s.id === id ? { ...s, status: newStatus } : s));
+      setSelectedSubmission(prev => prev?.id === id ? { ...prev, status: newStatus } : prev);
+    } else {
+      console.error('Error updating status:', error);
     }
   };
 
@@ -63,54 +77,13 @@ export default function ConsultasPage() {
     }
 
     try {
-      // 1. Create/Find Client first to link the meeting
-      let clientId: string | null = null;
-      
-      // Check if client exists by email
-      const { data: existingClient } = await supabase
-        .from('clients')
-        .select('id, source')
-        .eq('email', sub.email)
-        .single();
-        
-      if (existingClient) {
-        clientId = existingClient.id;
-        // If it was a session-only lead, promote it to a full client now that we accepted the consultation
-        if (existingClient.source === 'agenda_session_only') {
-          await supabase.from('clients').update({ source: 'formulario' }).eq('id', clientId);
-        }
-      } else {
-        const { data: newClient, error: clientError } = await supabase
-          .from('clients')
-          .insert([{
-            name: sub.name,
-            email: sub.email,
-            phone: sub.phone,
-            source: 'formulario'
-          }])
-          .select()
-          .single();
-          
-        if (clientError) throw clientError;
-        clientId = newClient.id;
-
-        // Create billing record for the new client
-        await supabase.from('client_billing').insert([{
-          client_id: clientId,
-          destination: sub.answers.find(a => a.questionText.toLowerCase().includes('destino'))?.answer || 'Por definir',
-          tasks: [],
-          notes: '',
-          passengers: 1
-        }]);
-      }
-
-      // 2. Mark as accepted in submissions
+      // 1. Mark as accepted in submissions
       await updateStatus(sub.id, 'aceptado');
 
-      // 3. Create reservation in admin_meetings with client_id
+      // 2. Create reservation in admin_meetings WITHOUT client_id
       const { error: meetingError } = await supabase.from('admin_meetings').insert([{
         client_name: sub.name,
-        client_id: clientId, // Link to client
+        client_id: null, // NO CLIENT YET
         destination: sub.answers.find(a => a.questionText.toLowerCase().includes('destino'))?.answer || 'Por definir',
         email: sub.email,
         phone: sub.phone,
@@ -123,7 +96,6 @@ export default function ConsultasPage() {
       if (meetingError) throw meetingError;
 
       alert('¡Reunión aceptada y agendada correctamente!');
-      fetchSubmissions();
     } catch (error: any) {
       console.error('Error accepting consultation:', error);
       alert('Error: ' + error.message);
@@ -134,7 +106,7 @@ export default function ConsultasPage() {
     setConfirmConfig({
       isOpen: true,
       title: '¿Eliminar consulta?',
-      message: 'Esta acción eliminará la consulta permanentemente.',
+      message: 'Esta acción eliminará la consulta permanentemente del sistema.',
       type: 'danger',
       onConfirm: async () => {
         const { error } = await supabase.from('form_submissions').delete().eq('id', id);
@@ -148,15 +120,19 @@ export default function ConsultasPage() {
   };
 
   const filteredSubmissions = submissions.filter(s => {
-    if (filter === 'todos') return true;
-    return s.status === filter;
+    const matchesFilter = filter === 'todos' || 
+                          (filter === 'nuevo' && (s.status === 'nuevo' || s.status === 'leido')) || 
+                          s.status === filter;
+    const matchesSearch = s.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                         s.email.toLowerCase().includes(searchTerm.toLowerCase());
+    return matchesFilter && matchesSearch;
   });
 
   return (
     <div className="consultas-page animate-fade-in">
       <header className="page-header-centered">
-        <h1>Consultas Recibidas</h1>
-        <p>Gestiona y responde las solicitudes de tus viajeros desde un solo lugar.</p>
+        <h1>Centro de Consultas</h1>
+        <p>Gestiona las solicitudes entrantes, agenda sesiones y contacta a tus potenciales viajeros.</p>
       </header>
       
       <div className="filter-pills-container">
@@ -164,132 +140,172 @@ export default function ConsultasPage() {
           <button className={`pill ${filter === 'todos' ? 'active' : ''}`} onClick={() => setFilter('todos')}>
             Todos <span className="pill-count">{submissions.length}</span>
           </button>
-          <button className={`pill nuevo ${filter === 'nuevo' ? 'active' : ''}`} onClick={() => setFilter('nuevo')}>
-            Nuevos <span className="pill-count">{submissions.filter(s => s.status === 'nuevo').length}</span>
+          <button className={`pill ${filter === 'nuevo' ? 'active' : ''}`} onClick={() => setFilter('nuevo')}>
+            Nuevos <span className="pill-count">{submissions.filter(s => s.status === 'nuevo' || s.status === 'leido').length}</span>
           </button>
-          <button className={`pill aceptado ${filter === 'aceptado' ? 'active' : ''}`} onClick={() => setFilter('aceptado')}>
+          <button className={`pill ${filter === 'aceptado' ? 'active' : ''}`} onClick={() => setFilter('aceptado')}>
             Aceptados <span className="pill-count">{submissions.filter(s => s.status === 'aceptado').length}</span>
           </button>
-          <button className={`pill rechazado ${filter === 'rechazado' ? 'active' : ''}`} onClick={() => setFilter('rechazado')}>
+          <button className={`pill ${filter === 'rechazado' ? 'active' : ''}`} onClick={() => setFilter('rechazado')}>
             Rechazados <span className="pill-count">{submissions.filter(s => s.status === 'rechazado').length}</span>
           </button>
         </div>
       </div>
 
-      {loading ? (
-        <div className="p-5 text-center"><div className="loader-premium"></div></div>
-      ) : (
-        <div className="inbox-grid">
-          <div className="submissions-list glass-card">
-            <div className="card-header border-bottom">
-              <h3><InboxIcon size={20} className="text-primary" /> Consultas Recibidas</h3>
-            </div>
-            <div className="list-items">
-              {filteredSubmissions.length === 0 ? (
-                <div className="empty-state py-5">
-                  <InboxIcon size={48} className="text-tertiary mb-3" />
-                  <p>No hay consultas.</p>
-                </div>
-              ) : (
-                filteredSubmissions.map(s => (
-                  <div 
-                    key={s.id} 
-                    className={`submission-item ${s.status} ${selectedSubmission?.id === s.id ? 'selected' : ''}`}
-                    onClick={() => {
-                      setSelectedSubmission(s);
-                      if (s.status === 'nuevo') updateStatus(s.id, 'leido');
-                    }}
-                  >
-                    <div className="item-main">
-                      <div className="item-header">
-                        <div className="item-avatar">{s.name.charAt(0)}</div>
-                        <div className="item-info">
-                          <h4>{s.name}</h4>
-                          <span className="item-date">{format(new Date(s.created_at), 'dd MMM', { locale: es })}</span>
-                        </div>
-                      </div>
-                      <p className="item-email">{s.email}</p>
-                      <div className="item-tags">
-                        {s.status === 'aceptado' && <span className="aceptado-mini-tag">Agendado</span>}
-                        {s.status === 'rechazado' && <span className="rechazado-mini-tag">Rechazado</span>}
-                      </div>
-                    </div>
-                    <ChevronRight size={18} className="item-arrow" />
-                  </div>
-                ))
-              )}
+      <div className="inbox-grid">
+        <div className="submissions-list">
+          <div className="card-header border-bottom">
+            <div className="search-bar-modern">
+              <Search size={18} />
+              <input 
+                type="text" 
+                placeholder="Buscar por nombre o email..." 
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
             </div>
           </div>
-
-          <div className="details-panel">
-            {selectedSubmission ? (
-              <div className="glass-card full-height animate-fade-in" key={selectedSubmission.id}>
-                <div className="details-header border-bottom">
-                  <div className="details-user">
-                    <div className="details-avatar"><User size={24} /></div>
-                    <div>
-                      <h2>{selectedSubmission.name}</h2>
-                      <span className={`status-tag ${selectedSubmission.status}`}>{selectedSubmission.status}</span>
-                    </div>
-                  </div>
-                  <div className="details-actions">
-                    {selectedSubmission.status !== 'aceptado' && selectedSubmission.status !== 'rechazado' && (
-                      <button className="btn-icon btn-accept" onClick={() => handleAccept(selectedSubmission)}><Check size={20} /></button>
-                    )}
-                    {selectedSubmission.status !== 'rechazado' && selectedSubmission.status !== 'aceptado' && (
-                      <button className="btn-icon btn-reject" onClick={() => updateStatus(selectedSubmission.id, 'rechazado')}><X size={20} /></button>
-                    )}
-                    <button className="btn-icon text-danger" onClick={() => deleteSubmission(selectedSubmission.id)}><Trash2 size={20} /></button>
-                  </div>
-                </div>
-
-                <div className="details-content">
-                  <div className="info-section">
-                    <h4>Información de Contacto</h4>
-                    <div className="info-grid">
-                      <div className="info-item"><Mail size={16} /><span>{selectedSubmission.email}</span></div>
-                      <div className="info-item"><Phone size={16} /><span>{selectedSubmission.phone}</span></div>
-                      <div className="info-item"><Calendar size={16} /><span>Recibido el {format(new Date(selectedSubmission.created_at), "PPP", { locale: es })}</span></div>
-                    </div>
-                  </div>
-
-                  <div className="info-section">
-                    <h4>Respuestas del Formulario</h4>
-                    <div className="answers-list">
-                      {selectedSubmission.answers.map((ans, i) => (
-                        <div key={i} className="answer-item">
-                          <label>{ans.questionText}</label>
-                          <p>{ans.answer || 'Sin respuesta'}</p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
+          <div className="list-items custom-scrollbar">
+            {loading ? (
+              <div className="p-5 text-center"><div className="loader-premium"></div></div>
+            ) : filteredSubmissions.length === 0 ? (
+              <div className="empty-state py-5">
+                <InboxIcon size={48} strokeWidth={1} className="text-tertiary mb-3" />
+                <p>No se encontraron consultas.</p>
               </div>
             ) : (
-              <div className="consultas-empty-state">
-                <div className="empty-state-content">
-                  <div className="icon-circle">
-                    <MessageSquare size={48} strokeWidth={1.5} />
-                  </div>
-                  <h3>Centro de Consultas</h3>
-                  <p>Selecciona una solicitud del listado para ver los detalles, respuestas del formulario y agendar una reunión.</p>
-                  <div className="empty-state-stats">
-                    <div className="mini-stat">
-                      <strong>{submissions.length}</strong>
-                      <span>Totales</span>
+              filteredSubmissions.map(s => (
+                <div 
+                  key={s.id} 
+                  className={`submission-item ${s.status} ${selectedSubmission?.id === s.id ? 'selected' : ''}`}
+                  onClick={() => {
+                    setSelectedSubmission(s);
+                    if (s.status === 'nuevo') updateStatus(s.id, 'leido');
+                  }}
+                >
+                  <div className="item-avatar">{s.name.charAt(0)}</div>
+                  <div className="item-main">
+                    <div className="item-header">
+                      <h4>{s.name}</h4>
+                      <span className="item-date">{format(new Date(s.created_at), 'dd MMM', { locale: es })}</span>
                     </div>
-                    <div className="mini-stat">
-                      <strong>{submissions.filter(s => s.status === 'nuevo').length}</strong>
-                      <span>Nuevas</span>
+                    <p className="item-email">{s.email}</p>
+                    <div className="item-tags">
+                      {s.status === 'aceptado' && <span className="aceptado-mini-tag">Agendado</span>}
+                      {s.status === 'rechazado' && <span className="rechazado-mini-tag">Rechazado</span>}
+                      {s.status === 'nuevo' && <span className="aceptado-mini-tag" style={{ background: 'var(--color-accent)', color: 'white' }}>Nuevo</span>}
                     </div>
                   </div>
+                  <ChevronRight size={18} className="item-arrow" />
                 </div>
-              </div>
+              ))
             )}
           </div>
         </div>
-      )}
+
+        <div className="details-panel">
+          {selectedSubmission ? (
+            <div className="details-card animate-fade-in" key={selectedSubmission.id}>
+              <div className="details-header border-bottom">
+                <div className="details-user">
+                  <div className="details-avatar-large">
+                    <User size={32} />
+                  </div>
+                  <div>
+                    <h2>{selectedSubmission.name}</h2>
+                    <div className={`status-badge ${selectedSubmission.status}`}>
+                      {selectedSubmission.status === 'nuevo' && <Clock size={14} />}
+                      {selectedSubmission.status === 'aceptado' && <Check size={14} />}
+                      {selectedSubmission.status === 'rechazado' && <X size={14} />}
+                      {selectedSubmission.status}
+                    </div>
+                  </div>
+                </div>
+                <div className="details-actions">
+                  {selectedSubmission.status !== 'aceptado' && selectedSubmission.status !== 'rechazado' && (
+                    <button className="btn-action btn-accept" onClick={() => handleAccept(selectedSubmission)} title="Aceptar y Agendar">
+                      <Check size={22} />
+                    </button>
+                  )}
+                  {selectedSubmission.status !== 'rechazado' && selectedSubmission.status !== 'aceptado' && (
+                    <button className="btn-action btn-reject" onClick={() => updateStatus(selectedSubmission.id, 'rechazado')} title="Rechazar Consulta">
+                      <X size={22} />
+                    </button>
+                  )}
+                  <button className="btn-action btn-delete" onClick={() => deleteSubmission(selectedSubmission.id)} title="Eliminar Permanentemente">
+                    <Trash2 size={22} />
+                  </button>
+                </div>
+              </div>
+
+              <div className="details-scrollable custom-scrollbar">
+                {selectedSubmission.requested_date && (
+                  <div className="appointment-highlight">
+                    <div className="appointment-info">
+                      <h4>Reunión Solicitada</h4>
+                      <p>El cliente ha solicitado una sesión inicial a través del calendario.</p>
+                    </div>
+                    <div className="appointment-date">
+                      <div className="date-pill">
+                        <span className="day">{format(new Date(selectedSubmission.requested_date + 'T12:00:00'), 'dd')}</span>
+                        <span className="month">{format(new Date(selectedSubmission.requested_date + 'T12:00:00'), 'MMM', { locale: es })}</span>
+                      </div>
+                      <div className="time-pill">
+                        {selectedSubmission.requested_time}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <div className="section-title">
+                  <InboxIcon size={18} /> Información de Contacto
+                </div>
+                <div className="contact-card">
+                  <div className="contact-item">
+                    <div className="contact-icon"><Mail size={18} /></div>
+                    <span className="contact-label">Email</span>
+                    <span className="contact-value">{selectedSubmission.email}</span>
+                  </div>
+                  <div className="contact-item">
+                    <div className="contact-icon"><Phone size={18} /></div>
+                    <span className="contact-label">Teléfono</span>
+                    <span className="contact-value">{selectedSubmission.phone}</span>
+                  </div>
+                  <div className="contact-item">
+                    <div className="contact-icon"><Calendar size={18} /></div>
+                    <span className="contact-label">Fecha de Recibo</span>
+                    <span className="contact-value">{format(new Date(selectedSubmission.created_at), "PPP", { locale: es })}</span>
+                  </div>
+                </div>
+
+                <div className="section-title">
+                  <MessageSquare size={18} /> Respuestas del Formulario
+                </div>
+                <div className="answers-grid">
+                  {selectedSubmission.answers.map((ans, i) => (
+                    <div key={i} className="answer-card">
+                      <label>{ans.questionText}</label>
+                      <p>{ans.answer || 'Sin respuesta'}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="details-card">
+              <div className="empty-hero">
+                <div className="hero-box">
+                  <div className="icon-box">
+                    <MessageSquare size={56} strokeWidth={1.5} />
+                  </div>
+                  <h3>Centro de Gestión</h3>
+                  <p>Selecciona una consulta del listado para ver el perfil completo del viajero y gestionar su solicitud.</p>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
 
       <ConfirmationModal 
         isOpen={confirmConfig.isOpen}

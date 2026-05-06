@@ -49,6 +49,66 @@ main {
   gap: 2rem;
 }
 
+.benefits-carousel-wrapper {
+  position: relative;
+  width: 100%;
+  padding: 1rem 3rem; /* Make room for arrows */
+}
+
+.benefits-track {
+  display: flex;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+  gap: 2rem;
+  padding: 1rem 0 2rem 0;
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+.benefits-track::-webkit-scrollbar {
+  display: none; /* Chrome, Safari and Opera */
+}
+
+.carousel-card {
+  flex: 0 0 calc(33.333% - 1.33rem);
+  scroll-snap-align: start;
+  min-width: 300px; /* Ensure they don't get too small on tablet */
+}
+
+.carousel-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: var(--color-white);
+  border: none;
+  border-radius: 50%;
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow-md);
+  cursor: pointer;
+  z-index: 10;
+  color: var(--color-primary);
+  transition: all var(--transition-fast);
+}
+
+.carousel-arrow:hover {
+  background: var(--color-primary);
+  color: var(--color-white);
+  transform: translateY(-50%) scale(1.1);
+}
+
+.carousel-arrow.left {
+  left: 0;
+}
+
+.carousel-arrow.right {
+  right: 0;
+}
+
 .feature-card {
   padding: 2.5rem;
   background-color: var(--color-bg);
@@ -196,6 +256,10 @@ main {
     grid-template-columns: repeat(2, 1fr);
   }
   
+  .carousel-card {
+    flex: 0 0 calc(50% - 1rem);
+  }
+  
   .session-container {
     grid-template-columns: 1fr;
     gap: 3rem;
@@ -205,6 +269,10 @@ main {
 @media (max-width: 768px) {
   .features-grid {
     grid-template-columns: 1fr;
+  }
+  
+  .carousel-card {
+    flex: 0 0 100%;
   }
   
   .footer-container {

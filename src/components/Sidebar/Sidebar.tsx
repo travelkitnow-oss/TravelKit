@@ -16,7 +16,10 @@ import {
   Hotel,
   ChevronDown,
   Briefcase,
-  Calculator
+  Calculator,
+  Compass,
+  ShieldCheck,
+  Star
 } from 'lucide-react';
 import './Sidebar.css';
 
@@ -28,10 +31,14 @@ interface SidebarProps {
 export default function Sidebar({ userEmail, handleLogout }: SidebarProps) {
   const location = useLocation();
   const [isViajeOpen, setIsViajeOpen] = useState(false);
+  const [isFormulariosOpen, setIsFormulariosOpen] = useState(false);
 
   // Check if any sub-item is active to keep dropdown open if needed
   const viajeRoutes = ['/excursiones', '/transportes', '/hoteles', '/agenda-clientes', '/pasajes'];
   const isAnyViajeActive = viajeRoutes.some(route => location.pathname === route);
+
+  const formulariosRoutes = ['/formulario', '/viaje-ideal', '/respuestas-viaje-ideal'];
+  const isAnyFormularioActive = formulariosRoutes.some(route => location.pathname === route);
 
   return (
     <aside className="sidebar">
@@ -119,7 +126,6 @@ export default function Sidebar({ userEmail, handleLogout }: SidebarProps) {
             </NavLink>
           </div>
         </div>
-
         <NavLink
           to="/clientes"
           className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
@@ -141,12 +147,72 @@ export default function Sidebar({ userEmail, handleLogout }: SidebarProps) {
           <Calculator size={20} />
           Liquidación
         </NavLink>
+        
         <NavLink
-          to="/formulario"
+          to="/resenas"
           className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
         >
-          <LinkIcon size={20} />
-          Formulario
+          <Star size={20} />
+          Reseñas
+        </NavLink>
+        <NavLink
+          to="/destinos"
+          className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
+        >
+          <Map size={20} />
+          Recomendaciones
+        </NavLink>
+
+        {/* --- DROPDOWN FORMULARIOS --- */}
+        <div className={`nav-dropdown ${isAnyFormularioActive ? 'child-active' : ''}`}>
+          <button 
+            className={`nav-item dropdown-toggle ${isFormulariosOpen ? 'open' : ''}`}
+            onClick={() => setIsFormulariosOpen(!isFormulariosOpen)}
+          >
+            <ClipboardList size={20} />
+            <span>Formularios</span>
+            <ChevronDown size={16} className="chevron" />
+          </button>
+          
+          <div className={`dropdown-content ${isFormulariosOpen ? 'show' : ''}`}>
+            <NavLink
+              to="/formulario"
+              className={({ isActive }) => `nav-item sub-item ${isActive ? 'active' : ''}`}
+            >
+              <LinkIcon size={18} />
+              Formulario Base
+            </NavLink>
+            <NavLink
+              to="/viaje-ideal"
+              className={({ isActive }) => `nav-item sub-item ${isActive ? 'active' : ''}`}
+            >
+              <Compass size={18} />
+              Viaje Ideal
+            </NavLink>
+            <NavLink
+              to="/respuestas-viaje-ideal"
+              className={({ isActive }) => `nav-item sub-item ${isActive ? 'active' : ''}`}
+            >
+              <MessageSquare size={18} />
+              Respuestas Ideal
+            </NavLink>
+          </div>
+        </div>
+
+        <NavLink
+          to="/editar-principal"
+          className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
+        >
+          <Map size={20} />
+          Editar Principal
+        </NavLink>
+        
+        <NavLink
+          to="/gestion-usuarios"
+          className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
+        >
+          <ShieldCheck size={20} />
+          Gestión de Usuarios
         </NavLink>
       </nav>
 

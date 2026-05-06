@@ -1,0 +1,295 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;900&display=swap');
+
+.respuestas-viaje-page {
+  font-family: 'Outfit', sans-serif;
+  padding: 2.5rem;
+  max-width: 1400px;
+  margin: 0 auto;
+  background: transparent;
+  min-height: 100vh;
+}
+
+/* Header Styles */
+.respuestas-viaje-page .dashboard-header {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  margin-bottom: 3rem !important; /* Espacio moderado */
+}
+
+.respuestas-viaje-page .header-info.centered {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.respuestas-viaje-page .header-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: rgba(31, 58, 77, 0.05);
+  color: var(--color-primary);
+  padding: 0.4rem 0.8rem;
+  border-radius: 100px;
+  font-size: 0.75rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 0.75rem;
+}
+
+.respuestas-viaje-page .display-title {
+  font-size: 2.75rem;
+  font-weight: 900;
+  color: #1e293b;
+  margin: 0;
+  letter-spacing: -1.5px;
+  line-height: 1.1;
+}
+
+.respuestas-viaje-page .subtitle {
+  color: #64748b;
+  font-size: 1.1rem;
+  margin-top: 0.5rem;
+}
+
+/* Stats Row */
+.respuestas-viaje-page .stats-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+  margin-bottom: 3rem !important; /* Espacio moderado */
+}
+
+.respuestas-viaje-page .premium-stat-card {
+  background: white;
+  padding: 1.75rem;
+  border-radius: 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.04);
+  border: 1px solid #f1f5f9;
+}
+
+.respuestas-viaje-page .stat-label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.respuestas-viaje-page .stat-number {
+  display: block;
+  font-size: 2.25rem;
+  font-weight: 900;
+  color: #0f172a;
+  margin: 0.25rem 0;
+}
+
+.respuestas-viaje-page .stat-trend {
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.respuestas-viaje-page .stat-trend.positive { color: #10b981; }
+.respuestas-viaje-page .stat-trend.neutral { color: #64748b; }
+
+.respuestas-viaje-page .stat-icon-wrapper {
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.respuestas-viaje-page .stat-icon-wrapper.blue { background: rgba(31, 58, 77, 0.08); color: var(--color-primary); }
+.respuestas-viaje-page .stat-icon-wrapper.green { background: rgba(16, 185, 129, 0.08); color: #10b981; }
+.respuestas-viaje-page .stat-icon-wrapper.gold { background: rgba(245, 158, 11, 0.08); color: #f59e0b; }
+
+/* Table Section */
+.respuestas-viaje-page .main-dashboard-card {
+  background: white;
+  border-radius: 28px;
+  overflow: hidden;
+  border: 1px solid #f1f5f9;
+}
+
+.respuestas-viaje-page .card-toolbar {
+  padding: 1.5rem 2.5rem;
+  border-bottom: 1px solid #f1f5f9;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #fafafa;
+}
+
+.respuestas-viaje-page .search-container {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background: white;
+  border: 1px solid #e2e8f0;
+  padding: 0 1.25rem;
+  border-radius: 14px;
+  width: 450px;
+  transition: all 0.2s;
+}
+
+.respuestas-viaje-page .search-container:focus-within {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 4px rgba(31, 58, 77, 0.05);
+}
+
+.respuestas-viaje-page .search-container input {
+  border: none;
+  background: transparent;
+  padding: 0.8rem 0;
+  font-size: 0.95rem;
+  width: 100%;
+  outline: none;
+}
+
+.respuestas-viaje-page .result-pill {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: white;
+  padding: 0.5rem 1rem;
+  border-radius: 100px;
+  border: 1px solid #e2e8f0;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #475569;
+}
+
+.respuestas-viaje-page .pulse-dot {
+  width: 8px;
+  height: 8px;
+  background: #10b981;
+  border-radius: 50%;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+  70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+}
+
+.respuestas-viaje-page .dashboard-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.respuestas-viaje-page .dashboard-table th {
+  text-align: left;
+  padding: 1.25rem 2.5rem;
+  background: #f8fafc;
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.respuestas-viaje-page .dashboard-table td {
+  padding: 1.5rem 2.5rem;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.respuestas-viaje-page .dashboard-table tr:hover {
+  background: #f8fafc;
+}
+
+/* User Column */
+.respuestas-viaje-page .user-info-group {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+.respuestas-viaje-page .user-initials {
+  width: 48px;
+  height: 48px;
+  background: linear-gradient(135deg, var(--color-primary), #427aa1);
+  color: white;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 1.1rem;
+  box-shadow: 0 4px 10px rgba(31, 58, 77, 0.2);
+}
+
+.respuestas-viaje-page .user-details {
+  display: flex;
+  flex-direction: column;
+}
+
+.respuestas-viaje-page .user-name {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.respuestas-viaje-page .user-id {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #94a3b8;
+  letter-spacing: 0.5px;
+}
+
+/* Badges */
+.respuestas-viaje-page .segment-badge-premium {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: #f1f5f9;
+  color: #475569;
+  padding: 0.5rem 1rem;
+  border-radius: 10px;
+  font-weight: 800;
+  font-size: 0.85rem;
+}
+
+/* Action Buttons */
+.respuestas-viaje-page .btn-action-view {
+  background: #f1f5f9;
+  border: none;
+  padding: 0.6rem 1.25rem;
+  border-radius: 10px;
+  color: #1e293b;
+  font-weight: 800;
+  font-size: 0.85rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.respuestas-viaje-page .btn-action-view:hover {
+  background: var(--color-primary);
+  color: white;
+  transform: translateX(-4px);
+}
+
+.respuestas-viaje-page .date-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #64748b;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.respuestas-viaje-page .loading-state, .respuestas-viaje-page .empty-state {
+  padding: 5rem !important;
+  text-align: center;
+}

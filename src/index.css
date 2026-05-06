@@ -54,6 +54,12 @@ h1, h2, h3, h4, h5, h6 {
   line-height: 1.2;
 }
 
+/* Ensure rich text titles don't break layout */
+h1 p, h2 p, h3 p, h4 p, h5 p, h6 p {
+  margin: 0;
+  display: inline;
+}
+
 a {
   color: inherit;
   text-decoration: none;
@@ -226,7 +232,7 @@ button {
   width: 100%;
 }
 
-.input-with-icon svg {
+.input-with-icon > svg:first-child {
   position: absolute;
   left: 1rem;
   top: 50%;

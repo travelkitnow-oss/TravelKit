@@ -1,7 +1,10 @@
 import { ArrowRight, MapPin, Plane } from 'lucide-react';
+import { useSiteSettings } from '../hooks/useSiteSettings';
 import './Hero.css';
 
 export default function Hero() {
+  const { settings } = useSiteSettings();
+
   return (
     <section id="inicio" className="hero">
       <div className="hero-background">
@@ -16,11 +19,12 @@ export default function Hero() {
             <span>Diseña tu viaje soñado</span>
           </div>
           
-          <h1>Organiza el viaje de tu vida con <span className="text-accent">Travel Kit</span></h1>
+          <div className="hero-title-wrapper" dangerouslySetInnerHTML={{ __html: settings.hero_title.replace('Travel Kit', '<span class="text-accent">Travel Kit</span>') }} />
           
-          <p className="hero-description">
-            Descubre una nueva forma de viajar. Te ayudamos a planificar cada detalle con sesiones personalizadas uno a uno para que tu única preocupación sea disfrutar el destino.
-          </p>
+          <div 
+            className="hero-description" 
+            dangerouslySetInnerHTML={{ __html: settings.hero_description }} 
+          />
           
           <div className="hero-actions">
             <a href="#sesion" className="btn btn-accent btn-lg">

@@ -32,6 +32,7 @@ interface Reservation {
   date: string;
   advancePaid?: boolean;
   finalPaid?: boolean;
+  paidAmount?: number;
 }
 
 export default function AgendaPage() {
@@ -67,20 +68,7 @@ export default function AgendaPage() {
     const { data, error } = await supabase.from('admin_meetings').select('*');
     if (error) console.error('Error fetching meetings:', error);
     else {
-      // Fetch billing info for all meetings that have a clientId
-      const clientIds = (data || []).filter(r => r.client_id).map(r => r.client_id);
-      const { data: billingData } = await supabase
-        .from('client_billing')
-        .select('client_id, tasks')
-        .in('client_id', clientIds);
-
-      const billingMap = (billingData || []).reduce((acc: any, curr: any) => {
-        acc[curr.client_id] = curr.tasks || [];
-        return acc;
-      }, {});
-
       const mapped: Reservation[] = (data || []).map(r => {
-        const tasks = billingMap[r.client_id] || [];
         return {
           id: r.id,
           client: r.client_name,
@@ -92,8 +80,9 @@ export default function AgendaPage() {
           phone: r.phone,
           date: r.meeting_date,
           clientId: r.client_id,
-          advancePaid: tasks.some((t: any) => t.name.includes('Adelanto 50%') && t.paid),
-          finalPaid: tasks.some((t: any) => t.name.includes('Pago Final 50%') && t.paid)
+          advancePaid: r.advance_paid || false,
+          finalPaid: r.final_paid || false,
+          paidAmount: r.paid_amount || 0
         };
       });
       setAllReservations(mapped);
@@ -237,64 +226,24 @@ export default function AgendaPage() {
   const handleChargeMeeting = async (res: Reservation, type: 'advance' | 'final') => {
     if (type === 'advance' && res.advancePaid) return;
     if (type === 'final' && res.finalPaid) return;
-    
-    let clientId = res.clientId;
 
     try {
-      if (!clientId) {
-        const { data: newClient, error: clientError } = await supabase
-          .from('clients')
-          .insert([{
-            name: res.client,
-            email: res.email || '',
-            phone: res.phone || '',
-            source: 'agenda_session_only'
-          }])
-          .select()
-          .single();
-
-        if (clientError) throw clientError;
-        clientId = newClient.id;
-
-        await supabase.from('client_billing').insert([{
-          client_id: clientId,
-          destination: res.dest || 'Por definir',
-          tasks: [],
-          notes: '',
-          passengers: 1
-        }]);
-
-        await supabase.from('admin_meetings').update({ client_id: clientId }).eq('id', res.id);
-        setAllReservations(prev => prev.map(r => r.id === res.id ? { ...r, clientId } : r));
-      }
-
+      // 1. Fetch service price
       const { data: services } = await supabase.from('services').select('*').ilike('name', '%sesi%n%');
       const meetingService = services?.[0];
       const totalPrice = meetingService ? meetingService.price : 50000; 
       const chargeAmount = totalPrice / 2;
 
-      const { data: billing } = await supabase.from('client_billing').select('tasks').eq('client_id', clientId).single();
-      if (!billing) throw new Error('No se encontró cuenta de cobro para este cliente');
-
-      const tasks = [...(billing.tasks as any[])];
-      const taskName = type === 'advance' ? `Adelanto 50% - Sesión Inicial` : `Pago Final 50% - Sesión Inicial`;
-      
-      if (tasks.some(t => t.name === taskName && t.paid)) {
-        setToast({ message: `Este ${type === 'advance' ? 'adelanto' : 'pago final'} ya fue registrado anteriormente.`, type: 'error' });
-        return;
+      // 2. Update directly in admin_meetings table
+      const updates: any = {};
+      if (type === 'advance') {
+        updates.advance_paid = true;
+      } else {
+        updates.final_paid = true;
       }
+      updates.paid_amount = (res.paidAmount || 0) + chargeAmount;
 
-      tasks.push({
-        serviceId: meetingService?.id || 'manual-session',
-        name: taskName,
-        price: chargeAmount,
-        date: new Date().toISOString(),
-        completed: true,
-        paid: true,
-        paidAt: new Date().toISOString()
-      });
-
-      const { error } = await supabase.from('client_billing').update({ tasks }).eq('client_id', clientId);
+      const { error } = await supabase.from('admin_meetings').update(updates).eq('id', res.id);
       if (error) throw error;
 
       setToast({ 
@@ -302,14 +251,14 @@ export default function AgendaPage() {
         type: 'success' 
       });
       
-      // Update local state immediately to block button
+      // 3. Update local state ATOMICALLY to block buttons immediately
       setAllReservations(prev => prev.map(r => 
         r.id === res.id 
           ? { 
               ...r, 
-              clientId, 
               advancePaid: type === 'advance' ? true : r.advancePaid,
-              finalPaid: type === 'final' ? true : r.finalPaid
+              finalPaid: type === 'final' ? true : r.finalPaid,
+              paidAmount: updates.paid_amount
             } 
           : r
       ));
@@ -524,12 +473,13 @@ export default function AgendaPage() {
                                   color: res.advancePaid ? '#475569' : 'var(--color-primary)',
                                   border: '1px solid ' + (res.advancePaid ? '#cbd5e1' : 'var(--color-tertiary)'),
                                   cursor: res.advancePaid ? 'default' : 'pointer',
-                                  fontWeight: res.advancePaid ? '700' : '500'
+                                  fontWeight: res.advancePaid ? '800' : '500',
+                                  opacity: res.advancePaid ? 0.8 : 1
                                 }}
                                 onClick={() => !res.advancePaid && handleChargeMeeting(res, 'advance')}
                                 disabled={res.advancePaid}
                               >
-                                {res.advancePaid ? 'YA PAGÓ EL 50%' : '$ Cobrar 50% Adelanto'}
+                                {res.advancePaid ? '✓ ADELANTO PAGADO' : '$ Cobrar 50% Adelanto'}
                               </button>
                               <button 
                                 className="btn btn-xs" 
@@ -538,12 +488,13 @@ export default function AgendaPage() {
                                   color: res.finalPaid ? '#475569' : 'var(--color-primary)',
                                   border: '1px solid ' + (res.finalPaid ? '#cbd5e1' : 'var(--color-tertiary)'),
                                   cursor: res.finalPaid ? 'default' : 'pointer',
-                                  fontWeight: res.finalPaid ? '700' : '500'
+                                  fontWeight: res.finalPaid ? '800' : '500',
+                                  opacity: res.finalPaid ? 0.8 : 1
                                 }}
                                 onClick={() => !res.finalPaid && handleChargeMeeting(res, 'final')}
                                 disabled={res.finalPaid}
                               >
-                                {res.finalPaid ? 'PAGO TOTAL' : '$ Cobrar 50% Final'}
+                                {res.finalPaid ? '✓ TOTAL PAGADO' : '$ Cobrar 50% Final'}
                               </button>
                             </div>
                           </div>

@@ -141,13 +141,20 @@ export default function TransportesPage() {
 
     const { data, error } = await supabase
       .from('catalog_folders')
-      .insert([{ name: fullFolderName, type: 'transport' }])
+      .insert([
+        { name: fullFolderName, type: 'hotel' },
+        { name: fullFolderName, type: 'transport' },
+        { name: fullFolderName, type: 'excursion' }
+      ])
       .select();
 
     if (error) {
       alert('Error al crear carpeta');
     } else if (data) {
-      setFolders([...folders, { id: data[0].id, name: data[0].name, transports: [] }]);
+      const currentTypeFolder = data.find(f => f.type === 'transport');
+      if (currentTypeFolder) {
+        setFolders([...folders, { id: currentTypeFolder.id, name: currentTypeFolder.name, transports: [] }]);
+      }
       setNewFolderName('');
       setShowFolderModal(false);
     }
@@ -535,21 +542,28 @@ export default function TransportesPage() {
       {/* New/Edit Transport Modal */}
       {showTransportModal && (
         <div className="modal-overlay">
-          <div className="modal-content animate-scale-in" style={{ maxWidth: '600px', padding: '0' }}>
-            <div className="modal-header" style={{ padding: '2rem 2.5rem 1.5rem', marginBottom: '0' }}>
+          <div className="modal-content glass-card animate-scale-in" style={{ maxWidth: '550px', padding: '0', overflow: 'hidden' }}>
+            <div style={{ background: 'linear-gradient(135deg, var(--color-primary) 0%, #0f2132 100%)', padding: '1.5rem 2rem', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                <div style={{ background: 'rgba(31, 58, 77, 0.05)', padding: '0.75rem', borderRadius: '12px' }}>
-                  <Truck size={24} className="text-primary" />
+                <div style={{ background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(8px)', padding: '0.6rem', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Truck size={20} color="white" />
                 </div>
-                <h3 style={{ fontSize: '1.5rem', fontWeight: 800 }}>{editingTransportId ? 'Editar Transporte' : 'Nuevo Transporte'}</h3>
+                <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 800, color: 'white', lineHeight: 1.2 }}>
+                  {editingTransportId ? 'Editar Transporte' : 'Nuevo Transporte'}
+                </h3>
               </div>
-              <button onClick={() => setShowTransportModal(false)} className="btn-icon">
-                <X size={20} />
+              <button 
+                onClick={() => setShowTransportModal(false)}
+                style={{ background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'white', transition: 'all 0.2s' }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.25)'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.12)'; }}
+              >
+                <X size={16} />
               </button>
             </div>
 
-            <div className="modal-body custom-scrollbar" style={{ maxHeight: '70vh', overflowY: 'auto', padding: '0 2.5rem 2rem' }}>
-              <div className="form-grid" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+            <div className="modal-body custom-scrollbar" style={{ maxHeight: '70vh', overflowY: 'auto', padding: '1.5rem 2rem' }}>
+              <div className="form-grid" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                 <div className="form-group">
                   <label className="text-xs font-semibold uppercase text-secondary">Nombre del Transporte / Servicio</label>
                   <div className="input-with-icon">
@@ -564,7 +578,7 @@ export default function TransportesPage() {
                   </div>
                 </div>
 
-              <div className="grid-2 gap-4">
+              <div className="grid-2 gap-3">
                 <div className="form-group">
                   <label>Empresa de Transporte</label>
                   <input
@@ -587,7 +601,7 @@ export default function TransportesPage() {
                 </div>
               </div>
 
-              <div className="grid-2 gap-4">
+              <div className="grid-2 gap-3">
                 <div className="form-group">
                   <label>Origen</label>
                   <input
@@ -660,7 +674,7 @@ export default function TransportesPage() {
               </div>
             </div>
             
-            <div className="modal-footer" style={{ padding: '1.5rem 2.5rem 2.5rem', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', borderTop: '1px solid #f1f5f9' }}>
+            <div className="modal-footer" style={{ padding: '1.25rem 2rem 1.5rem', display: 'flex', justifyContent: 'flex-end', gap: '1rem', borderTop: '1px solid rgba(0,0,0,0.05)', background: '#f8fafc' }}>
               <button className="btn btn-outline" onClick={() => setShowTransportModal(false)}>Cancelar</button>
               <button className="btn btn-primary" onClick={handleAddTransport}>
                 {editingTransportId ? 'Guardar Cambios' : 'Guardar Transporte'}

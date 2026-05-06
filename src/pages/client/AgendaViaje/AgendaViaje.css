@@ -1,0 +1,395 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800;900&family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&display=swap');
+
+.agenda-viaje-page {
+  padding: 2rem;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  min-height: 100vh;
+}
+
+/* ── BANNER PREMIUM TICKET ── */
+.agenda-client-banner-premium {
+  width: 100%;
+  padding: 1.5rem 2rem;
+  background: white;
+  border-radius: 20px;
+  box-shadow: 0 10px 30px rgba(31, 58, 77, 0.05);
+  border: 1px solid rgba(226, 232, 240, 0.8);
+}
+
+.banner-vuelos-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  margin-bottom: 0;
+}
+
+.premium-ticket {
+  display: flex;
+  background: white;
+  padding: 0 !important;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  overflow: hidden;
+  position: relative;
+}
+
+.premium-ticket.ida { border-left: 4px solid var(--color-primary); }
+.premium-ticket.vuelta { border-left: 4px solid #C89B5A; }
+
+.ticket-main {
+  flex: 1;
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.ticket-header-pro {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.vuelo-tag-pro {
+  font-size: 0.6rem;
+  font-weight: 800;
+  color: #94a3b8;
+  letter-spacing: 0.1em;
+}
+
+.vuelo-status {
+  font-size: 0.6rem;
+  font-weight: 800;
+  background: #f0fdf4;
+  color: #16a34a;
+  padding: 0.2rem 0.5rem;
+  border-radius: 100px;
+}
+
+.ticket-route-pro {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.25rem 0;
+}
+
+.city-code {
+  font-family: 'Outfit', sans-serif;
+  font-size: 1.5rem;
+  font-weight: 900;
+  color: var(--color-primary);
+  line-height: 1;
+}
+
+.city-name {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+}
+
+.city-group.dest { text-align: right; }
+
+.flight-path {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  padding: 0 1rem;
+}
+
+.path-line {
+  width: 100%;
+  height: 1px;
+  background-image: linear-gradient(to right, #cbd5e1 50%, transparent 50%);
+  background-size: 6px 1px;
+  background-repeat: repeat-x;
+}
+
+.path-plane {
+  position: absolute;
+  color: #94a3b8;
+  background: white;
+  padding: 0 4px;
+}
+
+.ticket-footer-pro {
+  display: flex;
+  justify-content: space-between;
+  border-top: 1px dashed #e2e8f0;
+  padding-top: 0.75rem;
+}
+
+.footer-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.item-label {
+  font-size: 0.55rem;
+  font-weight: 800;
+  color: #94a3b8;
+}
+
+.item-value {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--color-primary);
+}
+
+.ticket-stub {
+  width: 70px;
+  background: #f8fafc;
+  border-left: 1px dashed #cbd5e1;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.stub-notch {
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  background: white;
+  border-radius: 50%;
+  left: -8.5px;
+  border: 1px solid #e2e8f0;
+}
+
+.stub-notch.top { top: -8px; }
+.stub-notch.bottom { bottom: -8px; }
+
+.stub-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.stub-qr { color: var(--color-primary); opacity: 0.6; }
+.stub-text {
+  font-size: 0.5rem;
+  font-weight: 800;
+  color: #94a3b8;
+  letter-spacing: 0.05em;
+}
+
+/* ── ACTION BAR READONLY ── */
+.agenda-action-bar-readonly {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.25rem 0 0;
+  margin-top: 1.25rem;
+  border-top: 1px solid #f1f5f9;
+}
+
+.passengers-count {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: var(--color-primary);
+  background: #f8fafc;
+  padding: 0.5rem 1rem;
+  border-radius: 10px;
+}
+
+.trip-status-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: #f0fdf4;
+  color: #16a34a;
+  padding: 0.5rem 1rem;
+  border-radius: 10px;
+  font-weight: 800;
+  font-size: 0.75rem;
+}
+
+.btn-export-pdf-premium {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1.25rem;
+  background: transparent;
+  color: var(--color-primary);
+  border: 1px solid var(--color-primary);
+  border-radius: 100px;
+  font-weight: 700;
+  font-size: 0.8rem;
+  transition: all 0.3s;
+  cursor: pointer;
+}
+
+/* ── CALENDARIO ── */
+.agenda-calendar-full {
+  width: 100%;
+  padding: 2rem;
+  background: white;
+  border-radius: 24px;
+  box-shadow: 0 10px 40px rgba(31, 58, 77, 0.05);
+  border: 1px solid rgba(226, 232, 240, 0.8);
+}
+
+.calendar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.current-month {
+  font-size: 1.8rem;
+  font-weight: 900;
+  color: var(--color-primary);
+  text-transform: capitalize;
+  font-family: 'Outfit', sans-serif;
+}
+
+.calendar-day-label {
+  text-align: center;
+  font-weight: 800;
+  color: #94a3b8;
+  padding: 0.75rem;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.calendar-cell {
+  height: 80px; /* reduced from 105 */
+  background: white;
+  padding: 0.5rem;
+  position: relative;
+  border: 0.5px solid #f1f5f9;
+}
+
+.calendar-cell.trip-start { background: var(--color-primary) !important; border-radius: 12px 0 0 12px; color: white; z-index: 5; }
+.calendar-cell.trip-end { background: #C89B5A !important; border-radius: 0 12px 12px 0; color: white; z-index: 5; }
+
+.calendar-cell.trip-start .number, .calendar-cell.trip-end .number {
+  background: white;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-weight: 900;
+  font-size: 0.8rem;
+}
+
+/* ── TITULO PROFESIONAL ACTIVIDADES ── */
+.activities-header-professional {
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+.activities-header-professional h2 {
+  font-size: 1.8rem;
+  color: var(--color-primary);
+  font-family: 'Playfair Display', serif;
+  font-weight: 900;
+  margin-bottom: 0.25rem;
+}
+
+.activities-header-professional .subtitle {
+  font-size: 0.9rem;
+  color: #64748b;
+}
+
+.activities-header-professional .accent-line {
+  width: 40px;
+  height: 3px;
+  background: var(--color-primary);
+  margin: 1rem auto 0;
+  border-radius: 10px;
+}
+
+.agenda-sectors-container {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+}
+
+.agenda-sector {
+  background: white;
+  border-radius: 20px;
+  padding: 1.25rem;
+  box-shadow: 0 5px 20px rgba(0,0,0,0.02);
+  border: 1px solid #f1f5f9;
+}
+
+.sector-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+  color: var(--color-primary);
+}
+
+.sector-header h3 {
+  font-size: 1rem;
+  font-weight: 800;
+  margin: 0;
+}
+
+.sector-item {
+  display: flex;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  background: #f8fafc;
+  border-radius: 12px;
+  margin-bottom: 0.75rem;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.sector-item:hover {
+  background: white;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 15px rgba(0,0,0,0.05);
+  border-color: #e2e8f0;
+}
+
+.item-date {
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: var(--color-primary);
+  background: white;
+  padding: 0.25rem 0.5rem;
+  border-radius: 6px;
+  margin-right: 0.75rem;
+}
+
+.item-name {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--color-primary);
+}
+
+.item-address-mini {
+  font-size: 0.7rem;
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.loading-state-premium {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 60vh;
+}

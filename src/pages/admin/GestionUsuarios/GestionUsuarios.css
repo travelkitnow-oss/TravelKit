@@ -1,0 +1,73 @@
+.gestion-usuarios-page {
+  padding: 3rem;
+}
+
+.search-bar-premium {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: rgba(31, 58, 77, 0.03);
+  padding: 0.75rem 1.25rem;
+  border-radius: 100px;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  width: 350px;
+  color: #64748b;
+}
+
+.search-bar-premium input {
+  background: none;
+  border: none;
+  outline: none;
+  width: 100%;
+  font-family: var(--font-main);
+  font-size: 0.9rem;
+}
+
+.user-stats {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--color-primary);
+  background: rgba(31, 58, 77, 0.05);
+  padding: 0.5rem 1rem;
+  border-radius: 100px;
+}
+
+.gestion-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.gestion-table th {
+  text-align: left;
+  padding: 1.25rem 1.5rem;
+  font-size: 0.75rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: #64748b;
+  background: rgba(0, 0, 0, 0.01);
+  letter-spacing: 0.05em;
+}
+
+.gestion-table td {
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.03);
+  font-size: 0.9rem;
+  color: var(--color-primary);
+}
+
+.role-badge {
+  background: #f1f5f9;
+  color: #475569;
+  font-size: 0.7rem;
+  font-weight: 800;
+  padding: 4px 8px;
+  border-radius: 6px;
+  text-transform: uppercase;
+}
+
+.gestion-table tr:hover {
+  background: rgba(31, 58, 77, 0.01);
+}
