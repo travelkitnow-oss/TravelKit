@@ -6,10 +6,8 @@ import {
   Calendar, 
   MapPin, 
   ChevronRight, 
-  Clock,
   ExternalLink,
-  Trash2,
-  Users
+  Trash2
 } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import './HistorialViajes.css';

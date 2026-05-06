@@ -8,7 +8,8 @@ import {
   Settings,
   MapPin,
   Star,
-  Receipt
+  Receipt,
+  History as HistoryIcon
 } from 'lucide-react';
 import './Sidebar.css'; // Reusing base sidebar styles
 
@@ -52,7 +53,7 @@ export default function ClientSidebar({ clientName, handleLogout }: ClientSideba
         </NavLink>
 
         <NavLink to="/portal/historial" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
-          <History size={20} />
+          <HistoryIcon size={20} />
           <span>Mi Historial</span>
         </NavLink>
 

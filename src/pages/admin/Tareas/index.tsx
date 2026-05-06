@@ -28,7 +28,7 @@ interface ServiceItem {
   price: number;
   type?: 'hotel' | 'transport' | 'excursion' | 'generic';
   capacity?: number;
-  pricing_type?: 'per_person' | 'per_group';
+  pricing_type?: 'per_person' | 'per_group' | 'fixed';
 }
 
 interface ClientTask {
@@ -39,6 +39,7 @@ interface ClientTask {
   completed: boolean;
   paid?: boolean;
   paidAt?: string;
+  payment_status?: 'pending' | 'requested' | 'paid';
 }
 
 interface ClientNote {
