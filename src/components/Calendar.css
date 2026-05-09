@@ -87,6 +87,32 @@
   opacity: 0.5;
 }
 
+.dashboard-mode .day-btn.disabled {
+  cursor: pointer;
+}
+
+.dashboard-mode .day-btn.disabled:hover {
+  background-color: var(--color-bg);
+  opacity: 0.8;
+}
+
+.day-btn {
+  position: relative;
+}
+
+.res-dot {
+  position: absolute;
+  bottom: 4px;
+  width: 4px;
+  height: 4px;
+  background-color: var(--color-accent);
+  border-radius: 50%;
+}
+
+.day-btn.selected .res-dot {
+  background-color: var(--color-white);
+}
+
 .session-form-container {
   margin-top: 2rem;
   padding-top: 1.5rem;

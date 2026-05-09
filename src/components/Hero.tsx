@@ -13,7 +13,7 @@ export default function Hero() {
       </div>
       
       <div className="container hero-container">
-        <div className="hero-content animate-fade-in">
+        <div className="landing-hero-content animate-fade-in">
           <div className="badge">
             <Plane size={16} />
             <span>Diseña tu viaje soñado</span>

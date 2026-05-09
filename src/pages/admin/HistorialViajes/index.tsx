@@ -122,16 +122,16 @@ export default function HistorialViajesAdminPage() {
           {selectedTrip ? (
             <div className="trip-full-detail glass-card animate-slide-up">
               <div className="detail-hero">
-                <div className="hero-content">
+                <div className="trip-detail-hero-content">
                   <div className="avatar-circle">
                     {selectedTrip.clients?.name?.charAt(0)}
                   </div>
-                  <div className="hero-text">
+                  <div className="trip-detail-hero-text">
                     <h2>{selectedTrip.clients?.name}</h2>
                     <p>{selectedTrip.trip_name}</p>
                   </div>
                 </div>
-                <div className="hero-badge">REGISTRO ARCHIVADO</div>
+                <div className="trip-detail-hero-badge">REGISTRO ARCHIVADO</div>
               </div>
 
               <div className="detail-scroll-area">

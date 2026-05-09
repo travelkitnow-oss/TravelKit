@@ -77,10 +77,15 @@ export default function Calendar({ isDashboard = false, onDateSelect, selectedDa
   };
 
   const onDateClick = (day: Date) => {
-    if (!isBefore(day, startOfDay(new Date())) && !isWeekend(day)) {
-      if (isDashboard && onDateSelect) {
-        onDateSelect(day);
-      } else {
+    const isPast = isBefore(day, startOfDay(new Date()));
+    const isBlockedPublic = (isPast || isWeekend(day));
+
+    // In dashboard mode, we allow selecting any day
+    if (isDashboard) {
+      if (onDateSelect) onDateSelect(day);
+    } else {
+      // In public mode, we keep the restrictions
+      if (!isBlockedPublic) {
         setInternalSelectedDate(day);
         setSelectedTime(null);
       }
@@ -162,7 +167,7 @@ export default function Calendar({ isDashboard = false, onDateSelect, selectedDa
               isSameDay(day, new Date()) ? "today" : ""
             } ${(isPast || isWeekend(day)) && isCurrentMonth ? "disabled" : ""} ${hasRes ? 'has-reservation' : ''}`}
             onClick={() => onDateClick(cloneDay)}
-            disabled={(isPast || isWeekend(day)) || !isCurrentMonth}
+            disabled={(!isDashboard && (isPast || isWeekend(day))) || !isCurrentMonth}
           >
             {isCurrentMonth ? formattedDate : ""}
             {hasRes && <div className="res-dot"></div>}
