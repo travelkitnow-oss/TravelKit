@@ -1,7 +1,7 @@
 import Navbar from '../components/Navbar';
 import Hero from '../components/Hero';
 import Calendar from '../components/Calendar';
-import { Plane, CalendarCheck, Shield, Star, MapPin, Heart, Compass, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plane, CalendarCheck, Shield, Star, MapPin, Heart, Compass, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { useSiteSettings } from '../hooks/useSiteSettings';
 import { useRef, useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
@@ -20,7 +20,10 @@ export default function LandingPage() {
 
   const [destinations, setDestinations] = useState<any[]>([]);
   const [currentDestIndex, setCurrentDestIndex] = useState(0);
+  const [selectedDestination, setSelectedDestination] = useState<any | null>(null);
+  const [currentModalImgIndex, setCurrentModalImgIndex] = useState(0);
 
+  const [meetings, setMeetings] = useState<any[]>([]);
   useEffect(() => {
     const fetchReviews = async () => {
       const { data } = await supabase
@@ -37,6 +40,19 @@ export default function LandingPage() {
       }
     };
     fetchReviews();
+
+    const fetchMeetings = async () => {
+      const { data } = await supabase
+        .from('admin_meetings')
+        .select('*')
+        .neq('status', 'cancelled');
+      if (data) setMeetings(data.map(m => ({
+        date: m.meeting_date,
+        time: m.meeting_time,
+        status: m.status
+      })));
+    };
+    fetchMeetings();
 
     const fetchDestinations = async () => {
       const { data } = await supabase
@@ -70,6 +86,22 @@ export default function LandingPage() {
     
     return () => clearInterval(interval);
   }, [destinations]);
+
+  useEffect(() => {
+    if (!selectedDestination) {
+      setCurrentModalImgIndex(0);
+      return;
+    }
+    
+    const allImages = [selectedDestination.image_url, ...(selectedDestination.images || [])];
+    if (allImages.length <= 1) return;
+
+    const interval = setInterval(() => {
+      setCurrentModalImgIndex(prev => (prev + 1) % allImages.length);
+    }, 7000);
+
+    return () => clearInterval(interval);
+  }, [selectedDestination]);
   
   let benefits = [];
   try {
@@ -145,14 +177,14 @@ export default function LandingPage() {
         {destinations.length > 0 && (
           <section id="destinos" className="section-padding" style={{ backgroundColor: 'var(--color-primary)', color: 'white' }}>
             <div className="container">
-              <div className="text-center animate-fade-in" style={{ marginBottom: '3rem', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+              <div className="text-center animate-fade-in" style={{ marginBottom: '3rem', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
                 <h2 
-                  style={{ color: 'var(--color-accent)', fontFamily: "'Playfair Display', serif", fontSize: '2.5rem', marginBottom: '1rem' }}
+                  style={{ color: 'var(--color-accent)', fontFamily: "'Playfair Display', serif", fontSize: '2.5rem', marginBottom: '1rem', width: '100%' }}
                   dangerouslySetInnerHTML={{ __html: settings.destinations_title || 'Inspiración para tu próximo viaje' }}
                 />
                 <div 
                   className="subtitle" 
-                  style={{ color: '#e2e8f0', maxWidth: '600px', margin: '0 auto' }}
+                  style={{ color: '#e2e8f0', maxWidth: '800px', margin: '0 auto', width: '100%' }}
                   dangerouslySetInnerHTML={{ __html: settings.destinations_subtitle || 'Descubre algunos de los destinos que hemos preparado para nuestros viajeros.' }}
                 />
               </div>
@@ -167,30 +199,40 @@ export default function LandingPage() {
                         position: 'absolute',
                         top: 0, left: 0, width: '100%', height: '100%',
                         opacity: index === currentDestIndex ? 1 : 0,
-                        transition: 'opacity 1s ease-in-out',
+                        visibility: index === currentDestIndex ? 'visible' : 'hidden',
+                        transition: 'opacity 1s ease-in-out, visibility 1s',
                         zIndex: index === currentDestIndex ? 1 : 0
                       }}
                     >
-                      <img 
-                        src={dest.image_url} 
-                        alt={dest.title} 
-                        style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
-                        onError={(e) => (e.currentTarget.src = 'https://images.unsplash.com/photo-1488646953014-85cb44e25828?auto=format&fit=crop&q=80&w=1200')}
-                      />
-                      <div style={{ position: 'absolute', bottom: 0, left: 0, width: '100%', padding: '6rem 3rem 2rem', background: 'linear-gradient(to top, rgba(0,0,0,0.95), rgba(0,0,0,0.4), transparent)', color: 'white' }}>
-                        <h3 style={{ fontSize: '2.5rem', fontFamily: "'Playfair Display', serif", marginBottom: '0.5rem', color: 'white', textShadow: '2px 2px 4px rgba(0,0,0,0.8)' }}>{dest.title}</h3>
-                        <p style={{ 
-                          fontSize: '1.15rem', 
-                          maxWidth: '850px', 
-                          opacity: 0.95,
-                          textShadow: '1px 1px 3px rgba(0,0,0,0.8)',
-                          wordBreak: 'break-word',
-                          display: '-webkit-box',
-                          WebkitLineClamp: 3,
-                          lineClamp: 3,
-                          WebkitBoxOrient: 'vertical',
-                          overflow: 'hidden'
-                        }}>{dest.description}</p>
+                      <div
+                        onClick={() => setSelectedDestination(dest)}
+                        style={{ width: '100%', height: '100%', cursor: 'pointer', position: 'relative' }}
+                      >
+                        <img 
+                          src={dest.image_url} 
+                          alt={dest.title} 
+                          style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.5s' }} 
+                          className="destination-img-hover"
+                          onError={(e) => (e.currentTarget.src = 'https://images.unsplash.com/photo-1488646953014-85cb44e25828?auto=format&fit=crop&q=80&w=1200')}
+                        />
+                        <div style={{ position: 'absolute', bottom: 0, left: 0, width: '100%', padding: '6rem 3rem 2rem', background: 'linear-gradient(to top, rgba(0,0,0,0.95), rgba(0,0,0,0.4), transparent)', color: 'white', pointerEvents: 'none' }}>
+                          <h3 style={{ fontSize: '2.5rem', fontFamily: "'Playfair Display', serif", marginBottom: '0.5rem', color: 'white', textShadow: '2px 2px 4px rgba(0,0,0,0.8)' }}>{dest.title}</h3>
+                          <div 
+                            style={{ 
+                              fontSize: '1.15rem', 
+                              maxWidth: '850px', 
+                              opacity: 0.95,
+                              textShadow: '1px 1px 3px rgba(0,0,0,0.8)',
+                              wordBreak: 'break-word',
+                              display: '-webkit-box',
+                              WebkitLineClamp: 1,
+                              lineClamp: 1,
+                              WebkitBoxOrient: 'vertical',
+                              overflow: 'hidden'
+                            }}
+                            dangerouslySetInnerHTML={{ __html: dest.description }}
+                          />
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -215,6 +257,133 @@ export default function LandingPage() {
               </div>
             </div>
           </section>
+        )}
+
+        {/* Premium Destination Modal */}
+        {selectedDestination && (
+          <div className="modal-overlay" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }} onClick={() => setSelectedDestination(null)}>
+            <div 
+              className="glass-card animate-scale-in" 
+              style={{ 
+                width: '95%', 
+                maxWidth: '800px', 
+                maxHeight: '90vh', 
+                overflowY: 'auto', 
+                display: 'flex', 
+                flexDirection: 'column', 
+                position: 'relative',
+                borderRadius: '24px',
+                border: '1px solid rgba(255,255,255,0.2)',
+                boxShadow: '0 50px 100px -20px rgba(0,0,0,0.7)',
+                backgroundColor: '#1f3a4d',
+                backdropFilter: 'blur(20px)'
+              }} 
+              onClick={e => e.stopPropagation()}
+            >
+              <button 
+                onClick={() => setSelectedDestination(null)}
+                style={{ position: 'absolute', top: '20px', right: '20px', background: 'rgba(0,0,0,0.5)', border: 'none', color: 'white', cursor: 'pointer', zIndex: 10, padding: '8px', borderRadius: '50%', display: 'flex' }}
+              >
+                <X size={24} />
+              </button>
+
+              {(() => {
+                const allImages = [selectedDestination.image_url, ...(selectedDestination.images || [])].filter(url => url && url.trim() !== '');
+                
+                return (
+                  <div style={{ width: '100%', height: '450px', minHeight: '450px', position: 'relative', overflow: 'hidden', backgroundColor: '#1a2a36' }}>
+                    {allImages.map((img, idx) => (
+                      <img 
+                        key={idx}
+                        src={img} 
+                        alt={`${selectedDestination.title} ${idx + 1}`} 
+                        style={{ 
+                          position: 'absolute',
+                          top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover',
+                          opacity: idx === currentModalImgIndex ? 1 : 0,
+                          transition: 'opacity 0.8s ease-in-out',
+                          zIndex: idx === currentModalImgIndex ? 2 : 1
+                        }}
+                        onError={(e) => (e.currentTarget.src = 'https://images.unsplash.com/photo-1488646953014-85cb44e25828?auto=format&fit=crop&q=80&w=1200')}
+                      />
+                    ))}
+                    
+                    {allImages.length > 1 && (
+                      <>
+                        <button 
+                          className="carousel-arrow left" 
+                          style={{ left: '20px', width: '40px', height: '40px', zIndex: 10, background: 'rgba(255,255,255,0.2)', backdropFilter: 'blur(5px)' }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setCurrentModalImgIndex(prev => (prev - 1 + allImages.length) % allImages.length);
+                          }}
+                        >
+                          <ChevronLeft size={20} />
+                        </button>
+                        <button 
+                          className="carousel-arrow right" 
+                          style={{ right: '20px', width: '40px', height: '40px', zIndex: 10, background: 'rgba(255,255,255,0.2)', backdropFilter: 'blur(5px)' }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setCurrentModalImgIndex(prev => (prev + 1) % allImages.length);
+                          }}
+                        >
+                          <ChevronRight size={20} />
+                        </button>
+                        
+                        <div style={{ position: 'absolute', bottom: '40px', left: '0', width: '100%', display: 'flex', justifyContent: 'center', gap: '8px', zIndex: 10 }}>
+                          {allImages.map((_, idx) => (
+                            <div 
+                              key={idx}
+                              style={{ 
+                                width: '8px', height: '8px', borderRadius: '50%', 
+                                backgroundColor: idx === currentModalImgIndex ? 'var(--color-accent)' : 'rgba(255,255,255,0.3)',
+                                transition: 'background-color 0.3s'
+                              }}
+                            />
+                          ))}
+                        </div>
+                      </>
+                    )}
+                    <div style={{ position: 'absolute', bottom: 0, left: 0, width: '100%', height: '100px', background: 'linear-gradient(to top, #1f3a4d, transparent)', zIndex: 3 }}></div>
+                  </div>
+                );
+              })()}
+
+              <div style={{ padding: '3rem', color: 'white', display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+                <div style={{ textAlign: 'center' }}>
+                  <span style={{ color: 'var(--color-accent)', fontWeight: 'bold', letterSpacing: '3px', fontSize: '0.9rem', textTransform: 'uppercase' }}>Destino Destacado</span>
+                  <h3 style={{ fontSize: '3.5rem', fontFamily: "'Playfair Display', serif", marginTop: '1rem', color: 'white', lineHeight: '1.1' }}>{selectedDestination.title}</h3>
+                  <div style={{ width: '80px', height: '4px', backgroundColor: 'var(--color-accent)', margin: '2rem auto' }}></div>
+                </div>
+                
+                <div 
+                  className="rich-text-content"
+                  style={{ 
+                    fontSize: '1.25rem', 
+                    opacity: 0.95, 
+                    color: '#f8fafc',
+                    textAlign: 'left',
+                    fontFamily: 'inherit'
+                  }} 
+                  dangerouslySetInnerHTML={{ __html: selectedDestination.description }} 
+                />
+
+                <div style={{ marginTop: '2rem', display: 'flex', justifyContent: 'center' }}>
+                  <button 
+                    className="btn-primary" 
+                    onClick={() => {
+                      document.getElementById('sesion')?.scrollIntoView({ behavior: 'smooth' });
+                      setSelectedDestination(null);
+                    }}
+                    style={{ minWidth: '300px', padding: '1.2rem 2.5rem', fontSize: '1.1rem' }}
+                  >
+                    Llená tu formulario
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
         )}
         
         <section id="sesion" className="section-padding">
@@ -269,7 +438,7 @@ export default function LandingPage() {
             </div>
             
             <div className="session-calendar">
-              <Calendar />
+              <Calendar reservations={meetings} />
             </div>
           </div>
         </section>

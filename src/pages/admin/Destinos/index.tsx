@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../../lib/supabase';
-import { Plus, Edit2, Trash2, Image as ImageIcon, Check, X } from 'lucide-react';
+import { Plus, Edit2, Trash2, Image as ImageIcon, Check, X, Upload } from 'lucide-react';
+import ReactQuill from 'react-quill-new';
+import 'react-quill-new/dist/quill.snow.css';
 import './Destinos.css';
 
 interface Destination {
@@ -8,12 +10,41 @@ interface Destination {
   title: string;
   description: string;
   image_url: string;
+  images: string[];
   is_active: boolean;
   created_at: string;
 }
 
 export default function DestinosPage() {
   const [destinations, setDestinations] = useState<Destination[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
+
+  const handleUpload = async (file: File) => {
+    try {
+      setIsUploading(true);
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Math.random().toString(36).substring(2)}_${Date.now()}.${fileExt}`;
+      const filePath = fileName;
+
+      const { error: uploadError } = await supabase.storage
+        .from('destinations')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('destinations')
+        .getPublicUrl(filePath);
+
+      return publicUrl;
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      alert('Error al subir la imagen. Asegúrate de que el bucket "destinations" sea público.');
+      return null;
+    } finally {
+      setIsUploading(false);
+    }
+  };
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -22,6 +53,7 @@ export default function DestinosPage() {
     title: '',
     description: '',
     image_url: '',
+    images: [] as string[],
     is_active: true
   });
 
@@ -51,6 +83,7 @@ export default function DestinosPage() {
         title: destination.title,
         description: destination.description,
         image_url: destination.image_url,
+        images: destination.images || [],
         is_active: destination.is_active
       });
     } else {
@@ -59,6 +92,7 @@ export default function DestinosPage() {
         title: '',
         description: '',
         image_url: '',
+        images: [],
         is_active: true
       });
     }
@@ -184,7 +218,7 @@ export default function DestinosPage() {
               </div>
               <div className="destino-info">
                 <h3>{destino.title}</h3>
-                <p>{destino.description}</p>
+                <div dangerouslySetInnerHTML={{ __html: destino.description }} style={{ fontSize: '0.9rem', color: '#64748b', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }} />
                 <div className="destino-status">
                   <span className={`status-badge ${destino.is_active ? 'active' : 'inactive'}`}>
                     {destino.is_active ? 'Público' : 'Oculto'}
@@ -205,7 +239,7 @@ export default function DestinosPage() {
               <button className="close-btn" onClick={handleCloseModal}><X size={24} /></button>
             </div>
             
-            <form onSubmit={handleSubmit} className="modal-form">
+            <form id="destination-form" onSubmit={handleSubmit} className="modal-form">
               <div className="form-group-pro">
                 <label>Título del Destino *</label>
                 <input 
@@ -219,37 +253,127 @@ export default function DestinosPage() {
               </div>
               
               <div className="form-group-pro">
-                <label>Descripción corta *</label>
-                <textarea 
-                  required
-                  placeholder="Escribe algo que inspire al cliente a viajar aquí..."
-                  value={formData.description}
-                  onChange={e => setFormData({...formData, description: e.target.value})}
-                  className="pro-textarea"
-                  rows={3}
-                />
+                <label>Descripción *</label>
+                <div style={{ backgroundColor: 'white', borderRadius: '8px', overflow: 'hidden', border: '1px solid #e2e8f0' }}>
+                  <ReactQuill 
+                    theme="snow"
+                    value={formData.description}
+                    onChange={(val) => setFormData({...formData, description: val})}
+                    style={{ height: '200px' }}
+                  />
+                </div>
+                <div style={{ height: '45px' }}></div>
               </div>
 
               <div className="form-group-pro">
-                <label>URL de la Imagen *</label>
-                <input 
-                  type="url" 
-                  required
-                  placeholder="https://ejemplo.com/imagen.jpg"
-                  value={formData.image_url}
-                  onChange={e => setFormData({...formData, image_url: e.target.value})}
-                  className="pro-input"
-                />
-                <span style={{ fontSize: '0.8rem', color: '#64748b', marginTop: '0.25rem' }}>
-                  Puedes usar imágenes de Unsplash, Google u otro servidor copiando la dirección de la imagen.
-                </span>
+                <label>Imagen Principal (Portada) *</label>
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  <input 
+                    type="url" 
+                    required
+                    placeholder="URL de la imagen o sube una..."
+                    value={formData.image_url}
+                    onChange={e => setFormData({...formData, image_url: e.target.value})}
+                    className="pro-input"
+                    style={{ flex: 1 }}
+                  />
+                  <label className="btn btn-outline" style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', whiteSpace: 'nowrap' }}>
+                    <Upload size={18} />
+                    <input 
+                      type="file" 
+                      accept="image/*" 
+                      style={{ display: 'none' }}
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          const url = await handleUpload(file);
+                          if (url) setFormData({...formData, image_url: url});
+                        }
+                      }}
+                    />
+                    {isUploading ? '...' : 'Subir'}
+                  </label>
+                </div>
               </div>
-
-              <div className="form-actions">
-                <button type="button" className="btn btn-outline" onClick={handleCloseModal}>Cancelar</button>
-                <button type="submit" className="btn btn-primary">{editingId ? 'Guardar Cambios' : 'Crear Destino'}</button>
+              
+              <div className="form-group-pro">
+                <label>Galería de Imágenes Adicionales</label>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                  {formData.images.map((url, idx) => (
+                    <div key={idx} style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                      <input 
+                        type="url" 
+                        value={url}
+                        onChange={e => {
+                          const newImages = [...formData.images];
+                          newImages[idx] = e.target.value;
+                          setFormData({...formData, images: newImages});
+                        }}
+                        className="pro-input"
+                        placeholder="URL de imagen"
+                        style={{ flex: 1 }}
+                      />
+                      <label className="btn btn-icon" style={{ cursor: 'pointer', color: 'var(--color-primary)' }} title="Subir archivo">
+                        <Upload size={18} />
+                        <input 
+                          type="file" 
+                          accept="image/*" 
+                          style={{ display: 'none' }}
+                          onChange={async (e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              const uploadedUrl = await handleUpload(file);
+                              if (uploadedUrl) {
+                                const newImages = [...formData.images];
+                                newImages[idx] = uploadedUrl;
+                                setFormData({...formData, images: newImages});
+                              }
+                            }
+                          }}
+                        />
+                      </label>
+                      <button 
+                        type="button" 
+                        onClick={() => {
+                          const newImages = formData.images.filter((_, i) => i !== idx);
+                          setFormData({...formData, images: newImages});
+                        }}
+                        style={{ 
+                          background: 'none', 
+                          border: 'none', 
+                          color: '#ef4444', 
+                          cursor: 'pointer',
+                          padding: '0 8px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          transition: 'transform 0.2s'
+                        }}
+                        onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.2)'}
+                        onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
+                        title="Eliminar"
+                      >
+                        <Trash2 size={20} />
+                      </button>
+                    </div>
+                  ))}
+                  <button 
+                    type="button" 
+                    className="btn btn-outline" 
+                    onClick={() => setFormData({...formData, images: [...formData.images, '']})}
+                    style={{ alignSelf: 'flex-start', fontSize: '0.85rem', marginTop: '0.5rem' }}
+                  >
+                    <Plus size={14} /> Agregar otra imagen
+                  </button>
+                </div>
               </div>
             </form>
+
+            <div className="form-actions">
+              <button type="button" className="btn btn-outline" onClick={handleCloseModal}>Cancelar</button>
+              <button type="submit" form="destination-form" className="btn btn-primary">
+                {editingId ? 'Guardar Cambios' : 'Crear Destino'}
+              </button>
+            </div>
           </div>
         </div>
       )}

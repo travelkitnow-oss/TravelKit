@@ -60,6 +60,24 @@ h1 p, h2 p, h3 p, h4 p, h5 p, h6 p {
   display: inline;
 }
 
+.ql-align-center {
+  text-align: center !important;
+  justify-content: center !important;
+}
+
+.ql-align-right {
+  text-align: right !important;
+}
+
+.ql-align-justify {
+  text-align: justify !important;
+}
+
+p.ql-align-center, h1.ql-align-center, h2.ql-align-center, h3.ql-align-center {
+  display: block !important;
+  width: 100%;
+}
+
 a {
   color: inherit;
   text-decoration: none;
@@ -385,4 +403,93 @@ button {
   color: var(--text-secondary);
   line-height: 1.7;
   opacity: 0.85;
+}
+
+/* Premium Modal Pro Styles */
+.modal-content-pro {
+  background-color: var(--color-white);
+  border-radius: 32px;
+  box-shadow: 0 25px 50px -12px rgba(31, 58, 77, 0.35);
+  width: 100%;
+  max-width: 550px;
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  padding: 0;
+  animation: modalIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.modal-header-pro {
+  background: linear-gradient(135deg, var(--color-primary) 0%, #0f2132 100%);
+  padding: 1.75rem 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: white;
+}
+
+.modal-header-pro .header-left {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+.modal-header-pro .header-icon {
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(8px);
+  padding: 0.75rem;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  flex-shrink: 0;
+}
+
+.modal-header-pro .header-text h3 {
+  margin: 0;
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: white;
+  line-height: 1.2;
+}
+
+.modal-header-pro .header-text p {
+  margin: 0.2rem 0 0;
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.65);
+  font-weight: 500;
+}
+
+.modal-header-pro .close-modal-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  transition: all 0.2s;
+  cursor: pointer;
+}
+
+.modal-header-pro .close-modal-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: rotate(90deg);
+}
+
+.modal-body-pro {
+  padding: 2rem;
+}
+
+.modal-footer-pro {
+  padding: 1.5rem 2rem;
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  border-top: 1px solid rgba(0,0,0,0.05);
+  background: #f8fafc;
 }

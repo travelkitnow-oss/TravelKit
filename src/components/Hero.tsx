@@ -35,17 +35,6 @@ export default function Hero() {
             </a>
           </div>
           
-          <div className="hero-stats">
-            <div className="stat">
-              <span className="stat-number">100+</span>
-              <span className="stat-label">Viajes organizados</span>
-            </div>
-            <div className="stat-divider"></div>
-            <div className="stat">
-              <span className="stat-number">24/7</span>
-              <span className="stat-label">Soporte continuo</span>
-            </div>
-          </div>
         </div>
         
         <div className="hero-image-wrapper animate-fade-in" style={{ animationDelay: '0.2s' }}>

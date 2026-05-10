@@ -333,22 +333,30 @@ export default function ClientesPage() {
 
       {showAddModal && (
         <div className="modal-overlay animate-fade-in" style={{ zIndex: 1400 }}>
-          <div className="modal-content glass-card animate-scale-in" style={{ maxWidth: '450px', padding: '2.5rem' }}>
-            <div className="modal-header">
-              <h3>Nuevo Cliente</h3>
-              <button onClick={() => { setShowAddModal(false); setAttemptedSubmit(false); }} className="close-modal-btn">
-                <X size={20} />
+          <div className="modal-content glass-card animate-scale-in p-0 overflow-hidden" style={{ maxWidth: '440px', border: 'none', borderRadius: '24px' }}>
+            <div className="modal-header-full">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+                <div style={{ background: 'rgba(255, 255, 255, 0.1)', color: 'white', padding: '0.6rem', borderRadius: '10px' }}>
+                  <Users size={22} />
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '1.2rem', color: 'white', fontWeight: 800 }}>Nuevo Cliente</h3>
+                  <p style={{ margin: 0, fontSize: '0.85rem', opacity: 0.8, fontWeight: 500 }}>Registra un nuevo viajero</p>
+                </div>
+              </div>
+              <button onClick={() => { setShowAddModal(false); setAttemptedSubmit(false); }} className="close-modal-btn-white">
+                <X size={18} />
               </button>
             </div>
 
-            <div className="modal-form-grid">
-              <div className="form-group">
-                <label className="text-sm font-semibold">Nombre Completo</label>
-                <div className="input-with-icon">
+            <div className="modal-body">
+              <div className="form-group mb-4">
+                <label className="text-xs font-bold uppercase text-secondary mb-2 block">Nombre Completo</label>
+                <div className="input-with-icon-pro">
                   <User size={16} />
                   <input
                     type="text"
-                    className={`form-input ${getValidationClass(newName)}`}
+                    className={`form-input-pro ${getValidationClass(newName)}`}
                     placeholder="Ej: Juan Pérez"
                     value={newName}
                     onChange={e => setNewName(e.target.value)}
@@ -356,13 +364,13 @@ export default function ClientesPage() {
                 </div>
               </div>
 
-              <div className="form-group">
-                <label className="text-sm font-semibold">Email</label>
-                <div className="input-with-icon">
+              <div className="form-group mb-4">
+                <label className="text-xs font-bold uppercase text-secondary mb-2 block">Email</label>
+                <div className="input-with-icon-pro">
                   <Mail size={16} />
                   <input
                     type="email"
-                    className={`form-input ${getEmailClass()}`}
+                    className={`form-input-pro ${getEmailClass()}`}
                     placeholder="ejemplo@mail.com"
                     value={newEmail}
                     onChange={e => setNewEmail(e.target.value)}
@@ -371,12 +379,12 @@ export default function ClientesPage() {
               </div>
 
               <div className="form-group">
-                <label className="text-sm font-semibold">Teléfono</label>
-                <div className="input-with-icon">
+                <label className="text-xs font-bold uppercase text-secondary mb-2 block">Teléfono</label>
+                <div className="input-with-icon-pro">
                   <Phone size={16} />
                   <input
                     type="text"
-                    className={`form-input ${getValidationClass(newPhone)}`}
+                    className={`form-input-pro ${getValidationClass(newPhone)}`}
                     placeholder="11 1234 5678"
                     value={newPhone}
                     onChange={e => setNewPhone(e.target.value.replace(/\D/g, ''))}
@@ -385,10 +393,10 @@ export default function ClientesPage() {
               </div>
             </div>
 
-            <div style={{ display: 'flex', gap: '1rem', marginTop: '2rem' }}>
-              <button className="btn btn-outline w-100" onClick={() => { setShowAddModal(false); setAttemptedSubmit(false); }}>Cancelar</button>
+            <div className="modal-footer-pro">
+              <button className="btn-modal-secondary" onClick={() => { setShowAddModal(false); setAttemptedSubmit(false); }}>Cancelar</button>
               <button
-                className="btn btn-primary w-100"
+                className="btn-modal-primary"
                 onClick={handleAddManualClient}
               >
                 Guardar Cliente
@@ -494,35 +502,43 @@ export default function ClientesPage() {
 
       {editingClient && (
         <div className="modal-overlay animate-fade-in" style={{ zIndex: 1400 }}>
-          <div className="modal-content glass-card animate-scale-in" style={{ maxWidth: '450px', padding: '2.5rem' }}>
-            <div className="modal-header">
-              <h3>Editar Cliente</h3>
-              <button onClick={() => setEditingClient(null)} className="close-modal-btn">
-                <X size={20} />
+          <div className="modal-content glass-card animate-scale-in p-0 overflow-hidden" style={{ maxWidth: '440px', border: 'none', borderRadius: '24px' }}>
+            <div className="modal-header-full">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+                <div style={{ background: 'rgba(255, 255, 255, 0.1)', color: 'white', padding: '0.6rem', borderRadius: '10px' }}>
+                  <Edit2 size={22} />
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '1.2rem', color: 'white', fontWeight: 800 }}>Editar Cliente</h3>
+                  <p style={{ margin: 0, fontSize: '0.85rem', opacity: 0.8, fontWeight: 500 }}>Modifica los datos del viajero</p>
+                </div>
+              </div>
+              <button onClick={() => setEditingClient(null)} className="close-modal-btn-white">
+                <X size={18} />
               </button>
             </div>
 
-            <div className="modal-form-grid">
-              <div className="form-group">
-                <label className="text-sm font-semibold">Nombre Completo</label>
-                <div className="input-with-icon">
+            <div className="modal-body">
+              <div className="form-group mb-4">
+                <label className="text-xs font-bold uppercase text-secondary mb-2 block">Nombre Completo</label>
+                <div className="input-with-icon-pro">
                   <User size={16} />
                   <input
                     type="text"
-                    className="form-input"
+                    className="form-input-pro"
                     value={editingClient.name}
                     onChange={e => setEditingClient({ ...editingClient, name: e.target.value })}
                   />
                 </div>
               </div>
 
-              <div className="form-group">
-                <label className="text-sm font-semibold">Email</label>
-                <div className="input-with-icon">
+              <div className="form-group mb-4">
+                <label className="text-xs font-bold uppercase text-secondary mb-2 block">Email</label>
+                <div className="input-with-icon-pro">
                   <Mail size={16} />
                   <input
                     type="email"
-                    className="form-input"
+                    className="form-input-pro"
                     value={editingClient.email}
                     onChange={e => setEditingClient({ ...editingClient, email: e.target.value })}
                   />
@@ -530,12 +546,12 @@ export default function ClientesPage() {
               </div>
 
               <div className="form-group">
-                <label className="text-sm font-semibold">Teléfono</label>
-                <div className="input-with-icon">
+                <label className="text-xs font-bold uppercase text-secondary mb-2 block">Teléfono</label>
+                <div className="input-with-icon-pro">
                   <Phone size={16} />
                   <input
                     type="text"
-                    className="form-input"
+                    className="form-input-pro"
                     value={editingClient.phone}
                     onChange={e => setEditingClient({ ...editingClient, phone: e.target.value.replace(/\D/g, '') })}
                   />
@@ -543,10 +559,10 @@ export default function ClientesPage() {
               </div>
             </div>
 
-            <div style={{ display: 'flex', gap: '1rem', marginTop: '2rem' }}>
-              <button className="btn btn-outline w-100" onClick={() => setEditingClient(null)}>Cancelar</button>
+            <div className="modal-footer-pro">
+              <button className="btn-modal-secondary" onClick={() => setEditingClient(null)}>Cancelar</button>
               <button
-                className="btn btn-primary w-100"
+                className="btn-modal-primary"
                 onClick={handleEditClient}
               >
                 Guardar Cambios

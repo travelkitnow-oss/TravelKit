@@ -285,3 +285,45 @@ main {
     padding: 4rem 0;
   }
 }
+
+/* Custom styles for Rich Text Content (from Quill) */
+.rich-text-content {
+  line-height: 1.8;
+  word-break: break-word;
+}
+
+.rich-text-content p, .rich-text-content div {
+  margin-bottom: 1.2rem;
+  min-height: 1.2rem;
+}
+
+.rich-text-content ul, .rich-text-content ol {
+  margin-bottom: 1.5rem;
+  padding-left: 2rem !important;
+}
+
+.rich-text-content li {
+  margin-bottom: 0.6rem;
+  list-style: disc !important;
+}
+
+.rich-text-content ol li {
+  list-style: decimal !important;
+}
+
+/* Handle Quill Indentation */
+.rich-text-content .ql-indent-1 { padding-left: 3rem !important; }
+.rich-text-content .ql-indent-2 { padding-left: 6rem !important; }
+.rich-text-content .ql-indent-3 { padding-left: 9rem !important; }
+
+.rich-text-content b, .rich-text-content strong {
+  color: var(--color-accent);
+  font-weight: 700;
+}
+
+.rich-text-content h1, .rich-text-content h2, .rich-text-content h3 {
+  margin-top: 2rem;
+  margin-bottom: 1rem;
+  color: var(--color-accent);
+  font-family: 'Playfair Display', serif;
+}

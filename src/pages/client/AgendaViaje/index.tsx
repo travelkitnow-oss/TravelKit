@@ -533,12 +533,7 @@ export default function AgendaViajePage() {
                   <label>Horario</label>
                   <p>{selectedItemForDetails.time} HS</p>
                 </div>
-                {selectedItemForDetails.reservation_code && (
-                  <div className="detail-item">
-                    <label>Reserva</label>
-                    <p className="fw-bold">{selectedItemForDetails.reservation_code}</p>
-                  </div>
-                )}
+                {/* Reservation code is now part of the name to avoid DB issues */}
               </div>
             </div>
           </div>

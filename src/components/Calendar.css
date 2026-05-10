@@ -4,8 +4,17 @@
   box-shadow: var(--shadow-lg);
   padding: 2rem;
   width: 100%;
-  max-width: 450px;
+  max-width: 550px;
   margin: 0 auto;
+  box-sizing: border-box;
+}
+
+/* Dashboard adjustments */
+.dashboard-mode.calendar-container {
+  padding: 0;
+  box-shadow: none;
+  background: transparent;
+  max-width: 100%;
 }
 
 .calendar-header {
@@ -17,10 +26,11 @@
 
 .calendar-header h3 {
   font-family: var(--font-main);
-  font-size: 1.25rem;
-  font-weight: 600;
+  font-size: 1.4rem;
+  font-weight: 700;
   color: var(--color-primary);
   text-transform: capitalize;
+  margin: 0;
 }
 
 .month-nav-btn {
@@ -39,18 +49,36 @@
   color: var(--color-primary);
 }
 
+.calendar-body {
+  background-color: var(--color-white);
+  border: 1px solid var(--color-bg);
+  border-radius: 20px;
+  padding: 1rem; /* Reduced padding to fit 7 columns */
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
+  width: 100%;
+  box-sizing: border-box;
+}
+
 .calendar-grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  gap: 0.5rem;
+  gap: 2px; /* Minimal gap to ensure all 7 columns fit */
   text-align: center;
+  width: 100%;
 }
 
 .weekday {
-  font-size: 0.875rem;
-  font-weight: 600;
+  font-size: 0.75rem;
+  font-weight: 700;
   color: var(--color-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--color-bg);
   margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .day-btn {
@@ -59,10 +87,21 @@
   align-items: center;
   justify-content: center;
   font-size: 1rem;
-  font-weight: 500;
+  font-weight: 600;
   border-radius: var(--radius-full);
   color: var(--color-text-dark);
   transition: all var(--transition-fast);
+  position: relative;
+  width: 100%;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  padding: 0;
+}
+
+.day-number {
+  z-index: 2;
+  /* Centered perfectly regardless of dot */
 }
 
 .day-btn:not(.empty):not(.disabled):hover {
@@ -71,9 +110,8 @@
 }
 
 .day-btn.selected {
-  background-color: var(--color-accent);
-  color: var(--color-white);
-  box-shadow: var(--shadow-sm);
+  background-color: var(--color-accent) !important;
+  color: var(--color-white) !important;
 }
 
 .day-btn.today:not(.selected) {
@@ -84,29 +122,24 @@
 .day-btn.disabled {
   color: var(--color-tertiary);
   cursor: not-allowed;
-  opacity: 0.5;
+  opacity: 0.25;
 }
 
-.dashboard-mode .day-btn.disabled {
-  cursor: pointer;
-}
-
-.dashboard-mode .day-btn.disabled:hover {
-  background-color: var(--color-bg);
-  opacity: 0.8;
-}
-
-.day-btn {
-  position: relative;
+/* Dashboard specific scale */
+.dashboard-mode .day-btn {
+  font-size: 0.95rem;
 }
 
 .res-dot {
   position: absolute;
-  bottom: 4px;
+  bottom: 4px; /* Back to absolute at the very bottom */
+  left: 50%;
+  transform: translateX(-50%);
   width: 4px;
   height: 4px;
   background-color: var(--color-accent);
   border-radius: 50%;
+  z-index: 1;
 }
 
 .day-btn.selected .res-dot {
@@ -114,14 +147,14 @@
 }
 
 .session-form-container {
-  margin-top: 2rem;
+  margin-top: 1.5rem;
   padding-top: 1.5rem;
   border-top: 1px solid var(--color-bg);
 }
 
 .session-form-container h4 {
   font-family: var(--font-main);
-  font-size: 1.1rem;
+  font-size: 1rem;
   margin-bottom: 1rem;
   color: var(--color-primary);
 }
@@ -137,7 +170,7 @@
   padding: 0.5rem;
   border: 1px solid var(--color-tertiary);
   border-radius: var(--radius-sm);
-  font-size: 0.875rem;
+  font-size: 0.85rem;
   font-weight: 500;
   color: var(--color-secondary);
   transition: all var(--transition-fast);
@@ -160,11 +193,6 @@
   color: var(--color-tertiary);
   cursor: not-allowed;
   opacity: 0.7;
-}
-
-.time-slot-btn:disabled:hover {
-  border-color: transparent;
-  color: var(--color-tertiary);
 }
 
 .generate-link-btn {

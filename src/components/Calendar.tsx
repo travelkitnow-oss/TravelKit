@@ -1,16 +1,16 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { 
-  format, 
-  addMonths, 
-  subMonths, 
-  startOfMonth, 
-  endOfMonth, 
-  startOfWeek, 
-  endOfWeek, 
-  isSameMonth, 
-  isSameDay, 
+import {
+  format,
+  addMonths,
+  subMonths,
+  startOfMonth,
+  endOfMonth,
+  startOfWeek,
+  endOfWeek,
+  isSameMonth,
+  isSameDay,
   addDays,
   isBefore,
   startOfDay,
@@ -103,7 +103,7 @@ export default function Calendar({ isDashboard = false, onDateSelect, selectedDa
 
     setIsSubmitting(true);
     const fullEmail = `${emailPrefix}${emailDomain === 'personalizado' ? '@' + customDomain : emailDomain}`;
-    
+
     const newSubmission = {
       name: formValues['base-1'] || 'Cliente Web',
       email: fullEmail,
@@ -114,9 +114,9 @@ export default function Calendar({ isDashboard = false, onDateSelect, selectedDa
       answers: formQuestions.map(q => ({
         questionText: q.text,
         answer: q.id === 'base-1' ? (formValues['base-1'] || '') :
-                q.id === 'base-2' ? fullEmail :
-                q.id === 'base-3' ? (formValues['base-3'] || '') :
-                (formValues[q.id] || '')
+          q.id === 'base-2' ? fullEmail :
+            q.id === 'base-3' ? (formValues['base-3'] || '') :
+              (formValues[q.id] || '')
       }))
     };
 
@@ -144,8 +144,7 @@ export default function Calendar({ isDashboard = false, onDateSelect, selectedDa
     const startDate = startOfWeek(monthStart);
     const endDate = endOfWeek(monthEnd);
     const dateFormat = "d";
-    const rows = [];
-    let days = [];
+    const cells = [];
     let day = startDate;
 
     while (day <= endDate) {
@@ -154,53 +153,53 @@ export default function Calendar({ isDashboard = false, onDateSelect, selectedDa
         const cloneDay = day;
         const isPast = isBefore(day, startOfDay(new Date()));
         const isCurrentMonth = isSameMonth(day, monthStart);
-        
+
         // Find if this day has reservations
         const hasRes = reservations.some(r => r.date === format(cloneDay, 'yyyy-MM-dd') && r.status !== 'cancelled');
 
-        days.push(
+        cells.push(
           <button
             key={day.toString()}
-            className={`day-btn ${
-              !isCurrentMonth ? "empty" : 
-              isSameDay(day, selectedDate!) ? "selected" : 
-              isSameDay(day, new Date()) ? "today" : ""
-            } ${(isPast || isWeekend(day)) && isCurrentMonth ? "disabled" : ""} ${hasRes ? 'has-reservation' : ''}`}
+            className={`day-btn ${!isCurrentMonth ? "empty" :
+                isSameDay(day, selectedDate!) ? "selected" :
+                  isSameDay(day, new Date()) ? "today" : ""
+              } ${(isPast || isWeekend(day)) && isCurrentMonth ? "disabled" : ""} ${hasRes ? 'has-reservation' : ''}`}
             onClick={() => onDateClick(cloneDay)}
             disabled={(!isDashboard && (isPast || isWeekend(day))) || !isCurrentMonth}
           >
             {isCurrentMonth ? formattedDate : ""}
-            {hasRes && <div className="res-dot"></div>}
+            {isDashboard && hasRes && <div className="res-dot"></div>}
           </button>
         );
         day = addDays(day, 1);
       }
-      rows.push(<div className="calendar-grid" key={day.toString()}>{days}</div>);
-      days = [];
     }
-    return <div className="calendar-body">{rows}</div>;
+    return cells;
   };
 
   return (
-    <div className={`calendar-container animate-fade-in ${isDashboard ? 'dashboard-mode' : ''}`} style={isDashboard ? { maxWidth: '100%', boxShadow: 'none', padding: 0 } : {}}>
+    <div className={`calendar-container animate-fade-in ${isDashboard ? 'dashboard-mode' : ''}`}>
       {!isDashboard && (
         <div className="calendar-top" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.5rem' }}>
           <CalendarIcon color="var(--color-accent)" size={24} />
           <h2 style={{ fontSize: '1.5rem', margin: 0 }}>Agendar Sesión</h2>
         </div>
       )}
-      
+
       <div className="calendar-header">
         <button onClick={() => setCurrentDate(subMonths(currentDate, 1))} className="month-nav-btn"><ChevronLeft size={20} /></button>
         <h3>{format(currentDate, 'MMMM yyyy', { locale: es })}</h3>
         <button onClick={() => setCurrentDate(addMonths(currentDate, 1))} className="month-nav-btn"><ChevronRight size={20} /></button>
       </div>
 
-      <div className="calendar-grid">
-        {['Do', 'Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sa'].map((day, i) => <div className="weekday" key={i}>{day}</div>)}
+      <div className="calendar-body">
+        <div className="calendar-grid">
+          {['Do', 'Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sa'].map((day, i) => (
+            <div className="weekday" key={i}>{day}</div>
+          ))}
+          {renderCells()}
+        </div>
       </div>
-
-      {renderCells()}
 
       {!isDashboard && selectedDate && (
         <div className="session-form-container animate-fade-in">
@@ -212,7 +211,7 @@ export default function Calendar({ isDashboard = false, onDateSelect, selectedDa
               const slotDateTime = new Date(`${dateStr}T${time}:00`);
               const now = new Date();
               const isTooSoon = !isAfter(slotDateTime, addHours(now, 24));
-              
+
               return (
                 <button
                   key={time}
@@ -225,8 +224,8 @@ export default function Calendar({ isDashboard = false, onDateSelect, selectedDa
               );
             })}
           </div>
-          
-          <button 
+
+          <button
             className="btn btn-primary w-100 mt-4"
             onClick={() => setShowForm(true)}
             disabled={!selectedTime}
@@ -260,8 +259,8 @@ export default function Calendar({ isDashboard = false, onDateSelect, selectedDa
                   {formQuestions.map(q => (
                     <div key={q.id} className="form-group mb-4">
                       <label>{q.text} {q.required && '*'}</label>
-                      {q.type === 'text' && <input type="text" className="form-input" value={formValues[q.id] || ''} onChange={e => setFormValues({...formValues, [q.id]: e.target.value})} />}
-                      {q.type === 'phone' && <input type="tel" className="form-input" value={formValues[q.id] || ''} onChange={e => setFormValues({...formValues, [q.id]: formatPhoneFixed(e.target.value)})} />}
+                      {q.type === 'text' && <input type="text" className="form-input" value={formValues[q.id] || ''} onChange={e => setFormValues({ ...formValues, [q.id]: e.target.value })} />}
+                      {q.type === 'phone' && <input type="tel" className="form-input" value={formValues[q.id] || ''} onChange={e => setFormValues({ ...formValues, [q.id]: formatPhoneFixed(e.target.value) })} />}
                       {q.type === 'email' && (
                         <div className="email-input-group">
                           <input type="text" className="form-input" value={emailPrefix} onChange={e => setEmailPrefix(e.target.value)} />
@@ -271,7 +270,7 @@ export default function Calendar({ isDashboard = false, onDateSelect, selectedDa
                           </select>
                         </div>
                       )}
-                      {q.type === 'textarea' && <textarea className="form-input" value={formValues[q.id] || ''} onChange={e => setFormValues({...formValues, [q.id]: e.target.value})} />}
+                      {q.type === 'textarea' && <textarea className="form-input" value={formValues[q.id] || ''} onChange={e => setFormValues({ ...formValues, [q.id]: e.target.value })} />}
                     </div>
                   ))}
                 </div>

@@ -107,20 +107,21 @@
   color: var(--color-primary);
 }
 
-.close-modal-btn {
-  width: 36px;
-  height: 36px;
+.close-session-modal {
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background-color 0.2s;
-  color: var(--color-secondary);
+  transition: all 0.3s ease;
+  color: rgba(255, 255, 255, 0.7);
 }
 
-.close-modal-btn:hover {
-  background-color: var(--color-bg);
-  color: var(--color-primary);
+.close-session-modal:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: white;
+  transform: rotate(90deg) scale(1.1);
 }
 
 .modal-icon-wrapper {

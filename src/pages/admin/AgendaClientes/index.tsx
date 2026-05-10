@@ -18,7 +18,8 @@ import {
   Folder,
   ChevronDown,
   Archive,
-  AlertTriangle
+  AlertTriangle,
+  Search
 } from 'lucide-react';
 import {
   format,
@@ -32,7 +33,8 @@ import {
   isSameDay,
   addDays,
   isWithinInterval,
-  parseISO
+  parseISO,
+  differenceInDays
 } from 'date-fns';
 import { es } from 'date-fns/locale';
 import jsPDF from 'jspdf';
@@ -62,6 +64,9 @@ export default function AgendaClientesPage() {
   const [scheduledItems, setScheduledItems] = useState<any[]>([]);
   const [catalogFolders, setCatalogFolders] = useState<any[]>([]);
   const [showFinishConfirm, setShowFinishConfirm] = useState(false);
+  const [tickets, setTickets] = useState<any[]>([]);
+  const [currentTicketIndex, setCurrentTicketIndex] = useState(0);
+  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
     fetchInitialData();
@@ -70,6 +75,7 @@ export default function AgendaClientesPage() {
   useEffect(() => {
     if (selectedClientId) {
       fetchClientData(selectedClientId);
+      fetchTickets(selectedClientId);
     }
   }, [selectedClientId]);
 
@@ -101,6 +107,57 @@ export default function AgendaClientesPage() {
     setScheduledItems(sItems || []);
   };
 
+  const fetchTickets = async (clientId: string) => {
+    // Sort by created_at to avoid 400 error if departure_date column is missing
+    const { data, error } = await supabase
+      .from('tickets')
+      .select('*')
+      .eq('client_id', clientId)
+      .order('created_at', { ascending: true });
+    
+    if (error) {
+      console.error('Error fetching tickets:', error);
+      return;
+    }
+
+    const processedTickets = (data || []).flatMap(t => {
+      let flight_info = null;
+      try {
+        if (t.notes && t.notes.trim().startsWith('{')) {
+          flight_info = JSON.parse(t.notes);
+        }
+      } catch (e) { /* ignore */ }
+      
+      if (flight_info) {
+        const legs = [
+          { ...t, leg_type: 'IDA', ...flight_info.outbound }
+        ];
+        if (flight_info.is_round_trip && flight_info.return) {
+          legs.push({ ...t, leg_type: 'VUELTA', ...flight_info.return });
+        }
+        return legs;
+      }
+      // Fallback for old tickets
+      return [{ 
+        ...t, 
+        leg_type: 'VUELO',
+        origin: t.origin || '---',
+        destination: t.destination || '---',
+        date: t.departure_date || '',
+        departure_time: t.departure_time || '',
+        arrival_time: t.arrival_time || ''
+      }];
+    });
+
+    const sortedTickets = processedTickets.sort((a: any, b: any) => {
+      if (!a.date) return 1;
+      if (!b.date) return -1;
+      return a.date.localeCompare(b.date);
+    });
+    setTickets(sortedTickets);
+    setCurrentTicketIndex(0);
+  };
+
   const selectedClientData = useMemo(() => {
     if (!selectedClientId) return null;
     const client = clients.find((c: any) => c.id === selectedClientId);
@@ -111,8 +168,45 @@ export default function AgendaClientesPage() {
     };
   }, [selectedClientId, clients, billingData]);
 
-  const tripDateMin = selectedClientData?.dates?.departure_date || '';
-  const tripDateMax = selectedClientData?.dates?.return_date || '';
+  const tripDateMin = selectedClientData?.dates?.departure_date || (tickets.length > 0 ? tickets[0].date : '');
+  const tripDateMax = selectedClientData?.dates?.return_date || (tickets.length > 0 ? tickets[tickets.length - 1].date : '');
+
+  const locationsByDate = useMemo(() => {
+    if (!tripDateMin || !tripDateMax) return {};
+    
+    const locMap: Record<string, string> = {};
+    const sortedLegs = [...tickets].sort((a, b) => {
+      if (!a.date) return 1;
+      if (!b.date) return -1;
+      return a.date.localeCompare(b.date);
+    });
+
+    if (sortedLegs.length === 0) return {};
+
+    const firstLeg = sortedLegs[0];
+    const initialOrigin = firstLeg.origin || '';
+    const initialOriginCountry = initialOrigin.includes('-') ? initialOrigin.split('-')[0].trim() : initialOrigin;
+    
+    let currentCountry = initialOriginCountry;
+    let d = parseISO(tripDateMin);
+    const end = parseISO(tripDateMax);
+    
+    while (d <= end) {
+      const dateStr = format(d, 'yyyy-MM-dd');
+      const flightsToday = sortedLegs.filter(l => l.date === dateStr);
+      
+      if (flightsToday.length > 0) {
+        const lastFlight = flightsToday[flightsToday.length - 1];
+        const dest = lastFlight.destination || '';
+        const destCountry = dest.includes('-') ? dest.split('-')[0].trim() : dest;
+        currentCountry = destCountry;
+      }
+      
+      locMap[dateStr] = currentCountry;
+      d = addDays(d, 1);
+    }
+    return locMap;
+  }, [tickets, tripDateMin, tripDateMax]);
 
   const handleScheduleItem = async () => {
     if (!selectedClientId || !newSchedule.itemId || !newSchedule.date) return;
@@ -123,18 +217,18 @@ export default function AgendaClientesPage() {
       client_id: selectedClientId,
       type: addingType,
       item_id: newSchedule.itemId,
-      name: itemDetails?.name || 'Ítem agendado',
-      date: newSchedule.date,
-      time: newSchedule.time,
-      end_date: addingType === 'hotel' ? newSchedule.endDate : null,
-      end_time: addingType === 'hotel' ? newSchedule.endTime : null,
+      name: (itemDetails?.name || 'Ítem agendado') + (newSchedule.reservationCode ? ` (Reserva: ${newSchedule.reservationCode})` : ''),
+      date: newSchedule.date || null,
+      time: newSchedule.time || null,
+      end_date: (addingType === 'hotel' && newSchedule.endDate) ? newSchedule.endDate : null,
+      end_time: (addingType === 'hotel' && newSchedule.endTime) ? newSchedule.endTime : null,
       origin: itemDetails?.origin || null,
-      destination: itemDetails?.destination || null,
-      reservation_code: newSchedule.reservationCode || null
+      destination: itemDetails?.destination || null
     }]).select();
 
     if (error) {
-      alert('Error al agendar ítem');
+      console.error('Error scheduling item:', error);
+      alert('Error al agendar ítem: ' + error.message);
     } else if (data) {
       setScheduledItems([...scheduledItems, data[0]]);
       setNewSchedule({ date: '', time: '14:00', itemId: '', endDate: '', endTime: '10:00', reservationCode: '' });
@@ -201,6 +295,18 @@ export default function AgendaClientesPage() {
     }
   };
 
+  const nextTicket = () => {
+    if (currentTicketIndex < tickets.length - 1) {
+      setCurrentTicketIndex(currentTicketIndex + 1);
+    }
+  };
+
+  const prevTicket = () => {
+    if (currentTicketIndex > 0) {
+      setCurrentTicketIndex(currentTicketIndex - 1);
+    }
+  };
+
   const renderHeader = () => {
     return (
       <div className="calendar-header">
@@ -261,6 +367,33 @@ export default function AgendaClientesPage() {
             onClick={() => setSelectedDayForDetails(cloneDay)}
           >
             <span className="number">{format(day, "d")}</span>
+            
+            {isTripDay && locationsByDate[format(cloneDay, 'yyyy-MM-dd')] && (() => {
+              const loc = locationsByDate[format(cloneDay, 'yyyy-MM-dd')];
+              const destColors = [
+                { bg: 'rgba(255, 255, 255, 0.9)', text: '#059669', border: '#059669' }, // Verde Esmeralda
+                { bg: 'rgba(255, 255, 255, 0.9)', text: '#7c3aed', border: '#7c3aed' }, // Violeta
+                { bg: 'rgba(255, 255, 255, 0.9)', text: '#d97706', border: '#d97706' }, // Ámbar
+                { bg: 'rgba(255, 255, 255, 0.9)', text: '#5d4037', border: '#5d4037' }, // Marrón
+                { bg: 'rgba(255, 255, 255, 0.9)', text: '#0f766e', border: '#0f766e' }, // Teal
+              ];
+              
+              let colorIndex;
+              const lowLoc = loc.toLowerCase();
+              if (lowLoc.includes('madrid')) colorIndex = 0;
+              else if (lowLoc.includes('aeroparque')) colorIndex = 3;
+              else colorIndex = loc.split('').reduce((a, b) => a + b.charCodeAt(0), 0) % destColors.length;
+              
+              const color = destColors[colorIndex];
+              
+              return (
+                <div className="day-location-badge animate-fade-in" style={{ background: color.bg, color: color.text, border: `1px solid ${color.border}` }}>
+                  <MapPin size={8} />
+                  <span>{loc}</span>
+                </div>
+              );
+            })()}
+
             <div className="trip-markers">
               {dayItems.slice(0, 2).map((item, idx) => (
                 <div key={idx} className={`trip-pill ${item.type}`} title={`${item.time} - ${item.name}`}>
@@ -269,7 +402,7 @@ export default function AgendaClientesPage() {
                 </div>
               ))}
               {dayItems.length > 2 && (
-                <div className="more-markers">+{dayItems.length - 2} más</div>
+                <div className="more-marker">+{dayItems.length - 2} ver más</div>
               )}
             </div>
           </div>
@@ -304,15 +437,35 @@ export default function AgendaClientesPage() {
       blue: [59, 130, 246]
     };
 
-    const tripDuration = b.departure_date && b.return_date
-      ? Math.ceil((new Date(b.return_date).getTime() - new Date(b.departure_date).getTime()) / (1000 * 3600 * 24))
-      : 0;
 
     const counts = {
       hotel: scheduledItems.filter(i => i.type === 'hotel').length,
       transport: scheduledItems.filter(i => i.type === 'transport').length,
       excursion: scheduledItems.filter(i => i.type === 'excursion').length
     };
+
+    const firstTicket = tickets[0];
+    const lastTicket = tickets[tickets.length - 1];
+
+    const effDeparture = {
+      date: b.departure_date || firstTicket?.date,
+      time: b.departure_time || (firstTicket as any)?.departure_time,
+      arrival_time: b.arrival_time || (firstTicket as any)?.arrival_time,
+      origin: b.origin || (firstTicket as any)?.origin,
+      destination: b.destination || (firstTicket as any)?.destination
+    };
+
+    const effReturn = {
+      date: b.return_date || lastTicket?.date,
+      time: b.return_departure_time || (lastTicket as any)?.departure_time,
+      arrival_time: b.return_arrival_time || (lastTicket as any)?.arrival_time,
+      origin: b.return_origin || (lastTicket as any)?.origin,
+      destination: b.return_destination || (lastTicket as any)?.destination
+    };
+
+    const effTripDuration = effDeparture.date && effReturn.date 
+      ? Math.max(0, differenceInDays(parseISO(effReturn.date), parseISO(effDeparture.date)))
+      : 0;
 
     const drawHeader = () => {
       doc.setFillColor(c.beige[0], c.beige[1], c.beige[2]);
@@ -349,13 +502,14 @@ export default function AgendaClientesPage() {
       doc.setTextColor(c.grayBlue[0], c.grayBlue[1], c.grayBlue[2]);
       doc.text(client.email || '', 65, 46);
 
-      if (b.destination) {
+      const displayDest = b.destination || effDeparture.destination;
+      if (displayDest) {
         doc.setFillColor(c.gold[0], c.gold[1], c.gold[2]);
         doc.roundedRect(155, 18, 45, 12, 2, 2, 'F');
         doc.setTextColor(255, 255, 255);
         doc.setFontSize(10);
         doc.setFont("helvetica", "bold");
-        doc.text(b.destination.toUpperCase(), 177.5, 26, { align: "center" });
+        doc.text(displayDest.toUpperCase(), 177.5, 26, { align: "center" });
       }
 
       doc.setDrawColor(c.gold[0], c.gold[1], c.gold[2]);
@@ -384,25 +538,27 @@ export default function AgendaClientesPage() {
 
     doc.setFontSize(10);
     doc.setTextColor(c.deepBlue[0], c.deepBlue[1], c.deepBlue[2]);
-    if (b.departure_date) {
-      doc.text(`${format(parseISO(b.departure_date), 'dd/MM/yyyy')} • ${b.departure_time || '--'} hs`, 35, yPos + 20);
+    if (effDeparture.date) {
+      doc.text(`${format(parseISO(effDeparture.date), 'dd/MM/yyyy')} • ${effDeparture.time || '--'} hs`, 35, yPos + 20);
       doc.setFontSize(7);
       doc.setTextColor(c.grayBlue[0], c.grayBlue[1], c.grayBlue[2]);
-      doc.text(`Llegada: ${format(parseISO(b.departure_date), 'dd/MM/yyyy')} • ${b.arrival_time || '--'} hs`, 35, yPos + 26);
+      const isNextDay = effDeparture.arrival_time && effDeparture.time && effDeparture.arrival_time < effDeparture.time;
+      doc.text(`Llegada: ${format(parseISO(effDeparture.date), 'dd/MM/yyyy')} • ${effDeparture.arrival_time || '--'} hs ${isNextDay ? '(+1 Día)' : ''}`, 35, yPos + 26);
     }
 
     doc.setFontSize(10);
     doc.setTextColor(c.deepBlue[0], c.deepBlue[1], c.deepBlue[2]);
-    if (b.return_date) {
-      doc.text(`${format(parseISO(b.return_date), 'dd/MM/yyyy')} • ${b.return_departure_time || '--'} hs`, 90, yPos + 20);
+    if (effReturn.date) {
+      doc.text(`${format(parseISO(effReturn.date), 'dd/MM/yyyy')} • ${effReturn.time || '--'} hs`, 90, yPos + 20);
       doc.setFontSize(7);
       doc.setTextColor(c.grayBlue[0], c.grayBlue[1], c.grayBlue[2]);
-      doc.text(`Llegada: ${format(parseISO(b.return_date), 'dd/MM/yyyy')} • ${b.return_arrival_time || '--'} hs`, 90, yPos + 26);
+      const isNextDayReturn = effReturn.arrival_time && effReturn.time && effReturn.arrival_time < effReturn.time;
+      doc.text(`Llegada: ${format(parseISO(effReturn.date), 'dd/MM/yyyy')} • ${effReturn.arrival_time || '--'} hs ${isNextDayReturn ? '(+1 Día)' : ''}`, 90, yPos + 26);
     }
 
     doc.setFontSize(14);
     doc.setTextColor(c.deepBlue[0], c.deepBlue[1], c.deepBlue[2]);
-    doc.text(`${tripDuration} noches`, 150, yPos + 22);
+    doc.text(`${effTripDuration} noches`, 150, yPos + 22);
 
     doc.setDrawColor(c.lightBlue[0], c.lightBlue[1], c.lightBlue[2]);
     doc.line(35, yPos + 32, 175, yPos + 32);
@@ -421,6 +577,7 @@ export default function AgendaClientesPage() {
 
     yPos += 70;
 
+
     doc.setFontSize(12);
     doc.setTextColor(c.deepBlue[0], c.deepBlue[1], c.deepBlue[2]);
     doc.setFont("helvetica", "bold");
@@ -431,7 +588,18 @@ export default function AgendaClientesPage() {
 
     yPos += 15;
 
-    const groupedItems = scheduledItems.reduce((acc: any, item) => {
+    const allItineraryItems = [
+      ...scheduledItems.map(i => ({ ...i, isFlight: false })),
+      ...tickets.map(t => ({
+        ...t,
+        type: 'flight',
+        name: `Vuelo: ${t.origin} -> ${t.destination}`,
+        time: (t as any).departure_time,
+        isFlight: true
+      }))
+    ];
+
+    const groupedItems = allItineraryItems.reduce((acc: any, item) => {
       const dateKey = item.date;
       if (!acc[dateKey]) acc[dateKey] = [];
       acc[dateKey].push(item);
@@ -469,8 +637,9 @@ export default function AgendaClientesPage() {
           yPos = 70;
         }
 
-        const typeColor = item.type === 'hotel' ? c.green : item.type === 'transport' ? c.blue : c.orange;
-        const typeLabel = item.type === 'hotel' ? 'HOSPEDAJE' : item.type === 'transport' ? 'TRASLADO' : 'EXCURSION';
+        const isFlight = item.isFlight;
+        const typeColor = isFlight ? c.deepBlue : (item.type === 'hotel' ? c.green : (item.type === 'transport' ? c.blue : c.orange));
+        const typeLabel = isFlight ? 'VUELO / PASAJES' : (item.type === 'hotel' ? 'HOSPEDAJE' : (item.type === 'transport' ? 'TRASLADO' : 'EXCURSION'));
 
         doc.setFillColor(248, 255, 255);
         doc.rect(15, yPos, 180, 25, 'F');
@@ -566,114 +735,115 @@ export default function AgendaClientesPage() {
               </div>
             </div>
 
-            <div className="banner-vuelos-grid">
-              {/* Vuelo Ida */}
-              <div className="vuelo-card ida premium-ticket">
-                <div className="ticket-main">
-                  <div className="ticket-header-pro">
-                    <div className="vuelo-tag-pro">BOARDING PASS</div>
-                    <div className="vuelo-status">CONFIRMADO</div>
-                  </div>
-
-                  <div className="ticket-route-pro">
-                    <div className="city-group">
-                      <span className="city-code">{b.origin?.substring(0, 3).toUpperCase() || '---'}</span>
-                      <span className="city-name">{b.origin || 'Origen'}</span>
+            <div className="banner-vuelos-container">
+              {tickets.length > 2 && (
+                <button className="carousel-control prev" onClick={prevTicket} disabled={currentTicketIndex === 0}>
+                  <ChevronLeft size={24} />
+                </button>
+              )}
+              
+              <div className="banner-vuelos-grid">
+                {tickets.length === 0 ? (
+                  <div className="vuelo-card ida premium-ticket empty-ticket">
+                    <div className="ticket-main">
+                      <div className="ticket-header-pro">
+                        <div className="vuelo-tag-pro">BOARDING PASS</div>
+                        <div className="vuelo-status" style={{ background: 'rgba(0,0,0,0.05)', color: '#94a3b8' }}>PENDIENTE</div>
+                      </div>
+                      <div className="ticket-route-pro" style={{ opacity: 0.3 }}>
+                        <div className="city-group"><span className="city-code">---</span><span className="city-name">ORIGEN</span></div>
+                        <div className="flight-path"><div className="path-line"></div><Plane size={20} className="path-plane" /></div>
+                        <div className="city-group dest"><span className="city-code">---</span><span className="city-name">DESTINO</span></div>
+                      </div>
+                      <div className="ticket-footer-pro" style={{ opacity: 0.3 }}>
+                        <div className="footer-item"><span className="item-label">FECHA</span><span className="item-value">---</span></div>
+                        <div className="footer-item"><span className="item-label">SALIDA</span><span className="item-value">--:-- HS</span></div>
+                        <div className="footer-item"><span className="item-label">LLEGADA</span><span className="item-value">--:-- HS</span></div>
+                      </div>
                     </div>
-
-                    <div className="flight-path">
-                      <div className="path-line"></div>
-                      <Plane size={20} className="path-plane" />
-                    </div>
-
-                    <div className="city-group dest">
-                      <span className="city-code">{b.destination?.substring(0, 3).toUpperCase() || '---'}</span>
-                      <span className="city-name">{b.destination || 'Destino'}</span>
-                    </div>
-                  </div>
-
-                  <div className="ticket-footer-pro">
-                    <div className="footer-item">
-                      <span className="item-label">FECHA</span>
-                      <span className="item-value">{b.departure_date ? format(parseISO(b.departure_date), 'dd MMM yyyy', { locale: es }) : '---'}</span>
-                    </div>
-                    <div className="footer-item">
-                      <span className="item-label">SALIDA</span>
-                      <span className="item-value">{b.departure_time || '--:--'} HS</span>
-                    </div>
-                    <div className="footer-item">
-                      <span className="item-label">LLEGADA</span>
-                      <span className="item-value">{b.arrival_time || '--:--'} HS</span>
+                    <div className="ticket-stub" style={{ opacity: 0.3 }}>
+                      <div className="stub-notch top"></div>
+                      <div className="stub-content"><QrCode size={40} className="stub-qr" /><div className="stub-text">GATE OPEN</div></div>
+                      <div className="stub-notch bottom"></div>
                     </div>
                   </div>
-                </div>
+                ) : (
+                  tickets.slice(currentTicketIndex, currentTicketIndex + 2).map((ticket, idx) => (
+                    <div key={`${ticket.id}-${idx}`} className={`vuelo-card ${ticket.leg_type === 'VUELTA' ? 'vuelta' : 'ida'} premium-ticket animate-fade-in`}>
+                      <div className="ticket-main">
+                        <div className="ticket-header-pro">
+                          <div className="vuelo-tag-pro">BOARDING PASS - {ticket.leg_type}</div>
+                          <div className="vuelo-status">CONFIRMADO</div>
+                        </div>
 
-                <div className="ticket-stub">
-                  <div className="stub-notch top"></div>
-                  <div className="stub-content">
-                    <QrCode size={40} className="stub-qr" />
-                    <div className="stub-text">GATE OPEN</div>
-                  </div>
-                  <div className="stub-notch bottom"></div>
-                </div>
+                        <div className="ticket-route-pro">
+                          <div className="city-group">
+                            <span className="city-code">{ticket.origin?.substring(0, 3).toUpperCase() || '---'}</span>
+                            <span className="city-name">{ticket.origin || 'Origen'}</span>
+                          </div>
+
+                          <div className="flight-path">
+                            <div className="path-line"></div>
+                            <Plane size={20} className="path-plane" />
+                          </div>
+
+                          <div className="city-group dest">
+                            <span className="city-code">{ticket.destination?.substring(0, 3).toUpperCase() || '---'}</span>
+                            <span className="city-name">{ticket.destination || 'Destino'}</span>
+                          </div>
+                        </div>
+
+                        <div className="ticket-footer-pro">
+                          <div className="footer-item">
+                            <span className="item-label">FECHA</span>
+                            <span className="item-value">{ticket.date ? format(parseISO(ticket.date), 'dd MMM yyyy', { locale: es }) : '---'}</span>
+                          </div>
+                          <div className="footer-item">
+                            <span className="item-label">SALIDA</span>
+                            <span className="item-value">{ticket.departure_time || '--:--'} HS</span>
+                          </div>
+                          <div className="footer-item">
+                            <span className="item-label">LLEGADA</span>
+                            <span className="item-value">
+                              {ticket.arrival_time || '--:--'} HS
+                              {ticket.arrival_time && ticket.departure_time && ticket.arrival_time < ticket.departure_time && (
+                                <span style={{ fontSize: '0.65rem', color: '#ef4444', fontWeight: 'bold', marginLeft: '4px' }}>(+1 Día)</span>
+                              )}
+                            </span>
+                          </div>
+                        </div>
+                        
+                        {ticket.notes && (
+                          <div style={{ marginTop: '0.75rem', fontSize: '0.7rem', color: '#64748b', fontStyle: 'italic', background: '#f8fafc', padding: '0.5rem', borderRadius: '8px' }}>
+                            {ticket.notes}
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="ticket-stub">
+                        <div className="stub-notch top"></div>
+                        <div className="stub-content">
+                          <QrCode size={40} className="stub-qr" />
+                          <div className="stub-text">GATE OPEN</div>
+                        </div>
+                        <div className="stub-notch bottom"></div>
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
 
-              {/* Vuelo Vuelta */}
-              <div className="vuelo-card vuelta premium-ticket">
-                <div className="ticket-main">
-                  <div className="ticket-header-pro">
-                    <div className="vuelo-tag-pro">BOARDING PASS</div>
-                    <div className="vuelo-status">CONFIRMADO</div>
-                  </div>
-
-                  <div className="ticket-route-pro">
-                    <div className="city-group">
-                      <span className="city-code">{(b.return_origin || b.destination)?.substring(0, 3).toUpperCase() || '---'}</span>
-                      <span className="city-name">{b.return_origin || b.destination || 'Origen'}</span>
-                    </div>
-
-                    <div className="flight-path">
-                      <div className="path-line"></div>
-                      <Plane size={20} className="path-plane" />
-                    </div>
-
-                    <div className="city-group dest">
-                      <span className="city-code">{(b.return_destination || b.origin)?.substring(0, 3).toUpperCase() || '---'}</span>
-                      <span className="city-name">{b.return_destination || b.origin || 'Destino'}</span>
-                    </div>
-                  </div>
-
-                  <div className="ticket-footer-pro">
-                    <div className="footer-item">
-                      <span className="item-label">FECHA</span>
-                      <span className="item-value">{b.return_date ? format(parseISO(b.return_date), 'dd MMM yyyy', { locale: es }) : '---'}</span>
-                    </div>
-                    <div className="footer-item">
-                      <span className="item-label">SALIDA</span>
-                      <span className="item-value">{b.return_departure_time || '--:--'} HS</span>
-                    </div>
-                    <div className="footer-item">
-                      <span className="item-label">LLEGADA</span>
-                      <span className="item-value">{b.return_arrival_time || '--:--'} HS</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="ticket-stub">
-                  <div className="stub-notch top"></div>
-                  <div className="stub-content">
-                    <QrCode size={40} className="stub-qr" />
-                    <div className="stub-text">GATE OPEN</div>
-                  </div>
-                  <div className="stub-notch bottom"></div>
-                </div>
-              </div>
+              {tickets.length > 2 && (
+                <button className="carousel-control next" onClick={nextTicket} disabled={currentTicketIndex >= tickets.length - 2}>
+                  <ChevronRight size={24} />
+                </button>
+              )}
             </div>
 
             <div className="agenda-action-bar">
               <div className="passengers-count">
                 <User size={18} />
-                <span>{b.passengers || 1} Pasajeros</span>
+                <span>{(tickets.length > 0 ? tickets[0].passenger_count : (b.passengers || 1))} Pasajeros</span>
               </div>
               <div className="action-buttons-group">
                 <button className="btn-action-add hotel" onClick={() => setAddingType('hotel')}>
@@ -892,35 +1062,55 @@ export default function AgendaClientesPage() {
 
                 {isSelectorOpen && (
                   <div className="selector-dropdown custom-scrollbar">
+                    <div className="selector-search-wrapper" onClick={e => e.stopPropagation()}>
+                      <Search size={14} className="search-icon" />
+                      <input 
+                        type="text" 
+                        placeholder="Buscar en el catálogo..." 
+                        className="selector-search-input"
+                        value={searchTerm}
+                        onChange={e => setSearchTerm(e.target.value)}
+                        autoFocus
+                      />
+                    </div>
+                    
                     {catalogFolders.filter(f => f.type === addingType).length === 0 ? (
                       <div className="p-3 text-center text-secondary text-sm">No hay carpetas creadas</div>
                     ) : (
-                      catalogFolders.filter(f => f.type === addingType).map(folder => (
-                        <div key={folder.id} className="selector-folder">
-                          <div 
-                            className="folder-header" 
-                            onClick={() => setExpandedFolderId(expandedFolderId === folder.id ? null : folder.id)}
-                            style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem', minHeight: '36px', background: expandedFolderId === folder.id ? 'rgba(31,58,77,0.03)' : 'transparent', borderBottom: '1px solid rgba(0,0,0,0.02)' }}
-                          >
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                              <Folder size={12} className="text-primary" fill="rgba(31,58,77,0.15)" />
-                              <span className="folder-name" style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '250px', fontSize: '0.8rem', fontWeight: 600 }}>{folder.name}</span>
+                      catalogFolders.filter(f => f.type === addingType).map(folder => {
+                        const filteredItems = folder.items.filter((i: any) => 
+                          i.name.toLowerCase().includes(searchTerm.toLowerCase())
+                        );
+                        
+                        if (searchTerm && filteredItems.length === 0) return null;
+                        
+                        return (
+                          <div key={folder.id} className="selector-folder">
+                            <div 
+                              className="folder-header" 
+                              onClick={() => setExpandedFolderId(expandedFolderId === folder.id ? null : folder.id)}
+                              style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem', minHeight: '36px', background: (expandedFolderId === folder.id || searchTerm) ? 'rgba(31,58,77,0.03)' : 'transparent' }}
+                            >
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <Folder size={12} className="text-primary" fill="rgba(31,58,77,0.15)" />
+                                <span className="folder-name" style={{ fontSize: '0.8rem', fontWeight: 600 }}>{folder.name}</span>
+                              </div>
+                              {(expandedFolderId === folder.id || searchTerm) ? <ChevronDown size={12} opacity={0.4} /> : <ChevronRight size={12} opacity={0.4} />}
                             </div>
-                            {expandedFolderId === folder.id ? <ChevronDown size={12} opacity={0.4} /> : <ChevronRight size={12} opacity={0.4} />}
-                          </div>
-                          
-                          {expandedFolderId === folder.id && (
-                            <div className="folder-items">
-                              {folder.items.length === 0 ? (
-                                <div className="empty-items" style={{ padding: '0.75rem 1rem 0.75rem 2.5rem', fontSize: '0.8rem', color: '#94a3b8', fontStyle: 'italic' }}>Carpeta vacía</div>
-                              ) : (
-                                folder.items.map((item: any) => (
+                            
+                            {(expandedFolderId === folder.id || searchTerm) && (
+                              <div className="folder-items">
+                                {filteredItems.length === 0 ? (
+                                  <div className="empty-items" style={{ padding: '0.75rem 1rem 0.75rem 2.5rem', fontSize: '0.8rem', color: '#94a3b8', fontStyle: 'italic' }}>No hay coincidencias</div>
+                                ) : (
+                                  filteredItems.map((item: any) => (
                                     <div 
                                       key={item.id} 
                                       className={`item-row ${newSchedule.itemId === item.id ? 'selected' : ''}`}
                                       onClick={() => {
                                         setNewSchedule({ ...newSchedule, itemId: item.id });
                                         setIsSelectorOpen(false);
+                                        setSearchTerm('');
                                       }}
                                       style={{ padding: '0.3rem 0.8rem 0.3rem 1.8rem', fontSize: '0.8rem', minHeight: '32px' }}
                                     >
@@ -929,12 +1119,13 @@ export default function AgendaClientesPage() {
                                       </div>
                                       <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.name}</span>
                                     </div>
-                                ))
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      ))
+                                  ))
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })
                     )}
                   </div>
                 )}
@@ -949,7 +1140,14 @@ export default function AgendaClientesPage() {
                     <div className="form-group mb-3">
                       <div className="input-with-icon">
                         <CalendarIcon size={16} />
-                        <input type="date" className="form-input" value={newSchedule.date} onChange={e => setNewSchedule({ ...newSchedule, date: e.target.value })} />
+                        <input 
+                          type="date" 
+                          className="form-input" 
+                          value={newSchedule.date} 
+                          min={tripDateMin}
+                          max={tripDateMax}
+                          onChange={e => setNewSchedule({ ...newSchedule, date: e.target.value })} 
+                        />
                       </div>
                     </div>
                     <div className="form-group">
@@ -965,7 +1163,14 @@ export default function AgendaClientesPage() {
                     <div className="form-group mb-3">
                       <div className="input-with-icon">
                         <CalendarIcon size={16} />
-                        <input type="date" className="form-input" value={newSchedule.endDate} onChange={e => setNewSchedule({ ...newSchedule, endDate: e.target.value })} />
+                        <input 
+                          type="date" 
+                          className="form-input" 
+                          value={newSchedule.endDate} 
+                          min={newSchedule.date || tripDateMin}
+                          max={tripDateMax}
+                          onChange={e => setNewSchedule({ ...newSchedule, endDate: e.target.value })} 
+                        />
                       </div>
                     </div>
                     <div className="form-group">
@@ -984,7 +1189,14 @@ export default function AgendaClientesPage() {
               <div className="grid-2 gap-3 mb-6">
                 <div className="form-group">
                   <label className="text-xs font-bold uppercase text-secondary mb-2 display-block">Fecha</label>
-                  <input type="date" className="form-input" value={newSchedule.date} onChange={e => setNewSchedule({ ...newSchedule, date: e.target.value })} />
+                  <input 
+                    type="date" 
+                    className="form-input" 
+                    value={newSchedule.date} 
+                    min={tripDateMin}
+                    max={tripDateMax}
+                    onChange={e => setNewSchedule({ ...newSchedule, date: e.target.value })} 
+                  />
                 </div>
                 <div className="form-group">
                   <label className="text-xs font-bold uppercase text-secondary mb-2 display-block">Hora</label>
@@ -994,7 +1206,7 @@ export default function AgendaClientesPage() {
             )}
 
             <div className="form-group mb-4 mt-4">
-              <label className="text-xs font-bold uppercase text-secondary mb-2 display-block">Código de Reserva (Opcional)</label>
+              <label className="text-xs font-bold uppercase text-secondary mb-2 display-block">Código de Reserva (Se guardará en el nombre)</label>
               <div className="input-with-icon">
                 <QrCode size={16} />
                 <input 
@@ -1140,15 +1352,7 @@ export default function AgendaClientesPage() {
                   </div>
                 )}
 
-                {selectedItemForDetails.reservation_code && (
-                  <div className="info-box-pro">
-                    <div className="box-icon"><QrCode size={20} /></div>
-                    <div className="box-content">
-                      <span className="box-label">Código de Reserva</span>
-                      <span className="box-value font-bold text-primary">{selectedItemForDetails.reservation_code}</span>
-                    </div>
-                  </div>
-                )}
+                {/* Reservation code removed to avoid DB column error, now part of name */}
               </div>
 
               <div className="location-section-premium">

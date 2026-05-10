@@ -564,15 +564,23 @@ export default function HotelesPage() {
       {/* New Folder Modal */}
       {showFolderModal && (
         <div className="modal-overlay">
-          <div className="modal-content animate-scale-in" style={{ maxWidth: '450px' }}>
-            <div className="modal-header">
-              <h3><FolderPlus size={24} className="text-primary" style={{ marginRight: '0.75rem', verticalAlign: 'middle' }} /> Nuevo Destino</h3>
-              <button onClick={() => setShowFolderModal(false)} className="btn-icon">
+          <div className="modal-content-pro" style={{ maxWidth: '450px' }}>
+            <div className="modal-header-pro">
+              <div className="header-left">
+                <div className="header-icon">
+                  <FolderPlus size={24} />
+                </div>
+                <div className="header-text">
+                  <h3>Nuevo Destino</h3>
+                  <p>Crea una carpeta para organizar hoteles</p>
+                </div>
+              </div>
+              <button onClick={() => setShowFolderModal(false)} className="close-modal-btn">
                 <X size={20} />
               </button>
             </div>
             
-            <div className="modal-body">
+            <div className="modal-body-pro">
               <div className="form-group">
                 <label>Nombre de la Ciudad / Región</label>
                 <div className="input-with-icon">
@@ -589,7 +597,7 @@ export default function HotelesPage() {
               </div>
             </div>
 
-            <div className="modal-footer">
+            <div className="modal-footer-pro">
               <button className="btn btn-outline" onClick={() => setShowFolderModal(false)}>Cancelar</button>
               <button className="btn btn-primary" onClick={handleAddFolder}>Crear Carpeta</button>
             </div>
@@ -600,28 +608,24 @@ export default function HotelesPage() {
       {/* New/Edit Hotel Modal */}
       {showHotelModal && (
         <div className="modal-overlay">
-          <div className="modal-content glass-card animate-scale-in" style={{ maxWidth: '650px', padding: '0', overflow: 'hidden' }}>
-            <div style={{ background: 'linear-gradient(135deg, var(--color-primary) 0%, #0f2132 100%)', padding: '1.5rem 2rem', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                <div style={{ background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(8px)', padding: '0.6rem', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <HotelIcon size={20} color="white" />
+          <div className="modal-content-pro" style={{ maxWidth: '650px' }}>
+            <div className="modal-header-pro">
+              <div className="header-left">
+                <div className="header-icon">
+                  <HotelIcon size={24} />
                 </div>
-                <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 800, color: 'white', lineHeight: 1.2 }}>
-                  {editingHotelId ? 'Editar Hotel' : 'Nuevo Hotel'}
-                </h3>
-                {selectedFolder?.name && <span className="destination-badge" style={{ marginLeft: '0.5rem', background: 'rgba(255,255,255,0.2)', color: 'white', border: 'none' }}>{selectedFolder.name}</span>}
+                <div className="header-text">
+                  <h3>{editingHotelId ? 'Editar Hotel' : 'Nuevo Hotel'}</h3>
+                  <p>{selectedFolder?.name || 'Añade una opción de alojamiento'}</p>
+                </div>
               </div>
-              <button 
-                onClick={() => setShowHotelModal(false)}
-                style={{ background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'white', transition: 'all 0.2s' }}
-                onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.25)'; }}
-                onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.12)'; }}
-              >
-                <X size={16} />
+              <button onClick={() => setShowHotelModal(false)} className="close-modal-btn">
+                <X size={20} />
               </button>
             </div>
-            <div className="modal-body custom-scrollbar" style={{ maxHeight: '70vh', overflowY: 'auto', padding: '1.5rem 2rem' }}>
+            <div className="modal-body-pro custom-scrollbar" style={{ maxHeight: '70vh', overflowY: 'auto' }}>
               <div className="modal-form">
+                {/* ... existing form content ... */}
                 <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
                   <div className="form-group">
                     <label className="text-xs font-semibold uppercase text-secondary" style={{ letterSpacing: '0.5px', marginBottom: '0.5rem', display: 'block' }}>Nombre del Hotel</label>
@@ -761,7 +765,7 @@ export default function HotelesPage() {
               </div>
             </div>
             
-            <div className="modal-footer" style={{ padding: '1.25rem 2rem 1.5rem', display: 'flex', justifyContent: 'flex-end', gap: '1rem', borderTop: '1px solid rgba(0,0,0,0.05)', background: '#f8fafc' }}>
+            <div className="modal-footer-pro">
               <button className="btn btn-outline" onClick={() => setShowHotelModal(false)}>Cancelar</button>
               <button className="btn btn-primary" onClick={handleAddHotel}>
                 {editingHotelId ? 'Guardar Cambios' : 'Guardar Hotel'}
