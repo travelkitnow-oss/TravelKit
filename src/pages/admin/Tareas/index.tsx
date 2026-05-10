@@ -12,10 +12,6 @@ import {
   Notebook,
   X,
   Check,
-  Calendar,
-  MapPin,
-  Clock,
-  Receipt,
   DollarSign
 } from 'lucide-react';
 import MDEditor from '@uiw/react-md-editor';
@@ -88,7 +84,6 @@ export default function TareasPage() {
   const [selectedTaskIndices, setSelectedTaskIndices] = useState<number[]>([]);
   const [paymentAmount, setPaymentAmount] = useState<string>('');
   const [paymentConcept, setPaymentConcept] = useState<string>('');
-  const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | null>(null);
   const [services, setServices] = useState<ServiceItem[]>([]);
 
   // Notes state
@@ -216,7 +211,6 @@ export default function TareasPage() {
   };
 
   const saveBilling = async (updatedData: ClientBilling) => {
-    setSaveStatus('saving');
     const dbData = {
       client_id: updatedData.clientId,
       tasks: updatedData.tasks,
@@ -242,12 +236,7 @@ export default function TareasPage() {
 
     if (error) {
       console.error('Error saving billing:', error);
-      setSaveStatus(null);
       alert('Error al guardar los datos: ' + error.message);
-    } else {
-      setSaveStatus('saved');
-      // Hacer que el estado "Guardado" sea visible por 3 segundos
-      setTimeout(() => setSaveStatus(null), 3000);
     }
   };
 
@@ -314,7 +303,6 @@ export default function TareasPage() {
   const handleUpdateBillingField = (field: keyof ClientBilling, value: any) => {
     if (!selectedClientId || !billingData) return;
     
-    setSaveStatus('saving');
     const updated: ClientBilling = { 
       ...billingData, 
       [field]: value 
@@ -454,9 +442,6 @@ export default function TareasPage() {
       isNextDay
     };
   };
-
-  const arrivalInfo = getCalculatedArrivalDateStr(billingData?.departureDate, billingData?.departureTime, billingData?.arrivalTime);
-  const returnArrivalInfo = getCalculatedArrivalDateStr(billingData?.returnDate, billingData?.returnDepartureTime, billingData?.returnArrivalTime);
 
   return (
     <div className="tareas-page animate-fade-in">
