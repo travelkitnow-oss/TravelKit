@@ -423,25 +423,6 @@ export default function TareasPage() {
     }
   };
 
-  const getCalculatedArrivalDateStr = (depDateStr?: string, depTimeStr?: string, arrTimeStr?: string) => {
-    if (!depDateStr || !depTimeStr || !arrTimeStr) return null;
-    const depTime = parseInt(depTimeStr.replace(':', ''));
-    const arrTime = parseInt(arrTimeStr.replace(':', ''));
-    
-    if (isNaN(depTime) || isNaN(arrTime)) return null;
-
-    const depDate = new Date(depDateStr + 'T12:00:00');
-    const isNextDay = arrTime < depTime;
-    
-    if (isNextDay) {
-      depDate.setDate(depDate.getDate() + 1);
-    }
-    
-    return {
-      dateStr: depDate.toISOString().split('T')[0],
-      isNextDay
-    };
-  };
 
   return (
     <div className="tareas-page animate-fade-in">
