@@ -21,7 +21,8 @@ import {
   Compass,
   ShieldCheck,
   Star,
-  History
+  History,
+  Terminal
 } from 'lucide-react';
 import './Sidebar.css';
 
@@ -285,6 +286,15 @@ export default function Sidebar({ userEmail, handleLogout }: SidebarProps) {
         >
           <ShieldCheck size={20} />
           Gestión de Usuarios
+        </NavLink>
+
+        {/* 13. Logs de Sistema */}
+        <NavLink
+          to="/logs"
+          className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
+        >
+          <Terminal size={20} />
+          Logs de Sistema
         </NavLink>
       </nav>
 

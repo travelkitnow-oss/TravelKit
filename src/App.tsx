@@ -32,11 +32,15 @@ import ResenaViajePage from './pages/client/ResenaViaje';
 import ServiciosContratadosPage from './pages/client/ServiciosContratados';
 import HistorialViajesAdminPage from './pages/admin/HistorialViajes';
 import HistorialViajesClientePage from './pages/client/HistorialViajes';
+import LogsPage from './pages/admin/Logs';
+import NavigationLogger from './components/NavigationLogger';
 import './App.css';
 
 function App() {
   return (
-    <Routes>
+    <>
+      <NavigationLogger />
+      <Routes>
       <Route path="/" element={<LandingPage />} />
       <Route path="/login" element={<LoginPage />} />
       
@@ -63,6 +67,7 @@ function App() {
         <Route path="/datos-bancarios" element={<DatosBancariosPage />} />
         <Route path="/historial" element={<HistorialViajesAdminPage />} />
         <Route path="/gestion-usuarios" element={<GestionUsuariosPage />} />
+        <Route path="/logs" element={<LogsPage />} />
         <Route path="/configuracion" element={<AdminConfigPage />} />
         
         {/* Redirect from old dashboard or just to default */}
@@ -83,7 +88,8 @@ function App() {
       
       {/* Catch all to landing */}
       <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+      </Routes>
+    </>
   );
 }
 

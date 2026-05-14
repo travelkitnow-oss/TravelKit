@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Lock, User } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { Link } from 'react-router-dom';
+import { logger } from '../lib/logger';
 import '../App.css';
 
 export default function LoginPage() {
@@ -18,6 +19,7 @@ export default function LoginPage() {
     // 1. Hardcoded exclusive Admin user
     if (username === 'travelkitnow@gmail.com' && password === 'TravelKit.2026') {
       localStorage.setItem('travelkit_admin', 'travelkitnow@gmail.com');
+      logger.success('Auth', 'Inicio de sesión exitoso (Admin)', { email: username });
       navigate('/dashboard');
       return;
     }
@@ -31,7 +33,11 @@ export default function LoginPage() {
 
     if (profile) {
       // Record last login
-      await supabase.from('client_profiles').update({ last_login: new Date().toISOString() }).eq('id', profile.id);
+      const { error: updateError } = await supabase.from('client_profiles').update({ last_login: new Date().toISOString() }).eq('id', profile.id);
+      
+      if (updateError) {
+        logger.error('Database', 'Error al actualizar último login', updateError);
+      }
 
       // In a real app we'd check the hashed password via Supabase Auth
       // For this demo/oss version, we'll allow entry if the profile exists
@@ -40,9 +46,13 @@ export default function LoginPage() {
         email: profile.email,
         name: profile.clients?.name || 'Viajero'
       }));
+      
+      logger.success('Auth', 'Inicio de sesión exitoso (Cliente)', { email: username, clientId: profile.id });
       navigate('/portal');
       return;
     }
+
+    logger.warn('Auth', 'Intento de inicio de sesión fallido', { email: username });
 
     // If it doesn't match, show error
     setError(true);

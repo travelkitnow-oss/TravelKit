@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../../../lib/supabase';
 import { Plus, Edit2, Trash2, Image as ImageIcon, Eye, EyeOff, Upload, X } from 'lucide-react';
 import ReactQuill from 'react-quill-new';
+import { logger } from '../../../lib/logger';
 import 'react-quill-new/dist/quill.snow.css';
 import './Destinos.css';
 
@@ -30,15 +31,20 @@ export default function DestinosPage() {
         .from('destinations')
         .upload(filePath, file);
 
-      if (uploadError) throw uploadError;
+      if (uploadError) {
+        logger.error('Storage', 'Error al subir imagen de destino', uploadError);
+        throw uploadError;
+      }
 
       const { data: { publicUrl } } = supabase.storage
         .from('destinations')
         .getPublicUrl(filePath);
 
+      logger.success('Storage', 'Imagen de destino subida correctamente', { url: publicUrl });
       return publicUrl;
     } catch (error) {
       console.error('Error uploading image:', error);
+      logger.error('Storage', 'Error crítico en upload de imagen', error);
       alert('Error al subir la imagen. Asegúrate de que el bucket "destinations" sea público.');
       return null;
     } finally {
@@ -70,8 +76,10 @@ export default function DestinosPage() {
 
     if (error) {
       console.error('Error fetching destinations:', error);
+      logger.error('Database', 'Error al cargar destinos', error);
     } else {
       setDestinations(data || []);
+      logger.info('Database', `Destinos cargados: ${data?.length || 0}`);
     }
     setLoading(false);
   };
@@ -121,8 +129,10 @@ export default function DestinosPage() {
       if (error) {
         alert('Error al actualizar el destino');
         console.error(error);
+        logger.error('Database', 'Error al actualizar destino', { id: editingId, error });
       } else {
         setDestinations(destinations.map(d => d.id === editingId ? { ...d, ...formData } : d));
+        logger.success('Database', 'Destino actualizado correctamente', { id: editingId, title: formData.title });
         handleCloseModal();
       }
     } else {
@@ -134,8 +144,10 @@ export default function DestinosPage() {
       if (error) {
         alert('Error al crear el destino. Recuerde ejecutar el script SQL primero.');
         console.error(error);
+        logger.error('Database', 'Error al crear destino', error);
       } else if (data) {
         setDestinations([data[0], ...destinations]);
+        logger.success('Database', 'Nuevo destino creado', { id: data[0].id, title: formData.title });
         handleCloseModal();
       }
     }
@@ -164,8 +176,10 @@ export default function DestinosPage() {
 
     if (error) {
       alert('Error al eliminar');
+      logger.error('Database', 'Error al eliminar destino', { id, error });
     } else {
       setDestinations(destinations.filter(d => d.id !== id));
+      logger.success('Database', 'Destino eliminado', { id });
     }
   };
 
