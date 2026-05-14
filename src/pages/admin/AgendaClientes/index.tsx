@@ -47,7 +47,7 @@ export default function AgendaClientesPage() {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [addingType, setAddingType] = useState<'excursion' | 'transport' | 'hotel' | null>(null);
   const [isSelectorOpen, setIsSelectorOpen] = useState(false);
-  const [expandedFolderId, setExpandedFolderId] = useState<string | null>(null);
+
   const [newSchedule, setNewSchedule] = useState({
     date: '',
     time: '14:00',
@@ -67,6 +67,7 @@ export default function AgendaClientesPage() {
   const [tickets, setTickets] = useState<any[]>([]);
   const [currentTicketIndex, setCurrentTicketIndex] = useState(0);
   const [searchTerm, setSearchTerm] = useState('');
+  const [currentFolderPath, setCurrentFolderPath] = useState<string[]>([]);
 
   useEffect(() => {
     fetchInitialData();
@@ -1066,67 +1067,116 @@ export default function AgendaClientesPage() {
                       <Search size={14} className="search-icon" />
                       <input 
                         type="text" 
-                        placeholder="Buscar en el catálogo..." 
+                        placeholder="Buscar..." 
                         className="selector-search-input"
                         value={searchTerm}
-                        onChange={e => setSearchTerm(e.target.value)}
+                        onChange={e => {
+                          setSearchTerm(e.target.value);
+                          if (!e.target.value) setCurrentFolderPath([]);
+                        }}
                         autoFocus
                       />
                     </div>
-                    
-                    {catalogFolders.filter(f => f.type === addingType).length === 0 ? (
-                      <div className="p-3 text-center text-secondary text-sm">No hay carpetas creadas</div>
-                    ) : (
-                      catalogFolders.filter(f => f.type === addingType).map(folder => {
-                        const filteredItems = folder.items.filter((i: any) => 
-                          i.name.toLowerCase().includes(searchTerm.toLowerCase())
-                        );
-                        
-                        if (searchTerm && filteredItems.length === 0) return null;
-                        
-                        return (
-                          <div key={folder.id} className="selector-folder">
+
+                    {!searchTerm && (
+                      <div className="selector-navigation-bar">
+                        <div 
+                          className={`nav-crumb ${currentFolderPath.length === 0 ? 'active' : ''}`}
+                          onClick={() => setCurrentFolderPath([])}
+                        >
+                          Catálogo
+                        </div>
+                        {currentFolderPath.map((folderPart, idx) => (
+                          <div key={idx} style={{ display: 'flex', alignItems: 'center' }}>
+                            <ChevronRight size={10} className="nav-separator" />
                             <div 
-                              className="folder-header" 
-                              onClick={() => setExpandedFolderId(expandedFolderId === folder.id ? null : folder.id)}
-                              style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem', minHeight: '36px', background: (expandedFolderId === folder.id || searchTerm) ? 'rgba(31,58,77,0.03)' : 'transparent' }}
+                              className={`nav-crumb ${idx === currentFolderPath.length - 1 ? 'active' : ''}`}
+                              onClick={() => setCurrentFolderPath(currentFolderPath.slice(0, idx + 1))}
                             >
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                <Folder size={12} className="text-primary" fill="rgba(31,58,77,0.15)" />
-                                <span className="folder-name" style={{ fontSize: '0.8rem', fontWeight: 600 }}>{folder.name}</span>
-                              </div>
-                              {(expandedFolderId === folder.id || searchTerm) ? <ChevronDown size={12} opacity={0.4} /> : <ChevronRight size={12} opacity={0.4} />}
+                              {folderPart}
                             </div>
-                            
-                            {(expandedFolderId === folder.id || searchTerm) && (
-                              <div className="folder-items">
-                                {filteredItems.length === 0 ? (
-                                  <div className="empty-items" style={{ padding: '0.75rem 1rem 0.75rem 2.5rem', fontSize: '0.8rem', color: '#94a3b8', fontStyle: 'italic' }}>No hay coincidencias</div>
-                                ) : (
-                                  filteredItems.map((item: any) => (
-                                    <div 
-                                      key={item.id} 
-                                      className={`item-row ${newSchedule.itemId === item.id ? 'selected' : ''}`}
-                                      onClick={() => {
-                                        setNewSchedule({ ...newSchedule, itemId: item.id });
-                                        setIsSelectorOpen(false);
-                                        setSearchTerm('');
-                                      }}
-                                      style={{ padding: '0.3rem 0.8rem 0.3rem 1.8rem', fontSize: '0.8rem', minHeight: '32px' }}
-                                    >
-                                      <div className="item-icon-small">
-                                        {addingType === 'hotel' ? <Hotel size={10} /> : addingType === 'transport' ? <Plane size={10} /> : <MapPin size={10} />}
-                                      </div>
-                                      <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.name}</span>
-                                    </div>
-                                  ))
-                                )}
-                              </div>
-                            )}
                           </div>
-                        );
-                      })
+                        ))}
+                      </div>
                     )}
+                    
+                    <div className="selector-scrollable-content">
+                      {searchTerm ? (
+                        catalogFolders
+                          .filter(f => f.type === addingType)
+                          .flatMap(f => f.items)
+                          .filter(i => i.name.toLowerCase().includes(searchTerm.toLowerCase()))
+                          .map(item => (
+                            <div 
+                              key={item.id} 
+                              className={`item-row ${newSchedule.itemId === item.id ? 'selected' : ''}`}
+                              onClick={() => {
+                                setNewSchedule({ ...newSchedule, itemId: item.id });
+                                setIsSelectorOpen(false);
+                                setSearchTerm('');
+                              }}
+                              style={{ padding: '0.6rem 1rem', fontSize: '0.85rem' }}
+                            >
+                              <div className="item-icon-small">
+                                {addingType === 'hotel' ? <Hotel size={12} /> : addingType === 'transport' ? <Plane size={12} /> : <MapPin size={12} />}
+                              </div>
+                              <span>{item.name}</span>
+                            </div>
+                          ))
+                      ) : (
+                        <>
+                          {catalogFolders
+                            .filter(f => f.type === addingType)
+                            .map(f => f.name.split(' / '))
+                            .filter(parts => {
+                              if (parts.length !== currentFolderPath.length + 1) return false;
+                              for (let i = 0; i < currentFolderPath.length; i++) {
+                                if (parts[i] !== currentFolderPath[i]) return false;
+                              }
+                              return true;
+                            })
+                            .filter((value, index, self) => self.findIndex(v => v.join(' / ') === value.join(' / ')) === index)
+                            .map((parts, idx) => {
+                              const folderName = parts[parts.length - 1];
+                              return (
+                                <div 
+                                  key={idx} 
+                                  className="selector-folder-nav"
+                                  onClick={() => setCurrentFolderPath([...currentFolderPath, folderName])}
+                                >
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                    <Folder size={14} className="text-primary" fill="rgba(31,58,77,0.1)" />
+                                    <span className="folder-name-nav">{folderName}</span>
+                                  </div>
+                                  <ChevronRight size={14} opacity={0.3} />
+                                </div>
+                              );
+                            })
+                          }
+
+                          {catalogFolders
+                            .filter(f => f.type === addingType)
+                            .find(f => f.name === (currentFolderPath.length > 0 ? currentFolderPath.join(' / ') : ''))
+                            ?.items.map((item: any) => (
+                              <div 
+                                key={item.id} 
+                                className={`item-row-nav ${newSchedule.itemId === item.id ? 'selected' : ''}`}
+                                onClick={() => {
+                                  setNewSchedule({ ...newSchedule, itemId: item.id });
+                                  setIsSelectorOpen(false);
+                                  setSearchTerm('');
+                                }}
+                              >
+                                <div className="item-icon-nav">
+                                  {addingType === 'hotel' ? <Hotel size={12} /> : addingType === 'transport' ? <Plane size={12} /> : <MapPin size={12} />}
+                                </div>
+                                <span className="item-name-nav">{item.name}</span>
+                              </div>
+                            ))
+                          }
+                        </>
+                      )}
+                    </div>
                   </div>
                 )}
               </div>

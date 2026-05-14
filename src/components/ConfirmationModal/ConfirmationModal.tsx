@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, AlertTriangle } from 'lucide-react';
+import { X, AlertTriangle, Info, AlertCircle } from 'lucide-react';
 import './ConfirmationModal.css';
 
 interface ConfirmationModalProps {
@@ -25,31 +25,43 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
 }) => {
   if (!isOpen) return null;
 
+  const getIcon = () => {
+    switch (type) {
+      case 'danger': return <AlertTriangle size={24} />;
+      case 'warning': return <AlertCircle size={24} />;
+      case 'info': return <Info size={24} />;
+      default: return <AlertTriangle size={24} />;
+    }
+  };
+
   return (
-    <div className="modal-overlay" style={{ zIndex: 2000 }}>
-      <div className="modal-content confirmation-modal animate-scale-in">
-        <div className="modal-header">
-          <div className="confirmation-icon-title">
-            <div className={`confirmation-icon ${type}`}>
-              <AlertTriangle size={20} />
+    <div className="modal-overlay confirmation-overlay">
+      <div className={`modal-content-pro confirmation-modal-pro animate-modal-in ${type}`}>
+        <div className="modal-header-pro">
+          <div className="header-left">
+            <div className={`header-icon-box ${type}`}>
+              {getIcon()}
             </div>
-            <h3>{title}</h3>
+            <div className="header-text">
+              <h3>{title}</h3>
+              <p>{type === 'danger' ? 'Acción Requerida' : 'Confirmación'}</p>
+            </div>
           </div>
-          <button onClick={onClose} className="close-modal-btn">
+          <button onClick={onClose} className="close-modal-btn" aria-label="Cerrar">
             <X size={20} />
           </button>
         </div>
         
-        <div className="modal-body">
-          <p>{message}</p>
+        <div className="modal-body-pro">
+          <p className="confirmation-message">{message}</p>
         </div>
         
-        <div className="modal-footer">
-          <button className="btn btn-outline" onClick={onClose}>
+        <div className="modal-footer-pro">
+          <button className="btn-modal btn-cancel" onClick={onClose}>
             {cancelText}
           </button>
           <button 
-            className={`btn ${type === 'danger' ? 'btn-danger' : 'btn-primary'}`} 
+            className={`btn-modal btn-confirm ${type}`} 
             onClick={() => {
               onConfirm();
               onClose();

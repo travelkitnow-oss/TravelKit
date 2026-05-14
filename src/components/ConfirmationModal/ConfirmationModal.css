@@ -1,124 +1,157 @@
-.modal-overlay {
-  position: fixed !important;
-  inset: 0 !important;
-  background-color: rgba(31, 58, 77, 0.4) !important;
-  backdrop-filter: blur(8px) !important;
-  -webkit-backdrop-filter: blur(8px) !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  z-index: 99999 !important;
-  animation: fadeInOverlay 0.3s ease;
+.confirmation-overlay {
+  z-index: 10000 !important;
 }
 
-@keyframes fadeInOverlay {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-.confirmation-modal {
-  max-width: 440px !important;
-  padding: 2.75rem !important;
-  border-radius: 32px !important;
-  box-shadow: 0 25px 50px -12px rgba(31, 58, 77, 0.35) !important;
+.confirmation-modal-pro {
+  max-width: 480px !important;
+  border-radius: 28px !important;
+  box-shadow: 0 30px 60px -12px rgba(31, 58, 77, 0.45) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  overflow: hidden !important;
   background: white !important;
-  border: 1px solid rgba(255, 255, 255, 0.8) !important;
 }
 
-.confirmation-icon-title {
-  display: flex;
-  align-items: center;
-  gap: 1.25rem;
+.confirmation-modal-pro .modal-header-pro {
+  padding: 1.5rem 2rem !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
-.confirmation-icon-title h3 {
-  font-family: 'Outfit', sans-serif !important;
-  font-size: 1.85rem !important;
-  font-weight: 700 !important;
-  color: var(--color-primary) !important;
-  margin: 0 !important;
-  letter-spacing: -0.03em;
-  line-height: 1.1;
-}
-
-.confirmation-icon {
-  width: 52px;
-  height: 52px;
-  border-radius: 16px;
+.header-icon-box {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  box-shadow: 0 8px 16px rgba(0,0,0,0.05);
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-.confirmation-icon.danger {
-  background-color: #fef2f2;
-  color: #ef4444;
-  border: 1px solid rgba(239, 68, 68, 0.1);
+.header-icon-box.danger {
+  background: rgba(239, 68, 68, 0.2);
+  color: #fca5a5;
+  border: 1px solid rgba(239, 68, 68, 0.3);
 }
 
-.confirmation-icon.warning {
-  background-color: #fffbeb;
-  color: #f59e0b;
-  border: 1px solid rgba(245, 158, 11, 0.1);
+.header-icon-box.warning {
+  background: rgba(245, 158, 11, 0.2);
+  color: #fcd34d;
+  border: 1px solid rgba(245, 158, 11, 0.3);
 }
 
-.confirmation-icon.info {
-  background-color: #eff6ff;
-  color: #3b82f6;
-  border: 1px solid rgba(59, 130, 246, 0.1);
+.header-icon-box.info {
+  background: rgba(59, 130, 246, 0.2);
+  color: #93c5fd;
+  border: 1px solid rgba(59, 130, 246, 0.3);
 }
 
-.modal-body p {
-  color: #4b5563;
-  font-family: 'Outfit', sans-serif;
-  font-size: 1.1rem;
-  line-height: 1.6;
-  margin: 1.75rem 0 2.25rem 0;
-  font-weight: 400;
+.confirmation-modal-pro:hover .header-icon-box {
+  transform: scale(1.1) rotate(5deg);
 }
 
-.modal-footer {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1.25rem;
-  border-top: none !important;
-  padding-top: 0 !important;
-}
-
-.modal-footer .btn {
-  padding: 1.1rem !important;
-  font-weight: 700 !important;
-  font-size: 1.05rem !important;
-  border-radius: 18px !important;
+.modal-header-pro .header-text h3 {
+  font-size: 1.25rem !important;
   font-family: 'Outfit', sans-serif !important;
-  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
+  letter-spacing: -0.01em !important;
+  color: white !important;
+  margin: 0 !important;
 }
 
-.btn-danger {
+.modal-header-pro .header-text p {
+  margin: 0.1rem 0 0 !important;
+  font-size: 0.8rem !important;
+  opacity: 0.7;
+}
+
+.modal-body-pro {
+  padding: 2.5rem 2rem !important;
+}
+
+.confirmation-message {
+  font-size: 1.1rem !important;
+  line-height: 1.6 !important;
+  color: #475569 !important;
+  margin: 0 !important;
+  font-weight: 500 !important;
+  font-family: 'Outfit', sans-serif !important;
+}
+
+.modal-footer-pro {
+  padding: 1.5rem 2rem !important;
+  background: #f8fafc !important;
+  display: flex !important;
+  justify-content: flex-end !important;
+  gap: 1rem !important;
+  border-top: 1px solid #f1f5f9 !important;
+}
+
+.btn-modal {
+  padding: 0.8rem 1.5rem !important;
+  border-radius: 12px !important;
+  font-size: 0.95rem !important;
+  font-weight: 700 !important;
+  font-family: 'Outfit', sans-serif !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  cursor: pointer;
+  border: none;
+}
+
+.btn-cancel {
+  background: white !important;
+  color: #64748b !important;
+  border: 1px solid #e2e8f0 !important;
+}
+
+.btn-cancel:hover {
+  background: #f1f5f9 !important;
+  color: #1e293b !important;
+  transform: translateY(-2px);
+}
+
+.btn-confirm {
+  box-shadow: 0 10px 20px -5px rgba(0,0,0,0.1);
+}
+
+.btn-confirm.danger {
   background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%) !important;
   color: white !important;
-  border: none !important;
-  box-shadow: 0 10px 20px -5px rgba(239, 68, 68, 0.4) !important;
+  box-shadow: 0 10px 20px -5px rgba(239, 68, 68, 0.3) !important;
 }
 
-.btn-danger:hover {
-  transform: translateY(-3px) scale(1.02) !important;
-  box-shadow: 0 15px 25px -5px rgba(239, 68, 68, 0.5) !important;
-  filter: brightness(1.1);
+.btn-confirm.danger:hover {
+  box-shadow: 0 15px 25px -5px rgba(239, 68, 68, 0.4) !important;
+  transform: translateY(-2px) scale(1.02);
 }
 
-.modal-footer .btn-outline {
-  background: #f8fafc !important;
-  border: 1.5px solid #e2e8f0 !important;
-  color: #64748b !important;
+.btn-confirm.warning {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%) !important;
+  color: white !important;
+  box-shadow: 0 10px 20px -5px rgba(245, 158, 11, 0.3) !important;
 }
 
-.modal-footer .btn-outline:hover {
-  transform: translateY(-3px) !important;
-  background: white !important;
-  border-color: #cbd5e1 !important;
-  color: #1e293b !important;
-  box-shadow: 0 10px 20px -5px rgba(0,0,0,0.05) !important;
+.btn-confirm.warning:hover {
+  box-shadow: 0 15px 25px -5px rgba(245, 158, 11, 0.4) !important;
+  transform: translateY(-2px) scale(1.02);
+  filter: brightness(1.05);
+}
+
+.btn-confirm.info {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%) !important;
+  color: white !important;
+  box-shadow: 0 10px 20px -5px rgba(59, 130, 246, 0.3) !important;
+}
+
+.btn-confirm.info:hover {
+  box-shadow: 0 15px 25px -5px rgba(59, 130, 246, 0.4) !important;
+  transform: translateY(-2px) scale(1.02);
+  filter: brightness(1.05);
+}
+
+@keyframes modalIn {
+  from { opacity: 0; transform: scale(0.9) translateY(20px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.animate-modal-in {
+  animation: modalIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
 }

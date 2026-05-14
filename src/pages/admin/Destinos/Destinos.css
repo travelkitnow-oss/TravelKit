@@ -256,11 +256,11 @@
 }
 
 .form-group-pro label {
-  font-size: 0.85rem;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  font-family: 'Outfit', sans-serif;
   color: var(--color-primary);
+  margin-bottom: 0.5rem;
 }
 
 .form-actions {
@@ -272,4 +272,25 @@
   background: #f8fafc;
   border-top: 1px solid #e2e8f0;
   border-radius: 0 0 24px 24px;
+}
+
+.quill-destino .ql-toolbar {
+  border: none !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+  background: #f8fafc;
+  border-top-left-radius: 8px;
+  border-top-right-radius: 8px;
+}
+
+.quill-destino .ql-container {
+  border: none !important;
+  height: 200px !important;
+  border-bottom-left-radius: 8px;
+  border-bottom-right-radius: 8px;
+  font-family: 'Outfit', sans-serif !important;
+  font-size: 1rem !important;
+}
+
+.quill-destino .ql-editor {
+  min-height: 200px;
 }

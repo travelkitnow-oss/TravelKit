@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../../lib/supabase';
-import { Plus, Edit2, Trash2, Image as ImageIcon, Check, X, Upload } from 'lucide-react';
+import { Plus, Edit2, Trash2, Image as ImageIcon, Eye, EyeOff, Upload, X } from 'lucide-react';
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
 import './Destinos.css';
@@ -205,8 +205,8 @@ export default function DestinosPage() {
               <div className="destino-image-wrapper">
                 <img src={destino.image_url} alt={destino.title} onError={(e) => (e.currentTarget.src = 'https://images.unsplash.com/photo-1488646953014-85cb44e25828?auto=format&fit=crop&q=80&w=600')} />
                 <div className="destino-actions">
-                  <button onClick={() => toggleStatus(destino.id, destino.is_active)} className="action-btn status-btn" title={destino.is_active ? 'Ocultar de la web' : 'Mostrar en la web'}>
-                    {destino.is_active ? <Check size={18} /> : <X size={18} />}
+                  <button onClick={() => toggleStatus(destino.id, destino.is_active)} className="action-btn status-btn" title={destino.is_active ? 'Ocultar de la web' : 'Mostrar en la web'} style={{ color: destino.is_active ? '#10b981' : '#64748b' }}>
+                    {destino.is_active ? <Eye size={18} /> : <EyeOff size={18} />}
                   </button>
                   <button onClick={() => handleOpenModal(destino)} className="action-btn edit-btn" title="Editar">
                     <Edit2 size={18} />
@@ -240,7 +240,7 @@ export default function DestinosPage() {
             </div>
             
             <form id="destination-form" onSubmit={handleSubmit} className="modal-form">
-              <div className="form-group-pro">
+              <div className="form-group-destino">
                 <label>Título del Destino *</label>
                 <input 
                   type="text" 
@@ -252,33 +252,47 @@ export default function DestinosPage() {
                 />
               </div>
               
-              <div className="form-group-pro">
+              <div className="form-group-destino">
                 <label>Descripción *</label>
-                <div style={{ backgroundColor: 'white', borderRadius: '8px', overflow: 'hidden', border: '1px solid #e2e8f0' }}>
+                <div style={{ backgroundColor: 'white', borderRadius: '8px', border: '1px solid #e2e8f0', marginBottom: '2.5rem' }}>
                   <ReactQuill 
                     theme="snow"
                     value={formData.description}
                     onChange={(val) => setFormData({...formData, description: val})}
-                    style={{ height: '200px' }}
+                    className="quill-destino"
                   />
                 </div>
-                <div style={{ height: '45px' }}></div>
               </div>
 
-              <div className="form-group-pro">
+              <div className="form-group-destino">
                 <label>Imagen Principal (Portada) *</label>
-                <div style={{ display: 'flex', gap: '0.5rem' }}>
-                  <input 
-                    type="url" 
-                    required
-                    placeholder="URL de la imagen o sube una..."
-                    value={formData.image_url}
-                    onChange={e => setFormData({...formData, image_url: e.target.value})}
-                    className="pro-input"
-                    style={{ flex: 1 }}
-                  />
-                  <label className="btn btn-outline" style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', whiteSpace: 'nowrap' }}>
-                    <Upload size={18} />
+                
+                {formData.image_url ? (
+                  <div style={{ position: 'relative', borderRadius: '16px', overflow: 'hidden', height: '200px', border: '1px solid #e2e8f0', boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1)' }}>
+                    <img src={formData.image_url} alt="Portada" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    <button 
+                      type="button" 
+                      onClick={() => setFormData({...formData, image_url: ''})}
+                      style={{ position: 'absolute', top: '12px', right: '12px', background: 'white', border: 'none', borderRadius: '50%', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 4px 15px rgba(0,0,0,0.15)', color: '#ef4444', transition: 'all 0.2s' }}
+                      onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.1)'; e.currentTarget.style.background = '#fef2f2'; }}
+                      onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.background = 'white'; }}
+                    >
+                      <Trash2 size={18} />
+                    </button>
+                  </div>
+                ) : (
+                  <label style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '3.5rem 2rem', borderRadius: '20px', background: 'linear-gradient(145deg, #ffffff, #f8fafc)', border: '1px solid #e2e8f0', boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.03)', cursor: 'pointer', transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)', textTransform: 'none', letterSpacing: 'normal' }}
+                         onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 15px 35px -5px rgba(31, 58, 77, 0.1)'; e.currentTarget.style.borderColor = '#C89B5A'; }}
+                         onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = '0 10px 25px -5px rgba(0, 0, 0, 0.03)'; e.currentTarget.style.borderColor = '#e2e8f0'; }}>
+                    <div style={{ background: 'white', padding: '1rem', borderRadius: '50%', boxShadow: '0 4px 15px rgba(0,0,0,0.06)', marginBottom: '1.2rem' }}>
+                      <ImageIcon size={32} color="var(--color-primary)" />
+                    </div>
+                    <span style={{ fontFamily: "'Outfit', sans-serif", fontSize: '1.15rem', fontWeight: 700, color: '#1F3A4D', marginBottom: '0.4rem' }}>
+                      {isUploading ? 'Subiendo...' : 'Subir imagen de portada'}
+                    </span>
+                    <span style={{ fontSize: '0.9rem', color: '#64748b', fontWeight: 500 }}>
+                      Haz clic para seleccionar un archivo
+                    </span>
                     <input 
                       type="file" 
                       accept="image/*" 
@@ -291,78 +305,111 @@ export default function DestinosPage() {
                         }
                       }}
                     />
-                    {isUploading ? '...' : 'Subir'}
                   </label>
+                )}
+                
+                <div style={{ position: 'relative', marginTop: '1rem' }}>
+                  <div style={{ position: 'absolute', top: '50%', left: '1rem', transform: 'translateY(-50%)', color: '#94a3b8' }}>
+                    <Upload size={18} />
+                  </div>
+                  <input 
+                    type="url" 
+                    placeholder="O pega directamente la URL de la imagen aquí..."
+                    value={formData.image_url}
+                    onChange={e => setFormData({...formData, image_url: e.target.value})}
+                    className="pro-input"
+                    style={{ paddingLeft: '3rem', background: '#f8fafc', border: '1px solid #e2e8f0' }}
+                  />
                 </div>
               </div>
               
-              <div className="form-group-pro">
+              <div className="form-group-destino">
                 <label>Galería de Imágenes Adicionales</label>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '1rem', marginTop: '0.5rem' }}>
                   {formData.images.map((url, idx) => (
-                    <div key={idx} style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                      <input 
-                        type="url" 
-                        value={url}
-                        onChange={e => {
-                          const newImages = [...formData.images];
-                          newImages[idx] = e.target.value;
-                          setFormData({...formData, images: newImages});
-                        }}
-                        className="pro-input"
-                        placeholder="URL de imagen"
-                        style={{ flex: 1 }}
-                      />
-                      <label className="btn btn-icon" style={{ cursor: 'pointer', color: 'var(--color-primary)' }} title="Subir archivo">
-                        <Upload size={18} />
-                        <input 
-                          type="file" 
-                          accept="image/*" 
-                          style={{ display: 'none' }}
-                          onChange={async (e) => {
-                            const file = e.target.files?.[0];
-                            if (file) {
-                              const uploadedUrl = await handleUpload(file);
-                              if (uploadedUrl) {
-                                const newImages = [...formData.images];
-                                newImages[idx] = uploadedUrl;
-                                setFormData({...formData, images: newImages});
-                              }
-                            }
-                          }}
-                        />
-                      </label>
-                      <button 
-                        type="button" 
-                        onClick={() => {
-                          const newImages = formData.images.filter((_, i) => i !== idx);
-                          setFormData({...formData, images: newImages});
-                        }}
-                        style={{ 
-                          background: 'none', 
-                          border: 'none', 
-                          color: '#ef4444', 
-                          cursor: 'pointer',
-                          padding: '0 8px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          transition: 'transform 0.2s'
-                        }}
-                        onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.2)'}
-                        onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
-                        title="Eliminar"
-                      >
-                        <Trash2 size={20} />
-                      </button>
+                    <div key={idx} style={{ position: 'relative', borderRadius: '16px', overflow: 'hidden', height: '160px', border: '1px solid #e2e8f0', background: 'white', boxShadow: '0 4px 10px rgba(0,0,0,0.03)' }}>
+                      {url ? (
+                        <>
+                          <img src={url} alt={`Galería ${idx + 1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={(e) => (e.currentTarget.src = 'https://images.unsplash.com/photo-1488646953014-85cb44e25828?auto=format&fit=crop&q=80&w=300')} />
+                          <button 
+                            type="button" 
+                            onClick={() => {
+                              const newImages = formData.images.filter((_, i) => i !== idx);
+                              setFormData({...formData, images: newImages});
+                            }}
+                            style={{ position: 'absolute', top: '8px', right: '8px', background: 'white', border: 'none', borderRadius: '50%', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 4px 10px rgba(0,0,0,0.15)', color: '#ef4444', transition: 'transform 0.2s' }}
+                            onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.15)'}
+                            onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </>
+                      ) : (
+                        <div style={{ padding: '0.8rem', height: '100%', display: 'flex', flexDirection: 'column', gap: '0.5rem', background: '#f8fafc' }}>
+                          <input 
+                            type="url" 
+                            value={url}
+                            onChange={e => {
+                              const newImages = [...formData.images];
+                              newImages[idx] = e.target.value;
+                              setFormData({...formData, images: newImages});
+                            }}
+                            placeholder="Pegar URL..."
+                            className="pro-input"
+                            style={{ padding: '0.6rem', fontSize: '0.85rem', background: 'white', border: '1px solid #e2e8f0', borderRadius: '8px' }}
+                          />
+                          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <span style={{ fontSize: '0.85rem', color: '#94a3b8', fontWeight: 600 }}>o sube archivo</span>
+                          </div>
+                          <label style={{ position: 'absolute', top: '50px', left: 0, right: 0, bottom: 0, cursor: 'pointer' }}>
+                            <input 
+                              type="file" 
+                              accept="image/*" 
+                              style={{ display: 'none' }}
+                              onChange={async (e) => {
+                                const file = e.target.files?.[0];
+                                if (file) {
+                                  const uploadedUrl = await handleUpload(file);
+                                  if (uploadedUrl) {
+                                    const newImages = [...formData.images];
+                                    newImages[idx] = uploadedUrl;
+                                    setFormData({...formData, images: newImages});
+                                  }
+                                }
+                              }}
+                            />
+                          </label>
+                        </div>
+                      )}
                     </div>
                   ))}
+                  
                   <button 
                     type="button" 
-                    className="btn btn-outline" 
                     onClick={() => setFormData({...formData, images: [...formData.images, '']})}
-                    style={{ alignSelf: 'flex-start', fontSize: '0.85rem', marginTop: '0.5rem' }}
+                    style={{ 
+                      display: 'flex', 
+                      flexDirection: 'column',
+                      alignItems: 'center', 
+                      justifyContent: 'center',
+                      gap: '0.8rem', 
+                      height: '160px',
+                      borderRadius: '16px', 
+                      background: 'linear-gradient(145deg, #ffffff, #f8fafc)', 
+                      border: '1px solid #e2e8f0',
+                      color: 'var(--color-primary)', 
+                      cursor: 'pointer', 
+                      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                      boxShadow: '0 4px 10px rgba(0,0,0,0.03)'
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.borderColor = '#C89B5A'; e.currentTarget.style.boxShadow = '0 10px 20px rgba(31, 58, 77, 0.08)'; }}
+                    onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.boxShadow = '0 4px 10px rgba(0,0,0,0.03)'; }}
                   >
-                    <Plus size={14} /> Agregar otra imagen
+                    <div style={{ background: '#f8fafc', padding: '0.7rem', borderRadius: '50%', boxShadow: '0 2px 8px rgba(0,0,0,0.05)', border: '1px solid #e2e8f0' }}>
+                      <Plus size={20} color="var(--color-primary)" />
+                    </div>
+                    <span style={{ fontFamily: "'Outfit', sans-serif", fontSize: '0.95rem', fontWeight: 600 }}>Agregar Imagen</span>
                   </button>
                 </div>
               </div>

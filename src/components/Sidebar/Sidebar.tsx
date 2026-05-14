@@ -32,10 +32,16 @@ interface SidebarProps {
 
 export default function Sidebar({ userEmail, handleLogout }: SidebarProps) {
   const location = useLocation();
-  const [isViajeOpen, setIsViajeOpen] = useState(false);
-  const [isFormulariosOpen, setIsFormulariosOpen] = useState(false);
-  const [isMonetizacionOpen, setIsMonetizacionOpen] = useState(false);
-  const [isPrincipalOpen, setIsPrincipalOpen] = useState(false);
+  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+
+  const toggleDropdown = (dropdownName: string) => {
+    setOpenDropdown(prev => prev === dropdownName ? null : dropdownName);
+  };
+
+  const isViajeOpen = openDropdown === 'viaje';
+  const isFormulariosOpen = openDropdown === 'formularios';
+  const isMonetizacionOpen = openDropdown === 'monetizacion';
+  const isPrincipalOpen = openDropdown === 'principal';
 
   // Check if any sub-item is active to keep dropdown open if needed
   const viajeRoutes = ['/excursiones', '/transportes', '/hoteles', '/agenda-clientes', '/pasajes'];
@@ -107,7 +113,7 @@ export default function Sidebar({ userEmail, handleLogout }: SidebarProps) {
         <div className={`nav-dropdown ${isAnyViajeActive ? 'child-active' : ''}`}>
           <button 
             className={`nav-item dropdown-toggle ${isViajeOpen ? 'open' : ''}`}
-            onClick={() => setIsViajeOpen(!isViajeOpen)}
+            onClick={() => toggleDropdown('viaje')}
           >
             <Briefcase size={20} />
             <span>Viaje</span>
@@ -157,7 +163,7 @@ export default function Sidebar({ userEmail, handleLogout }: SidebarProps) {
         <div className={`nav-dropdown ${isAnyMonetizacionActive ? 'child-active' : ''}`}>
           <button 
             className={`nav-item dropdown-toggle ${isMonetizacionOpen ? 'open' : ''}`}
-            onClick={() => setIsMonetizacionOpen(!isMonetizacionOpen)}
+            onClick={() => toggleDropdown('monetizacion')}
           >
             <DollarSign size={20} />
             <span>Monetización</span>
@@ -193,7 +199,7 @@ export default function Sidebar({ userEmail, handleLogout }: SidebarProps) {
         <div className={`nav-dropdown ${isAnyFormularioActive ? 'child-active' : ''}`}>
           <button 
             className={`nav-item dropdown-toggle ${isFormulariosOpen ? 'open' : ''}`}
-            onClick={() => setIsFormulariosOpen(!isFormulariosOpen)}
+            onClick={() => toggleDropdown('formularios')}
           >
             <ClipboardList size={20} />
             <span>Formularios</span>
@@ -229,7 +235,7 @@ export default function Sidebar({ userEmail, handleLogout }: SidebarProps) {
         <div className={`nav-dropdown ${isAnyPrincipalActive ? 'child-active' : ''}`}>
           <button 
             className={`nav-item dropdown-toggle ${isPrincipalOpen ? 'open' : ''}`}
-            onClick={() => setIsPrincipalOpen(!isPrincipalOpen)}
+            onClick={() => toggleDropdown('principal')}
           >
             <Compass size={20} />
             <span>Pagina Principal</span>

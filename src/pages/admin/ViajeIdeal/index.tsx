@@ -28,10 +28,11 @@ export default function ViajeIdealPage() {
   const [newQuestionText, setNewQuestionText] = useState('');
   
   const [showPreview, setShowPreview] = useState(false);
+  const [currentPreviewIndex, setCurrentPreviewIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [result, setResult] = useState<string | null>(null);
 
-  const [expandedQuestions, setExpandedQuestions] = useState<Record<string, boolean>>({});
+  const [expandedQuestionId, setExpandedQuestionId] = useState<string | null>(null);
 
   const [catModal, setCatModal] = useState<CategoryModalState>({
     show: false,
@@ -42,7 +43,7 @@ export default function ViajeIdealPage() {
   });
 
   const toggleExpand = (id: string) => {
-    setExpandedQuestions(prev => ({ ...prev, [id]: !prev[id] }));
+    setExpandedQuestionId(prev => prev === id ? null : id);
   };
 
   useEffect(() => {
@@ -212,7 +213,7 @@ export default function ViajeIdealPage() {
         <p>Configura preguntas inteligentes para ayudar a tus clientes a descubrir su próximo destino.</p>
       </header>
 
-      <div className="builder-grid">
+      <div className="builder-container">
         <div className="builder-panel glass-card">
           <div className="card-header border-bottom">
             <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
@@ -220,9 +221,14 @@ export default function ViajeIdealPage() {
                 <h3><Settings size={20} className="text-primary" /> Configurador de Preguntas</h3>
                 <p className="text-secondary text-sm">Define las opciones y el peso que cada una tiene en el destino final.</p>
               </div>
-              <button className="btn btn-primary btn-sm" onClick={saveAll}>
-                Guardar Todo
-              </button>
+              <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+                <button className="btn btn-outline btn-sm" onClick={() => { setShowPreview(true); setCurrentPreviewIndex(0); setAnswers({}); setResult(null); }} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <Eye size={16} /> Probar Test
+                </button>
+                <button className="btn btn-primary btn-sm" onClick={saveAll}>
+                  Guardar Todo
+                </button>
+              </div>
             </div>
           </div>
           
@@ -238,7 +244,7 @@ export default function ViajeIdealPage() {
 
             <div className="questions-list">
               {questions.map((q, qIndex) => {
-                const isExpanded = expandedQuestions[q.id] !== false; // Default to expanded for now, or use true if you want them collapsed by default
+                const isExpanded = expandedQuestionId === q.id;
                 return (
                   <div key={q.id} className="question-config-item glass-card mb-4">
                     <div className="question-config-header" style={{ borderBottom: isExpanded ? '1px dashed rgba(0, 0, 0, 0.1)' : 'none', marginBottom: isExpanded ? '1.5rem' : '0' }}>
@@ -334,68 +340,96 @@ export default function ViajeIdealPage() {
           </div>
         </div>
 
-        <div className="preview-panel glass-card">
-          <div className="card-header border-bottom">
-            <h3><Eye size={20} className="text-primary" /> Vista del Cliente</h3>
-            <p className="text-secondary text-sm">Así es como el cliente responderá para ver su resultado.</p>
-          </div>
-          
-          <div className="card-body">
-            {!showPreview ? (
-              <div className="start-test text-center p-5">
-                <div className="test-icon">
-                  <MapPin size={48} />
-                </div>
-                <h2>Encuentra tu Viaje Ideal</h2>
-                <p>Responde unas breves preguntas y te diremos cuál es tu destino perfecto.</p>
-                <button className="btn btn-primary mt-4" onClick={() => setShowPreview(true)}>
-                  Comenzar Test
-                </button>
+
+      </div>
+
+      {showPreview && (
+        <div className="modal-overlay animate-fade-in" style={{ zIndex: 3000 }}>
+          <div className="modal-content glass-card animate-scale-in" style={{ maxWidth: '500px', width: '100%', padding: 0, borderRadius: '24px', overflow: 'hidden' }}>
+            <div style={{ padding: '1.25rem 1.5rem', background: 'var(--color-primary)', color: 'white', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700, color: 'white', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <Eye size={18} /> Vista del Cliente
+                </h3>
               </div>
-            ) : (
-              <div className="quiz-container">
-                {!result ? (
-                  <>
-                    {questions.map((q) => (
-                      <div key={q.id} className="quiz-question mb-5">
-                        <h4 className="mb-3">{q.text}</h4>
+              <button onClick={() => { setShowPreview(false); setResult(null); setAnswers({}); }} style={{ background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '50%', padding: '6px', cursor: 'pointer', color: 'white' }}>
+                <X size={18} />
+              </button>
+            </div>
+            
+            <div className="card-body" style={{ padding: '2rem' }}>
+              {!result ? (
+                <div className="quiz-container">
+                  <div className="test-icon" style={{ margin: '0 auto 1.5rem auto' }}>
+                    <MapPin size={48} />
+                  </div>
+                  {questions.length > 0 && currentPreviewIndex < questions.length ? (
+                    <div className="quiz-wizard animate-fade-in">
+                      <div className="wizard-progress" style={{ textAlign: 'center', marginBottom: '1.5rem', color: '#64748b', fontSize: '0.9rem', fontWeight: 600 }}>
+                        Pregunta {currentPreviewIndex + 1} de {questions.length}
+                        <div style={{ background: '#f1f5f9', height: '6px', borderRadius: '3px', marginTop: '0.5rem', overflow: 'hidden' }}>
+                          <div style={{ background: 'var(--color-primary)', height: '100%', width: `${((currentPreviewIndex + 1) / questions.length) * 100}%`, transition: 'width 0.3s' }}></div>
+                        </div>
+                      </div>
+                      
+                      <div className="quiz-question mb-5 text-center">
+                        <h4 className="mb-4" style={{ fontSize: '1.4rem', fontFamily: "'Playfair Display', serif", color: '#1F3A4D', fontWeight: 800, lineHeight: 1.3 }}>
+                          {questions[currentPreviewIndex].text}
+                        </h4>
                         <div className="quiz-options">
-                          {q.options.map(opt => (
+                          {questions[currentPreviewIndex].options.map(opt => (
                             <button 
                               key={opt.id}
-                              className={`quiz-opt-btn ${answers[q.id] === opt.id ? 'selected' : ''}`}
-                              onClick={() => setAnswers({ ...answers, [q.id]: opt.id })}
+                              className={`quiz-opt-btn ${answers[questions[currentPreviewIndex].id] === opt.id ? 'selected' : ''}`}
+                              onClick={() => setAnswers({ ...answers, [questions[currentPreviewIndex].id]: opt.id })}
                             >
                               {opt.text}
                             </button>
                           ))}
                         </div>
                       </div>
-                    ))}
-                    <button 
-                      className="btn btn-primary w-100" 
-                      onClick={calculateResult}
-                      disabled={Object.keys(answers).length < questions.length}
-                    >
-                      Ver mi resultado
-                    </button>
-                  </>
-                ) : (
-                  <div className="result-card text-center p-5 animate-scale-in">
-                    <div className="confetti">🎉</div>
-                    <h3>¡Tu destino ideal es!</h3>
-                    <div className="result-name">{result}</div>
-                    <p className="mt-3">Basado en tus preferencias, este lugar te encantará.</p>
-                    <button className="btn btn-outline mt-4" onClick={() => { setResult(null); setAnswers({}); setShowPreview(false); }}>
-                      Volver a empezar
-                    </button>
-                  </div>
-                )}
-              </div>
-            )}
+                      
+                      {currentPreviewIndex < questions.length - 1 ? (
+                        <button 
+                          className="btn btn-primary w-100" 
+                          onClick={() => setCurrentPreviewIndex(prev => prev + 1)}
+                          disabled={!answers[questions[currentPreviewIndex].id]}
+                          style={{ padding: '1rem', fontSize: '1.1rem', borderRadius: '12px' }}
+                        >
+                          Siguiente
+                        </button>
+                      ) : (
+                        <button 
+                          className="btn btn-primary w-100" 
+                          onClick={calculateResult}
+                          disabled={!answers[questions[currentPreviewIndex].id]}
+                          style={{ padding: '1rem', fontSize: '1.1rem', borderRadius: '12px' }}
+                        >
+                          Ver mi resultado
+                        </button>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="text-center text-secondary">
+                      Agrega preguntas para probar el test.
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="result-card animate-scale-in">
+                  <div className="confetti">🎉</div>
+                  <h3 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#1F3A4D' }}>¡Tu destino ideal es!</h3>
+                  <div className="result-name">{result}</div>
+                  <p className="mt-3 text-secondary text-center">Basado en tus preferencias, este lugar te encantará.</p>
+                  <button className="btn btn-outline w-100 mt-4" onClick={() => { setResult(null); setAnswers({}); setShowPreview(false); }} style={{ padding: '1rem', borderRadius: '12px' }}>
+                    Cerrar y Volver
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {catModal.show && (
         <div className="modal-overlay animate-fade-in" style={{ zIndex: 3000 }}>

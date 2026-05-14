@@ -1,18 +1,7 @@
 .form-builder-container {
-  padding-bottom: 2rem;
-}
-
-.builder-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 2rem;
-  align-items: start;
-}
-
-@media (max-width: 1024px) {
-  .builder-grid {
-    grid-template-columns: 1fr;
-  }
+  max-width: 1000px;
+  margin: 0 auto;
+  padding-bottom: 4rem;
 }
 
 .card-header h3 {

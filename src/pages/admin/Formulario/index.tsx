@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Trash2, GripVertical, Eye, Settings, HelpCircle, Mail, Phone, User, Check } from 'lucide-react';
+import { Plus, Trash2, GripVertical, Eye, Settings, HelpCircle, Mail, Phone, User, Check, X } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import './Formulario.css';
 
@@ -22,6 +22,8 @@ export default function FormularioPage() {
   const [loading, setLoading] = useState(true);
   const [newQuestionText, setNewQuestionText] = useState('');
   const [newQuestionRequired, setNewQuestionRequired] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
+  const [currentPreviewIndex, setCurrentPreviewIndex] = useState(0);
 
   const [emailPrefix, setEmailPrefix] = useState('');
   const [emailDomain, setEmailDomain] = useState('@gmail.com');
@@ -165,11 +167,18 @@ export default function FormularioPage() {
           <p className="mt-3">Cargando configuración...</p>
         </div>
       ) : (
-        <div className="builder-grid">
+        <div className="form-builder-container">
           <div className="builder-panel glass-card">
             <div className="card-header border-bottom">
-              <h3><Settings size={20} className="text-primary" /> Constructor de Formulario</h3>
-              <p className="text-secondary text-sm">Define qué le preguntarás a tus clientes antes de contratarte.</p>
+              <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
+                <div>
+                  <h3><Settings size={20} className="text-primary" /> Constructor de Formulario</h3>
+                  <p className="text-secondary text-sm">Define qué le preguntarás a tus clientes antes de contratarte.</p>
+                </div>
+                <button className="btn btn-outline btn-sm" onClick={() => { setShowPreview(true); setCurrentPreviewIndex(0); setPreviewValues({}); setEmailPrefix(''); setTriedToSubmit(false); setShowSuccess(false); }} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <Eye size={16} /> Probar Formulario
+                </button>
+              </div>
             </div>
             
             <div className="card-body">
@@ -237,101 +246,140 @@ export default function FormularioPage() {
               </div>
             </div>
           </div>
+        </div>
+      )}
 
-          <div className="preview-panel glass-card">
-            <div className="card-header border-bottom">
-              <h3><Eye size={20} className="text-primary" /> Vista Previa del Cliente</h3>
-              <p className="text-secondary text-sm">Así verá el formulario tu cliente en la web.</p>
+      {showPreview && (
+        <div className="modal-overlay animate-fade-in" style={{ zIndex: 3000 }}>
+          <div className="modal-content glass-card animate-scale-in" style={{ maxWidth: '600px', width: '100%', padding: 0, borderRadius: '24px', overflow: 'hidden' }}>
+            <div style={{ padding: '1.25rem 1.5rem', background: 'var(--color-primary)', color: 'white', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700, color: 'white', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <Eye size={18} /> Vista Previa del Cliente
+                </h3>
+              </div>
+              <button onClick={() => { setShowPreview(false); setShowSuccess(false); setTriedToSubmit(false); setPreviewValues({}); }} style={{ background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '50%', padding: '6px', cursor: 'pointer', color: 'white' }}>
+                <X size={18} />
+              </button>
             </div>
             
-            <div className="card-body preview-body">
+            <div className="card-body preview-body" style={{ maxHeight: '70vh', overflowY: 'auto' }}>
               <div className="preview-form">
-                <div className="preview-header text-center">
-                  <h3>Planifiquemos tu viaje</h3>
-                  <p>Completa estos datos para comenzar a planificar tu aventura.</p>
+                <div className="preview-header text-center mb-4">
+                  <h3 style={{ fontFamily: "'Outfit', sans-serif", fontWeight: 700, fontSize: '1.8rem', color: '#1F3A4D', marginBottom: '0.5rem' }}>Planifiquemos tu viaje</h3>
+                  <p style={{ color: '#64748b', fontSize: '1rem', fontFamily: "'Outfit', sans-serif" }}>Completa estos datos para comenzar a planificar tu aventura.</p>
                 </div>
 
-                {questions.map((q) => (
-                  <div key={q.id} className="preview-field">
-                    <label>
-                      {q.text} {q.required && <span className="text-danger">*</span>}
-                    </label>
-
-                    {q.type === 'text' && (
-                      <div className="input-with-icon">
-                        <User size={16} />
-                        <input 
-                          type="text" 
-                          placeholder="Tu respuesta..." 
-                          className="preview-input" 
-                          style={getValidationStyle(q)}
-                          value={previewValues[q.id] || ''}
-                          onChange={e => setPreviewValues({...previewValues, [q.id]: e.target.value})}
-                        />
+                {questions.length > 0 && currentPreviewIndex < questions.length ? (
+                  <div className="quiz-wizard animate-fade-in">
+                    <div className="wizard-progress" style={{ textAlign: 'center', marginBottom: '1.5rem', color: '#64748b', fontSize: '0.9rem', fontWeight: 600 }}>
+                      Paso {currentPreviewIndex + 1} de {questions.length}
+                      <div style={{ background: '#f1f5f9', height: '6px', borderRadius: '3px', marginTop: '0.5rem', overflow: 'hidden' }}>
+                        <div style={{ background: 'var(--color-primary)', height: '100%', width: `${((currentPreviewIndex + 1) / questions.length) * 100}%`, transition: 'width 0.3s' }}></div>
                       </div>
-                    )}
+                    </div>
 
-                    {q.type === 'phone' && (
-                      <div className="input-with-icon">
-                        <Phone size={16} />
-                        <input 
-                          type="tel" 
-                          placeholder="11 1234-5678" 
-                          className="preview-input" 
-                          style={getValidationStyle(q)}
-                          value={previewValues[q.id] || ''}
-                          onChange={e => setPreviewValues({...previewValues, [q.id]: formatPhoneNumber(e.target.value)})}
-                        />
-                      </div>
-                    )}
+                    {(() => {
+                      const q = questions[currentPreviewIndex];
+                      return (
+                        <div key={q.id} className="preview-field text-center">
+                          <label style={{ fontSize: '1.2rem', marginBottom: '1rem', display: 'block', fontWeight: 700, color: '#1F3A4D' }}>
+                            {q.text} {q.required && <span className="text-danger">*</span>}
+                          </label>
 
-                    {q.type === 'email' && (
-                      <div className="email-input-group">
-                        <div className="input-with-icon email-prefix">
-                          <Mail size={16} />
-                          <input 
-                            type="text" 
-                            placeholder="tu.nombre" 
-                            className="preview-input"
-                            style={getValidationStyle(q)}
-                            value={emailPrefix}
-                            onChange={e => setEmailPrefix(e.target.value.replace(/@/g, ''))}
-                          />
+                          {q.type === 'text' && (
+                            <div className="input-with-icon" style={{ maxWidth: '400px', margin: '0 auto' }}>
+                              <User size={16} />
+                              <input 
+                                type="text" 
+                                placeholder="Tu respuesta..." 
+                                className="preview-input" 
+                                style={{ ...getValidationStyle(q), textAlign: 'center', paddingLeft: '1rem' }}
+                                value={previewValues[q.id] || ''}
+                                onChange={e => setPreviewValues({...previewValues, [q.id]: e.target.value})}
+                              />
+                            </div>
+                          )}
+
+                          {q.type === 'phone' && (
+                            <div className="input-with-icon" style={{ maxWidth: '400px', margin: '0 auto' }}>
+                              <Phone size={16} />
+                              <input 
+                                type="tel" 
+                                placeholder="11 1234-5678" 
+                                className="preview-input" 
+                                style={{ ...getValidationStyle(q), textAlign: 'center', paddingLeft: '1rem' }}
+                                value={previewValues[q.id] || ''}
+                                onChange={e => setPreviewValues({...previewValues, [q.id]: formatPhoneNumber(e.target.value)})}
+                              />
+                            </div>
+                          )}
+
+                          {q.type === 'email' && (
+                            <div className="email-input-group" style={{ maxWidth: '400px', margin: '0 auto' }}>
+                              <div className="input-with-icon email-prefix">
+                                <Mail size={16} />
+                                <input 
+                                  type="text" 
+                                  placeholder="mail" 
+                                  className="preview-input"
+                                  style={{ ...getValidationStyle(q), textAlign: 'center', paddingLeft: '1rem' }}
+                                  value={emailPrefix}
+                                  onChange={e => setEmailPrefix(e.target.value.replace(/@/g, ''))}
+                                />
+                              </div>
+                              <select 
+                                className="preview-select domain-select"
+                                value={emailDomain}
+                                onChange={e => setEmailDomain(e.target.value)}
+                                style={{ textAlign: 'center' }}
+                              >
+                                <option value="@gmail.com">@gmail.com</option>
+                                <option value="@outlook.com">@outlook.com</option>
+                                <option value="@hotmail.com">@hotmail.com</option>
+                                <option value="@yahoo.com">@yahoo.com</option>
+                              </select>
+                            </div>
+                          )}
+
+                          {q.type === 'textarea' && (
+                            <textarea 
+                              placeholder="Escribe aquí tus detalles..." 
+                              className="preview-input textarea" 
+                              style={{ ...getValidationStyle(q), maxWidth: '400px', margin: '0 auto', display: 'block' }}
+                              rows={3}
+                              value={previewValues[q.id] || ''}
+                              onChange={e => setPreviewValues({...previewValues, [q.id]: e.target.value})}
+                            ></textarea>
+                          )}
+
+                          {currentPreviewIndex < questions.length - 1 ? (
+                            <button 
+                              className="btn btn-primary w-100 mt-4" 
+                              onClick={() => setCurrentPreviewIndex(prev => prev + 1)}
+                              disabled={q.required && (!previewValues[q.id] && (q.type !== 'email' || !emailPrefix))}
+                              style={{ padding: '1rem', fontSize: '1.1rem', borderRadius: '12px', boxShadow: '0 4px 15px rgba(31, 58, 77, 0.25)', opacity: (q.required && (!previewValues[q.id] && (q.type !== 'email' || !emailPrefix))) ? 0.6 : 1 }}
+                            >
+                              Siguiente
+                            </button>
+                          ) : (
+                            <button 
+                              className={`btn btn-primary w-100 mt-4 preview-submit ${isSubmitting ? 'loading' : ''} ${showSuccess ? 'success' : ''}`} 
+                              type="button"
+                              onClick={handlePreviewSubmit}
+                              disabled={isSubmitting || showSuccess || (q.required && (!previewValues[q.id] && (q.type !== 'email' || !emailPrefix)))}
+                              style={{ padding: '1rem', fontSize: '1.1rem', borderRadius: '12px', boxShadow: '0 4px 15px rgba(31, 58, 77, 0.25)', opacity: (isSubmitting || showSuccess || (q.required && (!previewValues[q.id] && (q.type !== 'email' || !emailPrefix)))) ? 0.6 : 1 }}
+                            >
+                              {isSubmitting ? 'Enviando...' : showSuccess ? <><Check size={18} /> ¡Formulario Enviado!</> : 'Enviar formulario'}
+                            </button>
+                          )}
                         </div>
-                        <select 
-                          className="preview-select domain-select"
-                          value={emailDomain}
-                          onChange={e => setEmailDomain(e.target.value)}
-                        >
-                          <option value="@gmail.com">@gmail.com</option>
-                          <option value="@outlook.com">@outlook.com</option>
-                          <option value="@hotmail.com">@hotmail.com</option>
-                          <option value="@yahoo.com">@yahoo.com</option>
-                        </select>
-                      </div>
-                    )}
-
-                    {q.type === 'textarea' && (
-                      <textarea 
-                        placeholder="Escribe aquí tus detalles..." 
-                        className="preview-input textarea" 
-                        style={getValidationStyle(q)}
-                        rows={3}
-                        value={previewValues[q.id] || ''}
-                        onChange={e => setPreviewValues({...previewValues, [q.id]: e.target.value})}
-                      ></textarea>
-                    )}
+                      );
+                    })()}
                   </div>
-                ))}
-
-                <button 
-                  className={`btn btn-primary w-100 mt-4 preview-submit ${isSubmitting ? 'loading' : ''} ${showSuccess ? 'success' : ''}`} 
-                  type="button"
-                  onClick={handlePreviewSubmit}
-                  disabled={isSubmitting || showSuccess}
-                >
-                  {isSubmitting ? 'Enviando...' : showSuccess ? <><Check size={18} /> ¡Formulario Enviado!</> : 'Enviar formulario'}
-                </button>
+                ) : (
+                  <div className="text-center text-secondary">No hay preguntas configuradas.</div>
+                )}
               </div>
             </div>
           </div>

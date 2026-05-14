@@ -16,10 +16,12 @@ import {
   startOfDay,
   isWeekend,
   addHours,
-  isAfter
+  isAfter,
+  parseISO
 } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, X, Check, CheckCircle } from 'lucide-react';
+import emailjs from '@emailjs/browser';
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, X, Check, CheckCircle, User, Phone, Mail } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import './Calendar.css';
 
@@ -46,6 +48,7 @@ export default function Calendar({ isDashboard = false, onDateSelect, selectedDa
   const [customDomain] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [currentFormIndex, setCurrentFormIndex] = useState(0);
 
   const selectedDate = isDashboard ? selectedDateExternal : internalSelectedDate;
 
@@ -125,6 +128,28 @@ export default function Calendar({ isDashboard = false, onDateSelect, selectedDa
     if (error) {
       alert('Error al enviar formulario');
     } else {
+      try {
+        const answersText = newSubmission.answers
+          .filter(a => !a.questionText.includes('Cómo te llamas') && !a.questionText.includes('Cuál es tu mail') && !a.questionText.includes('Cuál es tu número'))
+          .map(a => `${a.questionText}: ${a.answer}`).join('\n');
+        
+        await emailjs.send(
+          'service_yy59l1c',
+          'template_wibcykr',
+          {
+            name: newSubmission.name,
+            email: newSubmission.email,
+            phone: newSubmission.phone,
+            date: newSubmission.requested_date ? format(parseISO(newSubmission.requested_date), 'dd/MM/yyyy') : 'No especificada',
+            time: newSubmission.requested_time || 'No especificada',
+            message: answersText
+          },
+          'C9hOpK5F-cE45ip5t'
+        );
+      } catch (emailError) {
+        console.error('Error al enviar notificación por email:', emailError);
+      }
+
       setIsSuccess(true);
     }
     setIsSubmitting(false);
@@ -227,7 +252,7 @@ export default function Calendar({ isDashboard = false, onDateSelect, selectedDa
 
           <button
             className="btn btn-primary w-100 mt-4"
-            onClick={() => setShowForm(true)}
+            onClick={() => { setShowForm(true); setCurrentFormIndex(0); }}
             disabled={!selectedTime}
             style={{ opacity: !selectedTime ? 0.6 : 1 }}
           >
@@ -238,8 +263,17 @@ export default function Calendar({ isDashboard = false, onDateSelect, selectedDa
 
       {showForm && createPortal(
         <div className="modal-overlay">
-          <div className="modal-content animate-fade-in" style={{ maxWidth: '650px', padding: '3rem' }}>
-            <button className="close-modal-btn" onClick={() => setShowForm(false)}><X size={28} /></button>
+          <div className="modal-content animate-fade-in" style={{ maxWidth: '650px', padding: '2rem 3rem 3rem 3rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '0.5rem' }}>
+              <button 
+                onClick={() => setShowForm(false)} 
+                style={{ background: 'rgba(0,0,0,0.05)', border: 'none', borderRadius: '50%', width: '36px', height: '36px', cursor: 'pointer', color: '#1F3A4D', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)' }}
+                onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.15) rotate(90deg)'; e.currentTarget.style.background = 'rgba(0,0,0,0.1)'; e.currentTarget.style.color = 'var(--color-danger)'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1) rotate(0deg)'; e.currentTarget.style.background = 'rgba(0,0,0,0.05)'; e.currentTarget.style.color = '#1F3A4D'; }}
+              >
+                <X size={20} />
+              </button>
+            </div>
 
             {isSuccess ? (
               <div className="success-state text-center py-4">
@@ -251,33 +285,125 @@ export default function Calendar({ isDashboard = false, onDateSelect, selectedDa
             ) : (
               <div className="public-form">
                 <div className="text-center mb-5">
-                  <h2>Planifiquemos tu viaje</h2>
-                  <p>Reservando para el {selectedDate ? format(selectedDate, 'dd/MM/yyyy') : ''} a las {selectedTime}</p>
+                  <h2 style={{ fontFamily: "'Outfit', sans-serif", fontWeight: 700, fontSize: '1.8rem', color: '#1F3A4D', marginBottom: '0.5rem' }}>Planifiquemos tu viaje</h2>
+                  <p className="text-secondary" style={{ fontFamily: "'Outfit', sans-serif" }}>Solicitando reserva para el {selectedDate ? format(selectedDate, 'dd/MM/yyyy') : ''} a las {selectedTime}</p>
                 </div>
 
-                <div className="form-scroll-area custom-scrollbar" style={{ maxHeight: '55vh', overflowY: 'auto' }}>
-                  {formQuestions.map(q => (
-                    <div key={q.id} className="form-group mb-4">
-                      <label>{q.text} {q.required && '*'}</label>
-                      {q.type === 'text' && <input type="text" className="form-input" value={formValues[q.id] || ''} onChange={e => setFormValues({ ...formValues, [q.id]: e.target.value })} />}
-                      {q.type === 'phone' && <input type="tel" className="form-input" value={formValues[q.id] || ''} onChange={e => setFormValues({ ...formValues, [q.id]: formatPhoneFixed(e.target.value) })} />}
-                      {q.type === 'email' && (
-                        <div className="email-input-group">
-                          <input type="text" className="form-input" value={emailPrefix} onChange={e => setEmailPrefix(e.target.value)} />
-                          <select className="form-input" value={emailDomain} onChange={e => setEmailDomain(e.target.value)}>
-                            <option value="@gmail.com">@gmail.com</option>
-                            <option value="personalizado">Personalizado...</option>
-                          </select>
-                        </div>
-                      )}
-                      {q.type === 'textarea' && <textarea className="form-input" value={formValues[q.id] || ''} onChange={e => setFormValues({ ...formValues, [q.id]: e.target.value })} />}
+                {formQuestions.length > 0 && currentFormIndex < formQuestions.length ? (
+                  <div className="quiz-wizard animate-fade-in">
+                    <div className="wizard-progress" style={{ textAlign: 'center', marginBottom: '1.5rem', color: '#64748b', fontSize: '0.9rem', fontWeight: 600 }}>
+                      Paso {currentFormIndex + 1} de {formQuestions.length}
+                      <div style={{ background: '#f1f5f9', height: '6px', borderRadius: '3px', marginTop: '0.5rem', overflow: 'hidden' }}>
+                        <div style={{ background: 'var(--color-primary)', height: '100%', width: `${((currentFormIndex + 1) / formQuestions.length) * 100}%`, transition: 'width 0.3s' }}></div>
+                      </div>
                     </div>
-                  ))}
-                </div>
 
-                <button className="btn btn-primary w-100 mt-5" onClick={handleSubmitForm} disabled={isSubmitting}>
-                  {isSubmitting ? 'Enviando...' : 'Enviar formulario'}
-                </button>
+                    {(() => {
+                      const q = formQuestions[currentFormIndex];
+                      // Simple inline style generator matching the preview
+                      const isFilled = q.type === 'email' ? !!emailPrefix : !!formValues[q.id];
+                      const valStyle = {
+                        borderColor: isFilled ? '#10b981' : 'var(--color-tertiary)',
+                        backgroundColor: isFilled ? 'rgba(16, 185, 129, 0.02)' : 'var(--color-white)'
+                      };
+
+                      return (
+                        <div key={q.id} className="preview-field text-center">
+                          <label style={{ fontSize: '1.3rem', marginBottom: '1.5rem', display: 'block', fontWeight: 600, color: '#1F3A4D', fontFamily: "'Outfit', sans-serif" }}>
+                            {q.text} {q.required && <span className="text-danger">*</span>}
+                          </label>
+
+                          {q.type === 'text' && (
+                            <div className="input-with-icon" style={{ maxWidth: '400px', margin: '0 auto', position: 'relative' }}>
+                              <User size={18} style={{ position: 'absolute', left: '1.25rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--color-secondary)' }} />
+                              <input 
+                                type="text" 
+                                placeholder="Tu respuesta..." 
+                                className="form-input" 
+                                style={{ ...valStyle, textAlign: 'center', padding: '14px 1rem 14px 3rem', minHeight: '52px', height: 'auto', borderRadius: '10px', fontFamily: "'Outfit', sans-serif", fontSize: '1.05rem', width: '100%' }}
+                                value={formValues[q.id] || ''}
+                                onChange={e => setFormValues({...formValues, [q.id]: e.target.value})}
+                              />
+                            </div>
+                          )}
+
+                          {q.type === 'phone' && (
+                            <div className="input-with-icon" style={{ maxWidth: '400px', margin: '0 auto', position: 'relative' }}>
+                              <Phone size={18} style={{ position: 'absolute', left: '1.25rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--color-secondary)' }} />
+                              <input 
+                                type="tel" 
+                                placeholder="11 1234-5678" 
+                                className="form-input" 
+                                style={{ ...valStyle, textAlign: 'center', padding: '14px 1rem 14px 3rem', minHeight: '52px', height: 'auto', borderRadius: '10px', fontFamily: "'Outfit', sans-serif", fontSize: '1.05rem', width: '100%' }}
+                                value={formValues[q.id] || ''}
+                                onChange={e => setFormValues({...formValues, [q.id]: formatPhoneFixed(e.target.value)})}
+                              />
+                            </div>
+                          )}
+
+                          {q.type === 'email' && (
+                            <div className="email-input-group" style={{ maxWidth: '400px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                              <div className="input-with-icon" style={{ position: 'relative' }}>
+                                <Mail size={18} style={{ position: 'absolute', left: '1.25rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--color-secondary)' }} />
+                                <input 
+                                  type="text" 
+                                  placeholder="mail" 
+                                  className="form-input"
+                                  style={{ ...valStyle, textAlign: 'center', padding: '14px 1rem 14px 3rem', minHeight: '52px', height: 'auto', borderRadius: '10px', fontFamily: "'Outfit', sans-serif", fontSize: '1.05rem', width: '100%' }}
+                                  value={emailPrefix}
+                                  onChange={e => setEmailPrefix(e.target.value.replace(/@/g, ''))}
+                                />
+                              </div>
+                              <select 
+                                className="form-input"
+                                value={emailDomain}
+                                onChange={e => setEmailDomain(e.target.value)}
+                                style={{ textAlign: 'center', minHeight: '52px', height: 'auto', padding: '14px', borderRadius: '10px', backgroundColor: '#f8f9fa', fontFamily: "'Outfit', sans-serif", fontSize: '1.05rem', width: '100%' }}
+                              >
+                                <option value="@gmail.com">@gmail.com</option>
+                                <option value="@outlook.com">@outlook.com</option>
+                                <option value="@hotmail.com">@hotmail.com</option>
+                                <option value="@yahoo.com">@yahoo.com</option>
+                              </select>
+                            </div>
+                          )}
+
+                          {q.type === 'textarea' && (
+                            <textarea 
+                              placeholder="Escribe aquí tus detalles..." 
+                              className="form-input" 
+                              style={{ ...valStyle, maxWidth: '400px', margin: '0 auto', display: 'block', padding: '1.25rem', borderRadius: '10px', resize: 'vertical', fontFamily: "'Outfit', sans-serif", fontSize: '1.05rem', width: '100%' }}
+                              rows={4}
+                              value={formValues[q.id] || ''}
+                              onChange={e => setFormValues({...formValues, [q.id]: e.target.value})}
+                            ></textarea>
+                          )}
+
+                          {currentFormIndex < formQuestions.length - 1 ? (
+                            <button 
+                              className="btn btn-primary w-100 mt-5" 
+                              onClick={() => setCurrentFormIndex(prev => prev + 1)}
+                              disabled={q.required && !isFilled}
+                              style={{ padding: '1rem', fontSize: '1.1rem', borderRadius: '12px', boxShadow: '0 4px 15px rgba(31, 58, 77, 0.25)', fontFamily: "'Outfit', sans-serif", fontWeight: 600, letterSpacing: '0.5px', opacity: (q.required && !isFilled) ? 0.6 : 1 }}
+                            >
+                              Siguiente
+                            </button>
+                          ) : (
+                            <button 
+                              className={`btn btn-primary w-100 mt-5 ${isSubmitting ? 'loading' : ''}`} 
+                              type="button"
+                              onClick={handleSubmitForm}
+                              disabled={isSubmitting || (q.required && !isFilled)}
+                              style={{ padding: '1rem', fontSize: '1.1rem', borderRadius: '12px', boxShadow: '0 4px 15px rgba(31, 58, 77, 0.25)', fontFamily: "'Outfit', sans-serif", fontWeight: 600, letterSpacing: '0.5px', opacity: (isSubmitting || (q.required && !isFilled)) ? 0.6 : 1 }}
+                            >
+                              {isSubmitting ? 'Enviando...' : 'Enviar formulario'}
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })()}
+                  </div>
+                ) : null}
               </div>
             )}
           </div>

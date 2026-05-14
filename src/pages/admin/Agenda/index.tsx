@@ -519,36 +519,53 @@ export default function AgendaPage() {
       {/* Modal: completedRes actions */}
       {completedRes && (
         <div className="modal-overlay animate-fade-in" style={{ zIndex: 1500 }}>
-          <div className="modal-content glass-card animate-scale-in" style={{ maxWidth: '400px', padding: '2rem', borderRadius: '24px' }}>
-            <div className="modal-header">
-              <h3>Reunión completada</h3>
+          <div className="modal-content-pro animate-modal-in" style={{ maxWidth: '450px' }}>
+            <div className="modal-header-pro">
+              <div className="header-left">
+                <div className="header-icon">
+                  <Check size={22} />
+                </div>
+                <div className="header-text">
+                  <h3>Sesión Completada</h3>
+                  <p>Gestión de Cliente Post-Reunión</p>
+                </div>
+              </div>
               <button className="close-modal-btn" onClick={() => setCompletedRes(null)}>
                 <X size={20} />
               </button>
             </div>
-            <p style={{ marginBottom: '1.25rem' }}>Cliente: <strong>{completedRes.client}</strong></p>
             
-            <div className="form-group mb-4">
-              <label className="text-xs font-semibold uppercase text-secondary">¿Cuántas personas viajan?</label>
-              <div className="input-with-icon" style={{ marginTop: '0.5rem' }}>
-                <Users size={16} />
-                <input 
-                  type="number" 
-                  min="1"
-                  className="form-input"
-                  value={newClientPax}
-                  onChange={e => setNewClientPax(parseInt(e.target.value) || 1)}
-                />
+            <div className="modal-body-pro">
+              <div className="res-info-box-premium">
+                <p className="text-sm text-secondary">Estás gestionando la sesión de:</p>
+                <h4>{completedRes.client}</h4>
               </div>
+              
+              <div className="form-group mb-4">
+                <label>¿Cuántas personas viajan?</label>
+                <div className="input-with-icon">
+                  <Users size={16} />
+                  <input 
+                    type="number" 
+                    min="1"
+                    className="form-input"
+                    value={newClientPax}
+                    onChange={e => setNewClientPax(parseInt(e.target.value) || 1)}
+                  />
+                </div>
+              </div>
+
+              <p className="text-sm text-secondary" style={{ marginTop: '1rem' }}>
+                ¿Deseas guardar a este viajero en tu base de datos de clientes o descartarlo?
+              </p>
             </div>
 
-            <p className="text-sm text-secondary">¿Querés agregar a este cliente a tu lista de clientes o eliminarlo?</p>
-            <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1.25rem' }}>
-              <button className="btn btn-primary w-100" onClick={() => handleSaveNewClient(completedRes)}>
-                Guardar cliente
+            <div className="modal-footer-pro">
+              <button className="btn-modal btn-cancel" style={{ flex: 1 }} onClick={() => handleDeleteClient(completedRes)}>
+                Descartar
               </button>
-              <button className="btn btn-danger w-100" onClick={() => handleDeleteClient(completedRes)}>
-                Descartar cliente
+              <button className="btn-modal btn-confirm info" style={{ flex: 2 }} onClick={() => handleSaveNewClient(completedRes)}>
+                Guardar Cliente
               </button>
             </div>
           </div>
@@ -557,30 +574,27 @@ export default function AgendaPage() {
 
       {/* Modal: Nueva Sesión */}
       {showAddModal && (
-        <div className="modal-overlay animate-fade-in" style={{ zIndex: 1300, backgroundColor: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)' }}>
-          <div className="session-modal-container animate-scale-in" style={{ 
-            maxWidth: '550px', 
-            width: '100%',
-            backgroundColor: 'white',
-            padding: 0, 
-            borderRadius: '24px', 
-            overflow: 'hidden',
-            display: 'flex',
-            flexDirection: 'column',
-            maxHeight: '90vh',
-            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
-          }}>
-            <div className="session-modal-header" style={{ padding: '1.25rem 2.5rem', background: '#1F3A4D', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h3 style={{ margin: 0, fontSize: '1.5rem', color: 'white', fontFamily: 'Outfit, sans-serif', fontWeight: 700 }}>Nueva Sesión</h3>
-              <button onClick={() => { setShowAddModal(false); setAttemptedSubmit(false); }} className="close-session-modal">
+        <div className="modal-overlay animate-fade-in" style={{ zIndex: 1300 }}>
+          <div className="modal-content-pro animate-modal-in" style={{ maxWidth: '580px' }}>
+            <div className="modal-header-pro">
+              <div className="header-left">
+                <div className="header-icon">
+                  <Plus size={22} />
+                </div>
+                <div className="header-text">
+                  <h3>Nueva Sesión</h3>
+                  <p>Agenda una nueva reunión de asesoría</p>
+                </div>
+              </div>
+              <button onClick={() => { setShowAddModal(false); setAttemptedSubmit(false); }} className="close-modal-btn">
                 <X size={22} />
               </button>
             </div>
 
-            <div className="session-modal-body custom-scrollbar" style={{ padding: '2.5rem', overflowY: 'auto', flex: 1, background: 'white' }}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+            <div className="modal-body-pro custom-scrollbar" style={{ maxHeight: '70vh', overflowY: 'auto' }}>
+              <div className="modal-form-grid-2-col">
                 <div className="form-group">
-                  <label className="text-xs font-semibold uppercase text-secondary">Nombre del Cliente *</label>
+                  <label>Nombre del Cliente *</label>
                   <input 
                     type="text" 
                     className={`form-input ${getValidationClass(newResName)}`}
@@ -591,7 +605,7 @@ export default function AgendaPage() {
                 </div>
 
                 <div className="form-group">
-                  <label className="text-xs font-semibold uppercase text-secondary">Destino (Opcional)</label>
+                  <label>Destino (Opcional)</label>
                   <input 
                     type="text" 
                     className={`form-input ${getValidationClass(newResDest, false)}`}
@@ -602,7 +616,7 @@ export default function AgendaPage() {
                 </div>
 
                 <div className="form-group">
-                  <label className="text-xs font-semibold uppercase text-secondary">Email *</label>
+                  <label>Email *</label>
                   <input 
                     type="email" 
                     className={`form-input ${getEmailClass()}`}
@@ -613,7 +627,7 @@ export default function AgendaPage() {
                 </div>
 
                 <div className="form-group">
-                  <label className="text-xs font-semibold uppercase text-secondary">Teléfono</label>
+                  <label>Teléfono</label>
                   <input 
                     type="text" 
                     className={`form-input ${getValidationClass(newResPhone, false)}`}
@@ -624,7 +638,7 @@ export default function AgendaPage() {
                 </div>
 
                 <div className="form-group">
-                  <label className="text-xs font-semibold uppercase text-secondary">Fecha de Sesión *</label>
+                  <label>Fecha de Sesión *</label>
                   <input 
                     type="date" 
                     className={`form-input ${getValidationClass(newResDate)}`}
@@ -634,7 +648,7 @@ export default function AgendaPage() {
                 </div>
 
                 <div className="form-group">
-                  <label className="text-xs font-semibold uppercase text-secondary">Horario *</label>
+                  <label>Horario *</label>
                   <select 
                     className={`form-input ${getValidationClass(newResTime)}`}
                     value={newResTime}
@@ -647,9 +661,12 @@ export default function AgendaPage() {
                     })}
                   </select>
                 </div>
+              </div>
 
-                <div className="form-group">
-                  <label className="text-xs font-semibold uppercase text-secondary">Link de la reunión (Opcional)</label>
+              <div className="form-group" style={{ marginTop: '1.5rem' }}>
+                <label>Link de la reunión (Opcional)</label>
+                <div className="input-with-icon">
+                  <Link2 size={16} />
                   <input 
                     type="text" 
                     className="form-input"
@@ -661,11 +678,10 @@ export default function AgendaPage() {
               </div>
             </div>
 
-            <div className="session-modal-footer" style={{ padding: '1.75rem 2.5rem', background: 'white', borderTop: '1px solid #f1f5f9', display: 'flex', gap: '1rem' }}>
-              <button className="btn btn-outline" style={{ flex: 1, height: '54px', borderRadius: '14px' }} onClick={() => { setShowAddModal(false); setAttemptedSubmit(false); }}>Cancelar</button>
+            <div className="modal-footer-pro">
+              <button className="btn-modal btn-cancel" onClick={() => { setShowAddModal(false); setAttemptedSubmit(false); }}>Cancelar</button>
               <button 
-                className="btn btn-primary" 
-                style={{ flex: 2, height: '54px', borderRadius: '14px', backgroundColor: '#1F3A4D', color: 'white', fontWeight: 700 }}
+                className="btn-modal btn-confirm info" 
                 onClick={handleAddSession}
               >
                 Agendar Sesión
@@ -677,59 +693,70 @@ export default function AgendaPage() {
 
       {postponeData && (
         <div className="modal-overlay animate-fade-in" style={{ zIndex: 1100 }}>
-          <div className="modal-content glass-card animate-scale-in" style={{ maxWidth: '450px', padding: '2.5rem' }}>
-            <div className="modal-header">
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                <div className="modal-icon-wrapper">
-                  <CalendarClock size={20} />
+          <div className="modal-content-pro animate-modal-in" style={{ maxWidth: '480px' }}>
+            <div className="modal-header-pro">
+              <div className="header-left">
+                <div className="header-icon">
+                  <CalendarClock size={22} />
                 </div>
-                <h3>Posponer Reserva</h3>
+                <div className="header-text">
+                  <h3>Reprogramar</h3>
+                  <p>Cambio de fecha u horario</p>
+                </div>
               </div>
               <button onClick={() => { setPostponeData(null); setAttemptedSubmit(false); }} className="close-modal-btn">
-                <X size={20} />
+                <X size={22} />
               </button>
             </div>
             
-            <div className="res-info-box">
-              <p className="text-sm text-secondary m-0">Estás reprogramando la reunión de:</p>
-              <h4>{postponeData.res.client}</h4>
-            </div>
-
-            <div className="modal-form-grid">
-              <div className="form-group">
-                <label className="text-sm font-semibold">
-                  <CalendarIcon size={16} /> Nueva Fecha
-                </label>
-                <input 
-                  type="date" 
-                  className={`form-input ${getValidationClass(newPostponeDate)}`}
-                  value={newPostponeDate} 
-                  onChange={e => setNewPostponeDate(e.target.value)}
-                  min={format(new Date(), 'yyyy-MM-dd')}
-                />
+            <div className="modal-body-pro">
+              <div className="res-info-box-premium">
+                <p className="text-sm text-secondary">Estás reprogramando la reunión de:</p>
+                <h4>{postponeData.res.client}</h4>
               </div>
 
-              <div className="form-group">
-                <label className="text-sm font-semibold">
-                  <Clock size={16} /> Nuevo Horario
-                </label>
-                <select 
-                  className={`form-input ${getValidationClass(newPostponeTime)}`}
-                  value={newPostponeTime} 
-                  onChange={e => setNewPostponeTime(e.target.value)}
-                >
-                  <option value="">Selecciona un horario</option>
-                  {Array.from({ length: 12 }, (_, i) => i + 8).map(h => {
-                    const t = h.toString().padStart(2, '0') + ':00';
-                    return <option key={t} value={t}>{t}</option>;
-                  })}
-                </select>
+              <div className="modal-form-grid">
+                <div className="form-group">
+                  <label>
+                    Nueva Fecha
+                  </label>
+                  <div className="input-with-icon">
+                    <CalendarIcon size={16} />
+                    <input 
+                      type="date" 
+                      className={`form-input ${getValidationClass(newPostponeDate)}`}
+                      value={newPostponeDate} 
+                      onChange={e => setNewPostponeDate(e.target.value)}
+                      min={format(new Date(), 'yyyy-MM-dd')}
+                    />
+                  </div>
+                </div>
+
+                <div className="form-group" style={{ marginTop: '1.25rem' }}>
+                  <label>
+                    Nuevo Horario
+                  </label>
+                  <div className="input-with-icon">
+                    <Clock size={16} />
+                    <select 
+                      className={`form-input ${getValidationClass(newPostponeTime)}`}
+                      value={newPostponeTime} 
+                      onChange={e => setNewPostponeTime(e.target.value)}
+                    >
+                      <option value="">Selecciona un horario</option>
+                      {Array.from({ length: 12 }, (_, i) => i + 8).map(h => {
+                        const t = h.toString().padStart(2, '0') + ':00';
+                        return <option key={t} value={t}>{t}</option>;
+                      })}
+                    </select>
+                  </div>
+                </div>
               </div>
             </div>
 
-            <div className="modal-actions-grid mt-4">
-              <button className="btn btn-outline" onClick={() => { setPostponeData(null); setAttemptedSubmit(false); }}>Cancelar</button>
-              <button className="btn btn-primary" onClick={handleConfirmPostpone}>Confirmar Cambio</button>
+            <div className="modal-footer-pro">
+              <button className="btn-modal btn-cancel" onClick={() => { setPostponeData(null); setAttemptedSubmit(false); }}>Cancelar</button>
+              <button className="btn-modal btn-confirm info" onClick={handleConfirmPostpone}>Confirmar Cambio</button>
             </div>
           </div>
         </div>
