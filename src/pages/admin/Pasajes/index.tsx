@@ -79,6 +79,8 @@ interface Ticket {
   flight_info?: FlightInfo;
 }
 
+const defaultLeg = { origin: '', destination: '', date: '', departure_time: '', arrival_time: '', notes: '' };
+
 export default function PasajesPage() {
   const [clients, setClients] = useState<Client[]>([]);
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
@@ -245,6 +247,8 @@ export default function PasajesPage() {
         setFormData({
           ...ticket,
           ...ticket.flight_info,
+          outbound: ticket.flight_info.outbound || { ...defaultLeg },
+          return: ticket.flight_info.return || { ...defaultLeg },
           show_names: ticket.show_names || false
         });
       } else {
@@ -261,7 +265,7 @@ export default function PasajesPage() {
             arrival_time: ticket.arrival_time || '',
             notes: ''
           },
-          return: { origin: '', destination: '', date: '', departure_time: '', arrival_time: '', notes: '' }
+          return: { ...defaultLeg }
         });
       }
       setEditingId(ticket.id);
@@ -275,8 +279,8 @@ export default function PasajesPage() {
         show_names: false,
         passengers_detail: [{ name: '', amount: 0 }],
         is_round_trip: false,
-        outbound: { origin: '', destination: '', date: '', departure_time: '', arrival_time: '', notes: '' },
-        return: { origin: '', destination: '', date: '', departure_time: '', arrival_time: '', notes: '' }
+        outbound: { ...defaultLeg },
+        return: { ...defaultLeg }
       });
       setEditingId(null);
     }
@@ -384,7 +388,7 @@ export default function PasajesPage() {
                           <span className="ticket-date">
                             {ticket.flight_info ? (
                               <>
-                                {ticket.flight_info.outbound.origin} → {ticket.flight_info.outbound.destination}
+                                {ticket.flight_info.outbound?.origin || '---'} → {ticket.flight_info.outbound?.destination || '---'}
                                 {ticket.flight_info.is_round_trip && ` (I/V)`}
                               </>
                             ) : new Date(ticket.created_at).toLocaleDateString()}
@@ -396,8 +400,8 @@ export default function PasajesPage() {
                           <div className="ticket-itinerary-preview mb-4">
                             <div className="itinerary-row">
                               <span className="leg-label">IDA</span>
-                              <span className="leg-date">{ticket.flight_info.outbound.date ? new Date(ticket.flight_info.outbound.date + 'T00:00:00').toLocaleDateString() : '---'}</span>
-                              <span className="leg-time">{ticket.flight_info.outbound.departure_time || '--:--'} hs</span>
+                              <span className="leg-date">{ticket.flight_info.outbound?.date ? new Date(ticket.flight_info.outbound.date + 'T00:00:00').toLocaleDateString() : '---'}</span>
+                              <span className="leg-time">{ticket.flight_info.outbound?.departure_time || '--:--'} hs</span>
                             </div>
                             {ticket.flight_info.is_round_trip && (
                               <div className="itinerary-row mt-1">
@@ -596,13 +600,13 @@ export default function PasajesPage() {
                       <div className="form-group flex-1">
                         <label className="text-xs font-semibold uppercase text-secondary display-block">Origen (De dónde)</label>
                         <div className="input-with-icon">
-                          <Plane size={16} /><input type="text" className="form-input" value={formData.outbound.origin} onChange={e => setFormData({ ...formData, outbound: { ...formData.outbound, origin: e.target.value } })} placeholder="Ej: Buenos Aires" />
+                          <Plane size={16} /><input type="text" className="form-input" value={formData.outbound?.origin || ''} onChange={e => setFormData({ ...formData, outbound: { ...formData.outbound, origin: e.target.value } })} placeholder="Ej: Buenos Aires" />
                         </div>
                       </div>
                       <div className="form-group flex-1">
                         <label className="text-xs font-semibold uppercase text-secondary display-block">Destino (A dónde)</label>
                         <div className="input-with-icon">
-                          <PlaneLanding size={16} /><input type="text" className="form-input" value={formData.outbound.destination} onChange={e => setFormData({ ...formData, outbound: { ...formData.outbound, destination: e.target.value } })} placeholder="Ej: Madrid" />
+                          <PlaneLanding size={16} /><input type="text" className="form-input" value={formData.outbound?.destination || ''} onChange={e => setFormData({ ...formData, outbound: { ...formData.outbound, destination: e.target.value } })} placeholder="Ej: Madrid" />
                         </div>
                       </div>
                     </div>
@@ -613,19 +617,19 @@ export default function PasajesPage() {
                       <div className="form-group flex-1">
                         <label className="text-xs font-semibold uppercase text-secondary display-block">Fecha Salida</label>
                         <div className="input-with-icon">
-                          <Calendar size={16} /><input type="date" className="form-input" value={formData.outbound.date} onChange={e => setFormData({ ...formData, outbound: { ...formData.outbound, date: e.target.value } })} />
+                          <Calendar size={16} /><input type="date" className="form-input" value={formData.outbound?.date || ''} onChange={e => setFormData({ ...formData, outbound: { ...formData.outbound, date: e.target.value } })} />
                         </div>
                       </div>
                       <div className="form-group flex-1">
                         <label className="text-xs font-semibold uppercase text-secondary display-block">Hora Salida</label>
                         <div className="input-with-icon">
-                          <Clock size={16} /><input type="time" className="form-input" value={formData.outbound.departure_time} onChange={e => setFormData({ ...formData, outbound: { ...formData.outbound, departure_time: e.target.value } })} />
+                          <Clock size={16} /><input type="time" className="form-input" value={formData.outbound?.departure_time || ''} onChange={e => setFormData({ ...formData, outbound: { ...formData.outbound, departure_time: e.target.value } })} />
                         </div>
                       </div>
                       <div className="form-group flex-1">
                         <label className="text-xs font-semibold uppercase text-secondary display-block">Hora Llegada</label>
                         <div className="input-with-icon">
-                          <Clock size={16} /><input type="time" className="form-input" value={formData.outbound.arrival_time} onChange={e => setFormData({ ...formData, outbound: { ...formData.outbound, arrival_time: e.target.value } })} />
+                          <Clock size={16} /><input type="time" className="form-input" value={formData.outbound?.arrival_time || ''} onChange={e => setFormData({ ...formData, outbound: { ...formData.outbound, arrival_time: e.target.value } })} />
                         </div>
                       </div>
                     </div>
@@ -638,7 +642,7 @@ export default function PasajesPage() {
                         className="form-input" 
                         style={{ height: '80px', paddingTop: '0.75rem' }} 
                         placeholder="Ej: Localizador, aerolinea, escala..."
-                        value={formData.outbound.notes}
+                        value={formData.outbound?.notes || ''}
                         onChange={e => setFormData({ ...formData, outbound: { ...formData.outbound, notes: e.target.value } })}
                       />
                     </div>
@@ -653,13 +657,13 @@ export default function PasajesPage() {
                       <div className="form-group flex-1">
                         <label className="text-xs font-semibold uppercase text-secondary display-block">Origen (De dónde)</label>
                         <div className="input-with-icon">
-                          <Plane size={16} /><input type="text" className="form-input" value={formData.return.origin} onChange={e => setFormData({ ...formData, return: { ...formData.return, origin: e.target.value } })} placeholder="Ej: Madrid" />
+                          <Plane size={16} /><input type="text" className="form-input" value={formData.return?.origin || ''} onChange={e => setFormData({ ...formData, return: { ...formData.return || defaultLeg, origin: e.target.value } })} placeholder="Ej: Madrid" />
                         </div>
                       </div>
                       <div className="form-group flex-1">
                         <label className="text-xs font-semibold uppercase text-secondary display-block">Destino (A dónde)</label>
                         <div className="input-with-icon">
-                          <PlaneLanding size={16} /><input type="text" className="form-input" value={formData.return.destination} onChange={e => setFormData({ ...formData, return: { ...formData.return, destination: e.target.value } })} placeholder="Ej: Buenos Aires" />
+                          <PlaneLanding size={16} /><input type="text" className="form-input" value={formData.return?.destination || ''} onChange={e => setFormData({ ...formData, return: { ...formData.return || defaultLeg, destination: e.target.value } })} placeholder="Ej: Buenos Aires" />
                         </div>
                       </div>
                     </div>
@@ -670,19 +674,19 @@ export default function PasajesPage() {
                       <div className="form-group flex-1">
                         <label className="text-xs font-semibold uppercase text-secondary display-block">Fecha Regreso</label>
                         <div className="input-with-icon">
-                          <Calendar size={16} /><input type="date" className="form-input" value={formData.return.date} onChange={e => setFormData({ ...formData, return: { ...formData.return, date: e.target.value } })} />
+                          <Calendar size={16} /><input type="date" className="form-input" value={formData.return?.date || ''} onChange={e => setFormData({ ...formData, return: { ...formData.return || defaultLeg, date: e.target.value } })} />
                         </div>
                       </div>
                       <div className="form-group flex-1">
                         <label className="text-xs font-semibold uppercase text-secondary display-block">Hora Salida</label>
                         <div className="input-with-icon">
-                          <Clock size={16} /><input type="time" className="form-input" value={formData.return.departure_time} onChange={e => setFormData({ ...formData, return: { ...formData.return, departure_time: e.target.value } })} />
+                          <Clock size={16} /><input type="time" className="form-input" value={formData.return?.departure_time || ''} onChange={e => setFormData({ ...formData, return: { ...formData.return || defaultLeg, departure_time: e.target.value } })} />
                         </div>
                       </div>
                       <div className="form-group flex-1">
                         <label className="text-xs font-semibold uppercase text-secondary display-block">Hora Llegada</label>
                         <div className="input-with-icon">
-                          <Clock size={16} /><input type="time" className="form-input" value={formData.return.arrival_time} onChange={e => setFormData({ ...formData, return: { ...formData.return, arrival_time: e.target.value } })} />
+                          <Clock size={16} /><input type="time" className="form-input" value={formData.return?.arrival_time || ''} onChange={e => setFormData({ ...formData, return: { ...formData.return || defaultLeg, arrival_time: e.target.value } })} />
                         </div>
                       </div>
                     </div>
@@ -695,8 +699,8 @@ export default function PasajesPage() {
                         className="form-input" 
                         style={{ height: '80px', paddingTop: '0.75rem' }} 
                         placeholder="Notas del regreso..."
-                        value={formData.return.notes}
-                        onChange={e => setFormData({ ...formData, return: { ...formData.return, notes: e.target.value } })}
+                        value={formData.return?.notes || ''}
+                        onChange={e => setFormData({ ...formData, return: { ...formData.return || defaultLeg, notes: e.target.value } })}
                       />
                     </div>
                   </div>

@@ -594,8 +594,8 @@ export default function AgendaClientesPage() {
       ...tickets.map(t => ({
         ...t,
         type: 'flight',
-        name: `Vuelo: ${t.origin} -> ${t.destination}`,
-        time: (t as any).departure_time,
+        name: `Vuelo: ${t?.origin || '---'} -> ${t?.destination || '---'}`,
+        time: (t as any)?.departure_time || '--:--',
         isFlight: true
       }))
     ];
