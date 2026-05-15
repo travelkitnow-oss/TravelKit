@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import {
   Calendar as CalendarIcon,
   Link as LinkIcon,
@@ -33,6 +33,7 @@ interface SidebarProps {
 
 export default function Sidebar({ userEmail, handleLogout }: SidebarProps) {
   const location = useLocation();
+  const navigate = useNavigate();
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
 
   const toggleDropdown = (dropdownName: string) => {
@@ -288,14 +289,6 @@ export default function Sidebar({ userEmail, handleLogout }: SidebarProps) {
           Gestión de Usuarios
         </NavLink>
 
-        {/* 13. Logs de Sistema */}
-        <NavLink
-          to="/logs"
-          className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
-        >
-          <Terminal size={20} />
-          Logs de Sistema
-        </NavLink>
       </nav>
 
       <div className="sidebar-footer">
@@ -307,13 +300,23 @@ export default function Sidebar({ userEmail, handleLogout }: SidebarProps) {
             <span className="user-name">{userEmail}</span>
             <span className="user-role">Travel Planner</span>
           </div>
-          <button
-            className="logout-icon-btn"
-            onClick={handleLogout}
-            title="Cerrar Sesión"
-          >
-            <LogOut size={18} />
-          </button>
+          <div className="action-buttons" style={{ display: 'flex', gap: '4px' }}>
+            <button
+              className="logout-icon-btn"
+              onClick={() => navigate('/logs')}
+              title="Logs del Sistema"
+              style={{ color: location.pathname === '/logs' ? '#58a6ff' : '' }}
+            >
+              <Terminal size={18} />
+            </button>
+            <button
+              className="logout-icon-btn"
+              onClick={handleLogout}
+              title="Cerrar Sesión"
+            >
+              <LogOut size={18} />
+            </button>
+          </div>
         </div>
       </div>
     </aside>
