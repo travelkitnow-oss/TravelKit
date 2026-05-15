@@ -658,11 +658,11 @@ export default function TransportesPage() {
                       onChange={e => setNewTransport({ ...newTransport, cost_usd: parseFloat(e.target.value) })}
                     />
                   </div>
-                  {newTransport.cost_usd > 0 && (
+                  {(newTransport.cost_usd || 0) > 0 && (
                     <span style={{ fontSize: '0.7rem', color: '#64748b', marginTop: '4px', display: 'block' }}>
                       {newTransport.currency === 'ARS' ? 
-                        `Equiv: u$s ${Math.round(newTransport.cost_usd / (dollarRate || 1))}` : 
-                        `Equiv: $${Math.round(newTransport.cost_usd * dollarRate).toLocaleString('es-AR')} ARS`
+                        `Equiv: u$s ${Math.round((newTransport.cost_usd || 0) / (dollarRate || 1))}` : 
+                        `Equiv: $${Math.round((newTransport.cost_usd || 0) * dollarRate).toLocaleString('es-AR')} ARS`
                       }
                     </span>
                   )}

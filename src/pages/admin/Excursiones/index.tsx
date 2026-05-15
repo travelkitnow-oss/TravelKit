@@ -627,11 +627,11 @@ export default function ExcursionesPage() {
                       onChange={e => setNewExcursion({ ...newExcursion, cost_usd: parseFloat(e.target.value) })}
                     />
                   </div>
-                  {newExcursion.cost_usd > 0 && (
+                  {(newExcursion.cost_usd || 0) > 0 && (
                     <span style={{ fontSize: '0.7rem', color: '#64748b', marginTop: '4px', display: 'block' }}>
                       {newExcursion.currency === 'ARS' ? 
-                        `Equiv: u$s ${Math.round(newExcursion.cost_usd / (dollarRate || 1))}` : 
-                        `Equiv: $${Math.round(newExcursion.cost_usd * dollarRate).toLocaleString('es-AR')} ARS`
+                        `Equiv: u$s ${Math.round((newExcursion.cost_usd || 0) / (dollarRate || 1))}` : 
+                        `Equiv: $${Math.round((newExcursion.cost_usd || 0) * dollarRate).toLocaleString('es-AR')} ARS`
                       }
                     </span>
                   )}

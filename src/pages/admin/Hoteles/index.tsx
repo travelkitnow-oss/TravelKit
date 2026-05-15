@@ -687,11 +687,11 @@ export default function HotelesPage() {
                         onChange={e => setNewHotel({ ...newHotel, cost_usd: parseFloat(e.target.value) })}
                       />
                     </div>
-                    {newHotel.cost_usd > 0 && (
+                    {(newHotel.cost_usd || 0) > 0 && (
                       <span style={{ fontSize: '0.7rem', color: '#64748b', marginTop: '4px', display: 'block' }}>
                         {newHotel.currency === 'ARS' ? 
-                          `Equiv: u$s ${Math.round(newHotel.cost_usd / (dollarRate || 1))}` : 
-                          `Equiv: $${Math.round(newHotel.cost_usd * dollarRate).toLocaleString('es-AR')} ARS`
+                          `Equiv: u$s ${Math.round((newHotel.cost_usd || 0) / (dollarRate || 1))}` : 
+                          `Equiv: $${Math.round((newHotel.cost_usd || 0) * dollarRate).toLocaleString('es-AR')} ARS`
                         }
                       </span>
                     )}
