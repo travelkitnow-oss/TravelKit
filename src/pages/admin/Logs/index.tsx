@@ -18,7 +18,12 @@ export default function Logs() {
   const [search, setSearch] = useState<string>('');
 
   useEffect(() => {
+    // Initial local load
     setLogs(logger.getLogs());
+    
+    // Fetch from Supabase for global logs
+    logger.fetchLogsFromSupabase();
+
     const unsubscribe = logger.subscribe((newLogs) => {
       setLogs(newLogs);
     });
@@ -36,7 +41,8 @@ export default function Logs() {
   });
 
   const clearLogs = () => {
-    if (window.confirm('¿Estás seguro de que quieres borrar todos los logs?')) {
+    if (window.confirm('¿Estás seguro de que quieres borrar todos los logs de Supabase? Esta acción afectará a todos los administradores.')) {
+      logger.clearSupabaseLogs();
       logger.clearLogs();
     }
   };
