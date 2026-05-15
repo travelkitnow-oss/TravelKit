@@ -14,8 +14,7 @@ import {
   MapPin,
   Info,
   Users,
-  X,
-  Hotel
+  X
 } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import ConfirmationModal from '../../../components/ConfirmationModal/ConfirmationModal';
@@ -42,6 +41,7 @@ interface Hotel {
   all_inclusive: boolean;
   extra_services: string;
   capacity: number;
+  currency?: 'USD' | 'ARS';
 }
 
 interface HotelFolder {
@@ -73,7 +73,7 @@ export default function HotelesPage() {
   const [newFolderName, setNewFolderName] = useState('');
   const [newHotel, setNewHotel] = useState<Partial<Hotel>>({
     name: '', cost_usd: 0, address: '', description: '', notes: '', links: [],
-    nights: 1, breakfast: false, half_board: false, all_inclusive: false, extra_services: '', stars: 3, capacity: 2
+    nights: 1, breakfast: false, half_board: false, all_inclusive: false, extra_services: '', stars: 3, capacity: 2, currency: 'USD'
   });
 
   useEffect(() => {
@@ -126,7 +126,6 @@ export default function HotelesPage() {
           cost_usd: i.cost_usd,
           address: i.location || '',
           description: i.description || '',
-          notes: i.notes || '',
           links: i.links || [],
           nights: i.nights || 1,
           stars: i.stars || 3,
@@ -134,7 +133,9 @@ export default function HotelesPage() {
           half_board: !!i.half_board,
           all_inclusive: !!i.all_inclusive,
           extra_services: i.extra_services || '',
-          capacity: i.capacity || 2
+          capacity: i.capacity || 2,
+          currency: (i.notes?.startsWith('{') ? JSON.parse(i.notes).currency : 'USD') || 'USD',
+          notes: i.notes?.startsWith('{') ? JSON.parse(i.notes).text : (i.notes || '')
         })) as Hotel[]
     }));
 
@@ -196,14 +197,13 @@ export default function HotelesPage() {
 
   const handleAddHotel = async () => {
     if (!selectedFolderId || !newHotel.name) return;
-
+    
     const dbData = {
       folder_id: selectedFolderId,
       name: newHotel.name,
       cost_usd: Number(newHotel.cost_usd) || 0,
       location: newHotel.address || '',
       description: newHotel.description || '',
-      notes: newHotel.notes || '',
       links: newHotel.links || [],
       nights: Number(newHotel.nights) || 1,
       stars: Number(newHotel.stars) || 3,
@@ -211,7 +211,8 @@ export default function HotelesPage() {
       half_board: !!newHotel.half_board,
       all_inclusive: !!newHotel.all_inclusive,
       extra_services: newHotel.extra_services || '',
-      capacity: Number(newHotel.capacity) || 2
+      capacity: Number(newHotel.capacity) || 2,
+      notes: JSON.stringify({ text: newHotel.notes || '', currency: newHotel.currency || 'USD' })
     };
 
     if (editingHotelId) {
@@ -309,7 +310,7 @@ export default function HotelesPage() {
   const openCreateModal = () => {
     setNewHotel({
       name: '', cost_usd: 0, address: '', description: '', notes: '', links: [],
-      nights: 1, breakfast: false, half_board: false, all_inclusive: false, extra_services: '', stars: 3
+      nights: 1, breakfast: false, half_board: false, all_inclusive: false, extra_services: '', stars: 3, capacity: 2, currency: 'USD'
     });
     setEditingHotelId(null);
     setShowHotelModal(true);
@@ -468,8 +469,15 @@ export default function HotelesPage() {
                           </div>
                         </div>
                         <div className="hotel-costs">
-                          <span className="cost-usd">u$s {hotel.cost_usd}</span>
-                          <span className="cost-ars">≈ ${(hotel.cost_usd * dollarRate).toLocaleString('es-AR')}</span>
+                          <span className="cost-usd" style={{ fontSize: '1.1rem' }}>
+                            {hotel.currency === 'ARS' ? '$' : 'u$s'} {hotel.cost_usd?.toLocaleString()}
+                          </span>
+                          <span className="cost-ars" style={{ fontSize: '0.8rem', opacity: 0.7 }}>
+                            {hotel.currency === 'ARS' ? 
+                              `≈ u$s ${Math.round(hotel.cost_usd / (dollarRate || 1))}` : 
+                              `≈ $${Math.round(hotel.cost_usd * dollarRate).toLocaleString('es-AR')}`
+                            }
+                          </span>
                         </div>
                       </div>
                       <div style={{ display: 'flex', gap: '0.5rem' }}>
@@ -647,18 +655,29 @@ export default function HotelesPage() {
                       value={newHotel.stars || 3}
                       onChange={e => setNewHotel({ ...newHotel, stars: Number(e.target.value) })}
                     >
-                      <option value="1">⭐ 1 Estrella</option>
-                      <option value="2">⭐⭐ 2 Estrellas</option>
-                      <option value="3">⭐⭐⭐ 3 Estrellas</option>
-                      <option value="4">⭐⭐⭐⭐ 4 Estrellas</option>
-                      <option value="5">⭐⭐⭐⭐⭐ 5 Estrellas</option>
+                      <option value="1">1 Estrella</option>
+                      <option value="2">2 Estrellas</option>
+                      <option value="3">3 Estrellas</option>
+                      <option value="4">4 Estrellas</option>
+                      <option value="5">5 Estrellas</option>
                     </select>
                   </div>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr', gap: '1rem', marginBottom: '1rem' }}>
                   <div className="form-group">
-                    <label className="text-xs font-semibold uppercase text-secondary" style={{ letterSpacing: '0.5px', marginBottom: '0.5rem', display: 'block' }}>Costo Estancia Total (U$S)</label>
+                    <label className="text-xs font-semibold uppercase text-secondary" style={{ letterSpacing: '0.5px', marginBottom: '0.5rem', display: 'block' }}>Moneda</label>
+                    <select
+                      className="form-input"
+                      value={newHotel.currency || 'USD'}
+                      onChange={e => setNewHotel({ ...newHotel, currency: e.target.value as 'USD' | 'ARS' })}
+                    >
+                      <option value="USD">USD</option>
+                      <option value="ARS">ARS</option>
+                    </select>
+                  </div>
+                  <div className="form-group">
+                    <label className="text-xs font-semibold uppercase text-secondary" style={{ letterSpacing: '0.5px', marginBottom: '0.5rem', display: 'block' }}>Costo Total ({newHotel.currency})</label>
                     <div className="input-with-icon">
                       <DollarSign size={16} />
                       <input
@@ -668,7 +687,18 @@ export default function HotelesPage() {
                         onChange={e => setNewHotel({ ...newHotel, cost_usd: parseFloat(e.target.value) })}
                       />
                     </div>
+                    {newHotel.cost_usd > 0 && (
+                      <span style={{ fontSize: '0.7rem', color: '#64748b', marginTop: '4px', display: 'block' }}>
+                        {newHotel.currency === 'ARS' ? 
+                          `Equiv: u$s ${Math.round(newHotel.cost_usd / (dollarRate || 1))}` : 
+                          `Equiv: $${Math.round(newHotel.cost_usd * dollarRate).toLocaleString('es-AR')} ARS`
+                        }
+                      </span>
+                    )}
                   </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
                   <div className="form-group">
                     <label className="text-xs font-semibold uppercase text-secondary" style={{ letterSpacing: '0.5px', marginBottom: '0.5rem', display: 'block' }}>Noches</label>
                     <div className="input-with-icon">

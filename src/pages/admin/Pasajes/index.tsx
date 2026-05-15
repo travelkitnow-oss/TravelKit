@@ -13,8 +13,6 @@ import {
   Save,
   Edit2,
   X,
-  Calendar,
-  Clock,
   PlaneLanding
 } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
@@ -45,6 +43,7 @@ interface FlightInfo {
   is_round_trip: boolean;
   outbound: FlightLeg;
   return: FlightLeg;
+  currency?: 'USD' | 'ARS';
 }
 
 interface FormData {
@@ -58,6 +57,7 @@ interface FormData {
   is_round_trip: boolean;
   outbound: FlightLeg;
   return: FlightLeg;
+  currency: 'USD' | 'ARS';
 }
 
 interface Ticket {
@@ -118,7 +118,8 @@ export default function PasajesPage() {
       departure_time: '',
       arrival_time: '',
       notes: ''
-    }
+    },
+    currency: 'USD'
   });
 
   useEffect(() => {
@@ -206,7 +207,8 @@ export default function PasajesPage() {
     const flightData = {
       is_round_trip: formData.is_round_trip,
       outbound: formData.outbound,
-      return: formData.is_round_trip ? formData.return : null
+      return: formData.is_round_trip ? formData.return : null,
+      currency: formData.currency || 'USD'
     };
 
     const payload: any = {
@@ -215,7 +217,7 @@ export default function PasajesPage() {
       amount: totalAmount,
       source: formData.source || '',
       file_url: formData.file_url || '',
-      notes: JSON.stringify(flightData),
+      notes: JSON.stringify({ ...flightData, currency: formData.currency || 'USD' }),
       is_same_price: formData.is_same_price,
       passengers_detail: formData.passengers_detail || []
     };
@@ -249,7 +251,8 @@ export default function PasajesPage() {
           ...ticket.flight_info,
           outbound: ticket.flight_info.outbound || { ...defaultLeg },
           return: ticket.flight_info.return || { ...defaultLeg },
-          show_names: ticket.show_names || false
+          show_names: ticket.show_names || false,
+          currency: ticket.flight_info.currency || 'USD'
         });
       } else {
         // Fallback for old tickets
@@ -280,7 +283,8 @@ export default function PasajesPage() {
         passengers_detail: [{ name: '', amount: 0 }],
         is_round_trip: false,
         outbound: { ...defaultLeg },
-        return: { ...defaultLeg }
+        return: { ...defaultLeg },
+        currency: 'USD'
       });
       setEditingId(null);
     }
@@ -419,12 +423,32 @@ export default function PasajesPage() {
                         <div className="price-info-card">
                           <div className="price-row">
                             <span className="price-label">Monto Total</span>
-                            <span className="price-value">USD {ticket.amount.toLocaleString()}</span>
+                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+                              <span className="price-value" style={{ fontSize: '1.2rem' }}>
+                                {ticket.flight_info?.currency === 'ARS' ? '$' : 'USD'} {ticket.amount.toLocaleString()}
+                              </span>
+                              <span style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: '600' }}>
+                                {ticket.flight_info?.currency === 'ARS' ? 
+                                  `USD ${(ticket.amount / 1250).toLocaleString(undefined, {maximumFractionDigits: 0})}` : 
+                                  `$ ${(ticket.amount * 1250).toLocaleString()} ARS`
+                                }
+                              </span>
+                            </div>
                           </div>
                           {ticket.is_same_price && (
                             <div className="price-row individual">
                               <span className="price-label">Por persona</span>
-                              <span className="price-value">USD {(ticket.amount / (ticket.passenger_count || 1)).toLocaleString()}</span>
+                              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+                                <span className="price-value" style={{ fontSize: '0.95rem' }}>
+                                  {ticket.flight_info?.currency === 'ARS' ? '$' : 'USD'} {(ticket.amount / (ticket.passenger_count || 1)).toLocaleString()}
+                                </span>
+                                <span style={{ fontSize: '0.65rem', color: '#64748b', fontWeight: '600' }}>
+                                  {ticket.flight_info?.currency === 'ARS' ? 
+                                    `USD ${((ticket.amount / (ticket.passenger_count || 1)) / 1250).toLocaleString(undefined, {maximumFractionDigits: 0})}` : 
+                                    `$ ${((ticket.amount / (ticket.passenger_count || 1)) * 1250).toLocaleString()} ARS`
+                                  }
+                                </span>
+                              </div>
                             </div>
                           )}
                         </div>
@@ -526,12 +550,33 @@ export default function PasajesPage() {
                   </div>
 
                   {formData.is_same_price && (
-                    <div className="form-block">
-                      <div className="form-group">
-                        <label className="text-xs font-semibold uppercase text-secondary display-block">Monto Total (USD)</label>
-                        <div className="input-with-icon">
-                          <DollarSign size={16} /><input type="number" className="form-input" value={formData.amount} onChange={e => setFormData({ ...formData, amount: parseFloat(e.target.value) || 0 })} />
+                     <div className="form-block">
+                      <div className="form-row">
+                        <div className="form-group flex-1">
+                          <label className="text-xs font-semibold uppercase text-secondary display-block">Monto Total</label>
+                          <div className="input-with-icon">
+                            {formData.currency === 'ARS' ? <span style={{fontSize: '14px', fontWeight: 'bold', color: '#64748b', marginLeft: '8px'}}>$</span> : <DollarSign size={16} />}
+                            <input type="number" className="form-input" value={formData.amount} onChange={e => setFormData({ ...formData, amount: parseFloat(e.target.value) || 0 })} />
+                          </div>
                         </div>
+                        <div className="form-group flex-1">
+                          <label className="text-xs font-semibold uppercase text-secondary display-block">Moneda</label>
+                          <select 
+                            className="form-input" 
+                            value={formData.currency || 'USD'} 
+                            onChange={e => setFormData({ ...formData, currency: e.target.value as 'USD' | 'ARS' })}
+                          >
+                            <option value="USD">Dólares (USD)</option>
+                            <option value="ARS">Pesos (ARS)</option>
+                          </select>
+                        </div>
+                      </div>
+                      <div className="mt-2 text-xs font-medium text-blue-600 bg-blue-50 p-2 rounded-lg border border-blue-100">
+                        {formData.currency === 'USD' ? (
+                          <>Equivalente en Pesos: <strong>${(formData.amount * 1250).toLocaleString()} ARS</strong> (aprox.)</>
+                        ) : (
+                          <>Equivalente en Dólares: <strong>USD {(formData.amount / 1250).toLocaleString(undefined, {maximumFractionDigits: 2})}</strong> (aprox.)</>
+                        )}
                       </div>
                     </div>
                   )}
@@ -616,21 +661,15 @@ export default function PasajesPage() {
                     <div className="form-row triple">
                       <div className="form-group flex-1">
                         <label className="text-xs font-semibold uppercase text-secondary display-block">Fecha Salida</label>
-                        <div className="input-with-icon">
-                          <Calendar size={16} /><input type="date" className="form-input" value={formData.outbound?.date || ''} onChange={e => setFormData({ ...formData, outbound: { ...formData.outbound, date: e.target.value } })} />
-                        </div>
+                        <input type="date" className="form-input" style={{ paddingLeft: '0.75rem' }} value={formData.outbound?.date || ''} onChange={e => setFormData({ ...formData, outbound: { ...formData.outbound, date: e.target.value } })} />
                       </div>
                       <div className="form-group flex-1">
                         <label className="text-xs font-semibold uppercase text-secondary display-block">Hora Salida</label>
-                        <div className="input-with-icon">
-                          <Clock size={16} /><input type="time" className="form-input" value={formData.outbound?.departure_time || ''} onChange={e => setFormData({ ...formData, outbound: { ...formData.outbound, departure_time: e.target.value } })} />
-                        </div>
+                        <input type="time" className="form-input" style={{ paddingLeft: '0.75rem' }} value={formData.outbound?.departure_time || ''} onChange={e => setFormData({ ...formData, outbound: { ...formData.outbound, departure_time: e.target.value } })} />
                       </div>
                       <div className="form-group flex-1">
                         <label className="text-xs font-semibold uppercase text-secondary display-block">Hora Llegada</label>
-                        <div className="input-with-icon">
-                          <Clock size={16} /><input type="time" className="form-input" value={formData.outbound?.arrival_time || ''} onChange={e => setFormData({ ...formData, outbound: { ...formData.outbound, arrival_time: e.target.value } })} />
-                        </div>
+                        <input type="time" className="form-input" style={{ paddingLeft: '0.75rem' }} value={formData.outbound?.arrival_time || ''} onChange={e => setFormData({ ...formData, outbound: { ...formData.outbound, arrival_time: e.target.value } })} />
                       </div>
                     </div>
                   </div>
@@ -673,21 +712,15 @@ export default function PasajesPage() {
                     <div className="form-row triple">
                       <div className="form-group flex-1">
                         <label className="text-xs font-semibold uppercase text-secondary display-block">Fecha Regreso</label>
-                        <div className="input-with-icon">
-                          <Calendar size={16} /><input type="date" className="form-input" value={formData.return?.date || ''} onChange={e => setFormData({ ...formData, return: { ...formData.return || defaultLeg, date: e.target.value } })} />
-                        </div>
+                        <input type="date" className="form-input" style={{ paddingLeft: '0.75rem' }} value={formData.return?.date || ''} onChange={e => setFormData({ ...formData, return: { ...formData.return || defaultLeg, date: e.target.value } })} />
                       </div>
                       <div className="form-group flex-1">
                         <label className="text-xs font-semibold uppercase text-secondary display-block">Hora Salida</label>
-                        <div className="input-with-icon">
-                          <Clock size={16} /><input type="time" className="form-input" value={formData.return?.departure_time || ''} onChange={e => setFormData({ ...formData, return: { ...formData.return || defaultLeg, departure_time: e.target.value } })} />
-                        </div>
+                        <input type="time" className="form-input" style={{ paddingLeft: '0.75rem' }} value={formData.return?.departure_time || ''} onChange={e => setFormData({ ...formData, return: { ...formData.return || defaultLeg, departure_time: e.target.value } })} />
                       </div>
                       <div className="form-group flex-1">
                         <label className="text-xs font-semibold uppercase text-secondary display-block">Hora Llegada</label>
-                        <div className="input-with-icon">
-                          <Clock size={16} /><input type="time" className="form-input" value={formData.return?.arrival_time || ''} onChange={e => setFormData({ ...formData, return: { ...formData.return || defaultLeg, arrival_time: e.target.value } })} />
-                        </div>
+                        <input type="time" className="form-input" style={{ paddingLeft: '0.75rem' }} value={formData.return?.arrival_time || ''} onChange={e => setFormData({ ...formData, return: { ...formData.return || defaultLeg, arrival_time: e.target.value } })} />
                       </div>
                     </div>
                   </div>

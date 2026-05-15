@@ -36,6 +36,7 @@ interface Transport {
   driver_name: string;
   links: TransportLink[];
   capacity: number;
+  currency?: 'USD' | 'ARS';
 }
 
 interface TransportFolder {
@@ -67,7 +68,7 @@ export default function TransportesPage() {
   const [newFolderName, setNewFolderName] = useState('');
   const [newTransport, setNewTransport] = useState<Partial<Transport>>({
     name: '', cost_usd: 0, origin: '', destination: '', description: '', notes: '', links: [],
-    company: '', driver_name: '', capacity: 4
+    company: '', driver_name: '', capacity: 4, currency: 'USD'
   });
 
   useEffect(() => {
@@ -121,11 +122,12 @@ export default function TransportesPage() {
           origin: i.origin || '',
           destination: i.destination || '',
           description: i.description || '',
-          notes: i.notes || '',
+          capacity: i.capacity || 4,
           company: i.company || '',
           driver_name: i.driver_name || '',
           links: i.links || [],
-          capacity: i.capacity || 4
+          currency: (i.notes?.startsWith('{') ? JSON.parse(i.notes).currency : 'USD') || 'USD',
+          notes: i.notes?.startsWith('{') ? JSON.parse(i.notes).text : (i.notes || '')
         }))
     }));
 
@@ -195,11 +197,11 @@ export default function TransportesPage() {
       origin: newTransport.origin || '',
       destination: newTransport.destination || '',
       description: newTransport.description || '',
-      notes: newTransport.notes || '',
+      links: newTransport.links || [],
+      capacity: Number(newTransport.capacity) || 4,
       company: newTransport.company || '',
       driver_name: newTransport.driver_name || '',
-      links: newTransport.links || [],
-      capacity: Number(newTransport.capacity) || 4
+      notes: JSON.stringify({ text: newTransport.notes || '', currency: newTransport.currency || 'USD' })
     };
 
     if (editingTransportId) {
@@ -441,8 +443,15 @@ export default function TransportesPage() {
                       <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                         <h3 className="transport-title">{transport.name}</h3>
                         <div className="transport-costs">
-                          <span className="cost-usd">u$s {transport.cost_usd}</span>
-                          <span className="cost-ars">≈ ${(transport.cost_usd * dollarRate).toLocaleString('es-AR')}</span>
+                          <span className="cost-usd" style={{ fontSize: '1.1rem' }}>
+                            {transport.currency === 'ARS' ? '$' : 'u$s'} {transport.cost_usd?.toLocaleString()}
+                          </span>
+                          <span className="cost-ars" style={{ fontSize: '0.8rem', opacity: 0.7 }}>
+                            {transport.currency === 'ARS' ? 
+                              `≈ u$s ${Math.round(transport.cost_usd / (dollarRate || 1))}` : 
+                              `≈ $${Math.round(transport.cost_usd * dollarRate).toLocaleString('es-AR')}`
+                            }
+                          </span>
                         </div>
                       </div>
                       <div style={{ display: 'flex', gap: '0.5rem' }}>
@@ -626,9 +635,20 @@ export default function TransportesPage() {
                 </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr 1fr', gap: '1rem', marginTop: '1rem' }}>
                 <div className="form-group">
-                  <label>Costo (U$S)</label>
+                  <label>Moneda</label>
+                  <select 
+                    className="form-input"
+                    value={newTransport.currency || 'USD'}
+                    onChange={e => setNewTransport({ ...newTransport, currency: e.target.value as 'USD' | 'ARS' })}
+                  >
+                    <option value="USD">USD</option>
+                    <option value="ARS">ARS</option>
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label>Costo {newTransport.currency === 'ARS' ? '(Pesos)' : '(U$S)'}</label>
                   <div className="input-with-icon">
                     <DollarSign size={16} />
                     <input
@@ -638,9 +658,17 @@ export default function TransportesPage() {
                       onChange={e => setNewTransport({ ...newTransport, cost_usd: parseFloat(e.target.value) })}
                     />
                   </div>
+                  {newTransport.cost_usd > 0 && (
+                    <span style={{ fontSize: '0.7rem', color: '#64748b', marginTop: '4px', display: 'block' }}>
+                      {newTransport.currency === 'ARS' ? 
+                        `Equiv: u$s ${Math.round(newTransport.cost_usd / (dollarRate || 1))}` : 
+                        `Equiv: $${Math.round(newTransport.cost_usd * dollarRate).toLocaleString('es-AR')} ARS`
+                      }
+                    </span>
+                  )}
                 </div>
                 <div className="form-group">
-                  <label>Capacidad (Pasajeros)</label>
+                  <label>Capacidad (Pax)</label>
                   <div className="input-with-icon">
                     <Users size={16} />
                     <input
@@ -654,7 +682,7 @@ export default function TransportesPage() {
                 </div>
               </div>
 
-                <div className="form-group">
+              <div className="form-group">
                   <label className="text-xs font-semibold uppercase text-secondary">Descripción</label>
                   <textarea
                     className="form-input"

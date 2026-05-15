@@ -40,8 +40,8 @@
 
 .admin-grid {
   display: grid;
-  grid-template-columns: 320px 1fr;
-  gap: 2rem;
+  grid-template-columns: 300px 1fr;
+  gap: 1.5rem;
   height: calc(100vh - 250px);
 }
 
@@ -94,7 +94,7 @@
 .client-header-card { background: white; padding: 1.5rem 2rem; border-radius: var(--radius-xl); box-shadow: var(--shadow-premium); border: 1px solid #f1f5f9; }
 .client-large-avatar { width: 56px; height: 56px; border-radius: 16px; background: #f1f5f9; color: var(--color-primary-local); display: flex; align-items: center; justify-content: center; }
 
-.tickets-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 1.5rem; margin-top: 1.5rem; }
+.tickets-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(310px, 1fr)); gap: 1.5rem; margin-top: 1.5rem; }
 .ticket-card { background: white; border-radius: var(--radius-xl); padding: 1.5rem; position: relative; border: 1px solid #f1f5f9; box-shadow: var(--shadow-premium); }
 
 .price-info-card { background: #f8fafc; border-radius: 16px; padding: 1rem; border: 1px solid #e2e8f0; }
@@ -254,13 +254,13 @@
 .ticket-stat svg { color: #3b82f6; }
 
 /* Modal Tabs Styling */
-.modal-tabs { display: flex; gap: 0.5rem; margin-bottom: 2rem; padding: 0.25rem; background: #f1f5f9; border-radius: 14px; }
+.modal-tabs { display: flex; gap: 0.5rem; margin-bottom: 0.5rem; padding: 0.25rem; background: #f1f5f9; border-radius: 14px; }
 .tab-btn { flex: 1; padding: 0.75rem; border: none; background: transparent; border-radius: 11px; font-size: 0.85rem; font-weight: 700; color: #64748b; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 0.5rem; }
 .tab-btn:hover { color: #1e293b; }
 .tab-btn.active { background: white; color: #3b82f6; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05); }
 .tab-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
-.tab-content-pane { animation: tabFadeIn 0.3s ease; }
+.tab-content-pane { animation: tabFadeIn 0.3s ease; justify-content: flex-start; }
 @keyframes tabFadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 
 .checkbox-pro-group { display: flex; align-items: center; gap: 1rem; padding: 1rem; background: #f8fafc; border-radius: 12px; border: 1px solid #e2e8f0; }
@@ -276,13 +276,14 @@
 .tab-content-pane > * + * { margin-top: 1.25rem !important; }
 
 .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; margin-top: 0 !important; }
-.form-row.triple { grid-template-columns: 1.5fr 1fr 1fr; }
+.form-row.triple { grid-template-columns: 1.2fr 1fr 1fr; }
 
+.modal-body-pro { padding-top: 0 !important; }
 .modal-body-pro .form-group { gap: 0 !important; display: flex; flex-direction: column; }
 .modal-body-pro .form-group label { margin-top: 0 !important; margin-bottom: 0.3rem !important; font-weight: 800 !important; color: #1e293b !important; letter-spacing: 0.02em; display: block; }
 
 .modal-body-pro .input-with-icon { margin-top: 0 !important; }
-.checkbox-pro-group { margin-top: 0 !important; flex: 1; justify-content: flex-start; min-height: 80px; }
+.checkbox-pro-group { margin-top: 0 !important; justify-content: flex-start; min-height: 80px; }
 
 /* Passenger List Aesthetics */
 .passengers-detail-section {
@@ -347,4 +348,19 @@
   border-radius: 6px;
   border: 1px solid #e2e8f0;
   font-size: 0.75rem;
+}
+
+@media (max-width: 1440px) {
+  .pasajes-page { padding: 1.5rem; }
+  .admin-grid { grid-template-columns: 280px 1fr; gap: 1rem; }
+  .tickets-grid { grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 1rem; }
+  .client-header-card { padding: 1rem 1.5rem; }
+  .client-large-avatar { width: 48px; height: 48px; }
+  .ticket-card { padding: 1.25rem; }
+  .ticket-icon { width: 42px; height: 42px; margin-bottom: 1rem; }
+}
+
+@media (max-width: 1200px) {
+  .admin-grid { grid-template-columns: 1fr; height: auto; }
+  .client-sidebar { height: 300px; margin-bottom: 1rem; }
 }

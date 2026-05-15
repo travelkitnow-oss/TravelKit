@@ -36,6 +36,7 @@ interface Excursion {
   links: ExcursionLink[];
   pricing_type: 'per_person' | 'per_group';
   capacity: number;
+  currency?: 'USD' | 'ARS';
 }
 
 interface ExcursionFolder {
@@ -68,7 +69,7 @@ export default function ExcursionesPage() {
   const [newFolderName, setNewFolderName] = useState('');
   const [newExcursion, setNewExcursion] = useState<Partial<Excursion>>({
     name: '', cost_usd: 0, location: '', description: '', notes: '', links: [],
-    pricing_type: 'per_person', capacity: 1
+    pricing_type: 'per_person', capacity: 1, currency: 'USD'
   });
 
   useEffect(() => {
@@ -132,10 +133,11 @@ export default function ExcursionesPage() {
           cost_usd: i.cost_usd,
           location: i.location,
           description: i.description,
-          notes: i.notes,
           links: i.links || [],
           pricing_type: i.pricing_type || 'per_person',
-          capacity: i.capacity || 1
+          capacity: i.capacity || 1,
+          currency: (i.notes?.startsWith('{') ? JSON.parse(i.notes).currency : 'USD') || 'USD',
+          notes: i.notes?.startsWith('{') ? JSON.parse(i.notes).text : (i.notes || '')
         }))
     }));
 
@@ -204,10 +206,10 @@ export default function ExcursionesPage() {
       cost_usd: Number(newExcursion.cost_usd) || 0,
       location: newExcursion.location || '',
       description: newExcursion.description || '',
-      notes: newExcursion.notes || '',
       links: newExcursion.links || [],
       pricing_type: newExcursion.pricing_type || 'per_person',
-      capacity: Number(newExcursion.capacity) || 1
+      capacity: Number(newExcursion.capacity) || 1,
+      notes: JSON.stringify({ text: newExcursion.notes || '', currency: newExcursion.currency || 'USD' })
     };
 
     if (editingExcursionId) {
@@ -297,7 +299,7 @@ export default function ExcursionesPage() {
   };
 
   const openCreateModal = () => {
-    setNewExcursion({ name: '', cost_usd: 0, location: '', description: '', notes: '', links: [] });
+    setNewExcursion({ name: '', cost_usd: 0, location: '', description: '', notes: '', links: [], currency: 'USD' });
     setEditingExcursionId(null);
     setShowExcursionModal(true);
   };
@@ -454,8 +456,15 @@ export default function ExcursionesPage() {
                       <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                         <h3 className="excursion-title">{excursion.name}</h3>
                         <div className="excursion-costs">
-                          <span className="cost-usd">u$s {excursion.cost_usd}</span>
-                          <span className="cost-ars">≈ ${(excursion.cost_usd * dollarRate).toLocaleString('es-AR')}</span>
+                          <span className="cost-usd" style={{ fontSize: '1.1rem' }}>
+                            {excursion.currency === 'ARS' ? '$' : 'u$s'} {excursion.cost_usd?.toLocaleString()}
+                          </span>
+                          <span className="cost-ars" style={{ fontSize: '0.8rem', opacity: 0.7 }}>
+                            {excursion.currency === 'ARS' ? 
+                              `≈ u$s ${Math.round(excursion.cost_usd / (dollarRate || 1))}` : 
+                              `≈ $${Math.round(excursion.cost_usd * dollarRate).toLocaleString('es-AR')}`
+                            }
+                          </span>
                         </div>
                       </div>
                       <div style={{ display: 'flex', gap: '0.5rem' }}>
@@ -595,18 +604,20 @@ export default function ExcursionesPage() {
                   </div>
                 </div>
 
-              <div className="grid-2 gap-3">
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '1rem' }}>
                 <div className="form-group">
-                  <label>Ubicación</label>
-                  <input
-                    type="text"
+                  <label>Moneda</label>
+                  <select
                     className="form-input"
-                    value={newExcursion.location || ''}
-                    onChange={e => setNewExcursion({ ...newExcursion, location: e.target.value })}
-                  />
+                    value={newExcursion.currency || 'USD'}
+                    onChange={e => setNewExcursion({ ...newExcursion, currency: e.target.value as 'USD' | 'ARS' })}
+                  >
+                    <option value="USD">USD</option>
+                    <option value="ARS">ARS</option>
+                  </select>
                 </div>
                 <div className="form-group">
-                  <label>Costo (U$S)</label>
+                  <label>Costo {newExcursion.currency === 'ARS' ? '(Pesos)' : '(U$S)'}</label>
                   <div className="input-with-icon">
                     <DollarSign size={16} />
                     <input
@@ -616,7 +627,25 @@ export default function ExcursionesPage() {
                       onChange={e => setNewExcursion({ ...newExcursion, cost_usd: parseFloat(e.target.value) })}
                     />
                   </div>
+                  {newExcursion.cost_usd > 0 && (
+                    <span style={{ fontSize: '0.7rem', color: '#64748b', marginTop: '4px', display: 'block' }}>
+                      {newExcursion.currency === 'ARS' ? 
+                        `Equiv: u$s ${Math.round(newExcursion.cost_usd / (dollarRate || 1))}` : 
+                        `Equiv: $${Math.round(newExcursion.cost_usd * dollarRate).toLocaleString('es-AR')} ARS`
+                      }
+                    </span>
+                  )}
                 </div>
+              </div>
+
+              <div className="form-group">
+                <label>Ubicación</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  value={newExcursion.location || ''}
+                  onChange={e => setNewExcursion({ ...newExcursion, location: e.target.value })}
+                />
               </div>
 
               <div className="grid-2 gap-3">
