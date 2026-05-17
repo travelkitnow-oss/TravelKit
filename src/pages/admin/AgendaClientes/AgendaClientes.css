@@ -421,7 +421,7 @@
 
 .calendar-days-grid {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
+  grid-template-columns: repeat(7, minmax(0, 1fr));
   margin-bottom: 1rem;
 }
 
@@ -446,12 +446,13 @@
 
 .calendar-row {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
+  grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: 2px;
 }
 
 .calendar-cell {
-  height: 105px;
+  min-height: 120px;
+  height: auto;
   background: white;
   padding: 0.75rem;
   position: relative;
@@ -529,7 +530,8 @@
 /* ── CALENDAR MARKERS REFINEMENT ── */
 .calendar-cell {
   position: relative;
-  min-height: 110px !important;
+  min-height: 120px !important;
+  height: auto;
   display: flex;
   flex-direction: column;
   padding: 0.5rem;
@@ -552,6 +554,17 @@
   border: 1px solid rgba(59, 130, 246, 0.15);
   backdrop-filter: blur(4px);
   z-index: 2;
+  max-width: calc(100% - 40px);
+}
+
+.day-location-badge span {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.day-location-badge svg {
+  flex-shrink: 0;
 }
 
 .trip-markers {
@@ -1160,16 +1173,17 @@
   flex-direction: column;
   overflow: hidden;
   border-radius: 32px !important;
+  padding: 0 !important;
 }
 
-.modal-header-premium {
+.agenda-day-modal-header {
   padding: 1.25rem 2rem;
-  background: white; /* Fondo blanco limpio */
-  color: #1F3A4D;
+  background: #1F3A4D;
+  color: white;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-bottom: 1px solid #f1f5f9;
+  border-bottom: 1px solid #1F3A4D;
 }
 
 .day-info-pro {
@@ -1181,8 +1195,8 @@
 .day-circle {
   width: 44px;
   height: 44px;
-  background: #1F3A4D;
-  color: white;
+  background: white;
+  color: #1F3A4D;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -1212,7 +1226,7 @@
   font-weight: 800;
   text-transform: capitalize;
   line-height: 1;
-  color: #1F3A4D;
+  color: white;
 }
 
 .day-weekday {
@@ -1220,14 +1234,14 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  opacity: 0.5;
-  color: #1F3A4D;
+  opacity: 0.8;
+  color: white;
 }
 
 .close-modal-btn {
-  background: #e2e8f0;
+  background: rgba(255, 255, 255, 0.1);
   border: none;
-  color: #1F3A4D;
+  color: white;
   width: 36px;
   height: 36px;
   border-radius: 50%;
@@ -1387,7 +1401,8 @@
   }
   
   .calendar-cell {
-    height: 100px;
+    min-height: 110px;
+    height: auto;
   }
 }
 

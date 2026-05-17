@@ -1286,7 +1286,7 @@ export default function AgendaClientesPage() {
       {selectedDayForDetails && (
         <div className="modal-overlay">
           <div className="modal-content glass-card day-details-modal animate-scale-in">
-            <div className="modal-header-premium">
+            <div className="agenda-day-modal-header">
               <div className="day-info-pro">
                 <div className="day-circle">
                   <span className="day-number">{format(selectedDayForDetails, "d")}</span>
