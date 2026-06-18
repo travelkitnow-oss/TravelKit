@@ -359,3 +359,55 @@
   color: #059669;
   font-size: 0.95rem;
 }
+
+/* ─── MOBILE ≤ 768px ─── */
+@media (max-width: 768px) {
+  /* Página: altura auto y padding reducido */
+  .historial-admin-page {
+    height: auto;
+    min-height: 100%;
+    padding: 0;
+    gap: 0.75rem;
+  }
+
+  /* Header: apilar título + búsqueda */
+  .historial-top-header {
+    padding: 1rem;
+  }
+  .header-flex {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
+  }
+  .header-title h1 {
+    font-size: 1.4rem;
+  }
+  .search-box-premium {
+    max-width: 100%;
+    width: 100%;
+  }
+
+  /* Layout: lista arriba, detalle abajo */
+  .historial-main-layout {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+    overflow: visible;
+  }
+
+  /* Sidebar: altura fija scrolleable */
+  .history-sidebar {
+    max-height: 320px;
+    overflow-y: auto;
+  }
+
+  /* Detalle: altura auto */
+  .history-detail-pane {
+    overflow: visible;
+  }
+
+  /* Summary info: 1 columna */
+  .summary-info-grid {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+}

@@ -255,3 +255,12 @@
   border-radius: 30px;
   border: 2px dashed rgba(0,0,0,0.05);
 }
+
+/* ─── MOBILE ≤ 768px ─── */
+@media (max-width: 768px) {
+  .folders-grid,
+  .transports-grid {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+}

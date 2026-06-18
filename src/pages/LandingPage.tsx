@@ -1,6 +1,7 @@
 import Navbar from '../components/Navbar';
 import Hero from '../components/Hero';
 import Calendar from '../components/Calendar';
+import DownloadAppBanner from '../components/DownloadAppBanner';
 import { Plane, CalendarCheck, Shield, Star, MapPin, Heart, Compass, ChevronLeft, ChevronRight, X, Megaphone } from 'lucide-react';
 import { useSiteSettings } from '../hooks/useSiteSettings';
 import { useRef, useState, useEffect } from 'react';
@@ -154,6 +155,7 @@ export default function LandingPage() {
 
   return (
     <div className="app">
+      <DownloadAppBanner />
       <Navbar />
       
       <main>

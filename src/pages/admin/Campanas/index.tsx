@@ -1,4 +1,5 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import emailjs from '@emailjs/browser';
 import { supabase } from '../../../lib/supabase';
 import { logger } from '../../../lib/logger';
 import { useSiteSettings } from '../../../hooks/useSiteSettings';
@@ -10,15 +11,26 @@ import {
   Save,
   Send,
   Calendar,
-  Image as ImageIcon,
+  Clock,
   CheckCircle,
   Loader2,
   Trash2,
-  AlertCircle
+  AlertCircle,
+  Image as ImageIcon
 } from 'lucide-react';
-import ReactQuill from 'react-quill-new';
+import ReactQuill, { Quill } from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
+import ResizeImage from 'quill-resize-image';
 import './Campanas.css';
+
+Quill.register('modules/resizeImage', ResizeImage);
+
+const EMAILJS_SERVICE_ID = 'service_yy59l1c';
+const EMAILJS_CAMPAIGN_TEMPLATE = 'template_dgvw2pq';
+const EMAILJS_PUBLIC_KEY = 'C9hOpK5F-cE45ip5t';
+
+const stripHtml = (html: string) =>
+  html.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim();
 
 interface Client {
   id: string;
@@ -40,9 +52,19 @@ export default function CampanasPage() {
   const [emailTitle, setEmailTitle] = useState('');
   const [emailBody, setEmailBody] = useState('');
   const [scheduleType, setScheduleType] = useState<'manual' | 'scheduled'>('manual');
-  const [scheduleCron, setScheduleCron] = useState('every_monday_12am');
-  const [isSavingMail, setIsSavingMail] = useState(false);
+  const [scheduleFreq, setScheduleFreq] = useState<'weekly' | 'monthly'>('weekly');
+  const [scheduleDays, setScheduleDays] = useState<number[]>([1]); // 0=Dom..6=Sáb
+  const [scheduleTime, setScheduleTime] = useState('09:00');
+  const [scheduleMonthDay, setScheduleMonthDay] = useState(1);
   const [sendingProgress, setSendingProgress] = useState<{ active: boolean; current: number; total: number; currentName: string } | null>(null);
+
+  // Templates & Schedules
+  const [templates, setTemplates] = useState<any[]>([]);
+  const [schedules, setSchedules] = useState<any[]>([]);
+  const [showSaveTemplateModal, setShowSaveTemplateModal] = useState(false);
+  const [templateName, setTemplateName] = useState('');
+  const [isSavingTemplate, setIsSavingTemplate] = useState(false);
+  const [isSavingSchedule, setIsSavingSchedule] = useState(false);
 
   // Popup tab states
   const [popupEnabled, setPopupEnabled] = useState(false);
@@ -64,6 +86,34 @@ export default function CampanasPage() {
     "#1F3A4D", "#6E8898", "#B7C5CF", "#C89B5A", "#E9DFD2", "#1a2a36"
   ];
 
+  const quillRef = useRef<ReactQuill>(null);
+
+  const handleImageInsert = useCallback(() => {
+    const input = document.createElement('input');
+    input.setAttribute('type', 'file');
+    input.setAttribute('accept', 'image/*');
+    input.click();
+    input.onchange = () => {
+      const file = input.files?.[0];
+      if (!file) return;
+      if (file.size > 5 * 1024 * 1024) {
+        showNotice('error', 'La imagen es muy pesada. Máximo 5MB.');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const base64 = e.target?.result as string;
+        const quill = quillRef.current?.getEditor();
+        if (quill) {
+          const range = quill.getSelection(true);
+          quill.insertEmbed(range.index, 'image', base64);
+          quill.setSelection(range.index + 1, 0);
+        }
+      };
+      reader.readAsDataURL(file);
+    };
+  }, []);
+
   const quillModules = useMemo(() => ({
     toolbar: {
       container: [
@@ -73,14 +123,20 @@ export default function CampanasPage() {
         [{ 'color': extendedColors }, { 'background': extendedColors }],
         [{ 'list': 'ordered'}, { 'list': 'bullet' }],
         [{ 'align': [] }],
+        ['image'],
         ['clean']
-      ]
-    }
-  }), []);
+      ],
+      handlers: {
+        image: handleImageInsert
+      }
+    },
+    resizeImage: {}
+  }), [handleImageInsert]);
 
-  // Fetch clients and initialize states from settings
   useEffect(() => {
     fetchClients();
+    fetchTemplates();
+    fetchSchedules();
   }, []);
 
   useEffect(() => {
@@ -88,7 +144,7 @@ export default function CampanasPage() {
       setEmailTitle(settings.default_email_title || '');
       setEmailBody(settings.default_email_body || '');
       setScheduleType((settings.email_schedule_type as 'manual' | 'scheduled') || 'manual');
-      setScheduleCron(settings.email_schedule_cron || 'every_monday_12am');
+      // scheduleCron legacy removed
 
       setPopupEnabled(settings.popup_ad_enabled === 'true');
       setPopupTitle(settings.popup_ad_title || '');
@@ -114,6 +170,78 @@ export default function CampanasPage() {
     }
     setLoadingClients(false);
   };
+
+  const fetchTemplates = async () => {
+    const { data } = await supabase.from('email_templates').select('*').order('created_at', { ascending: false });
+    if (data) setTemplates(data);
+  };
+
+  const fetchSchedules = async () => {
+    const { data } = await supabase.from('email_schedules').select('*').order('created_at', { ascending: false });
+    if (data) setSchedules(data);
+  };
+
+  const handleSaveTemplate = async () => {
+    if (!templateName.trim()) { showNotice('error', 'Escribí un nombre para la plantilla.'); return; }
+    if (!emailTitle.trim() || !emailBody.trim()) { showNotice('error', 'El asunto y cuerpo no pueden estar vacíos.'); return; }
+    setIsSavingTemplate(true);
+    const { error } = await supabase.from('email_templates').insert([{ name: templateName.trim(), subject: emailTitle, body: emailBody }]);
+    setIsSavingTemplate(false);
+    if (error) { showNotice('error', 'Error al guardar plantilla.'); return; }
+    showNotice('success', `Plantilla "${templateName}" guardada.`);
+    setTemplateName('');
+    setShowSaveTemplateModal(false);
+    fetchTemplates();
+  };
+
+  const handleLoadTemplate = (t: any) => {
+    setEmailTitle(t.subject);
+    setEmailBody(t.body);
+    showNotice('success', `Plantilla "${t.name}" cargada en el editor.`);
+  };
+
+  const handleDeleteTemplate = async (id: string) => {
+    await supabase.from('email_templates').delete().eq('id', id);
+    fetchTemplates();
+  };
+
+  const buildCronLabel = () => {
+    const dayNames = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+    if (scheduleFreq === 'weekly') {
+      const days = scheduleDays.map(d => dayNames[d]).join(', ');
+      return `Semanal · ${days} · ${scheduleTime} hs`;
+    }
+    return `Mensual · Día ${scheduleMonthDay} · ${scheduleTime} hs`;
+  };
+
+  const handleSaveSchedule = async () => {
+    if (!emailTitle.trim() || !emailBody.trim()) { showNotice('error', 'El asunto y cuerpo no pueden estar vacíos.'); return; }
+    if (scheduleFreq === 'weekly' && scheduleDays.length === 0) { showNotice('error', 'Seleccioná al menos un día.'); return; }
+    const name = emailTitle.slice(0, 50) || 'Envío programado';
+    const cron_type = buildCronLabel();
+    setIsSavingSchedule(true);
+    const { error } = await supabase.from('email_schedules').insert([{ name, subject: emailTitle, body: emailBody, cron_type, active: true }]);
+    setIsSavingSchedule(false);
+    if (error) { showNotice('error', 'Error al guardar envío programado.'); return; }
+    showNotice('success', 'Envío programado guardado y activado.');
+    fetchSchedules();
+  };
+
+  const handleToggleSchedule = async (id: string, current: boolean) => {
+    await supabase.from('email_schedules').update({ active: !current }).eq('id', id);
+    fetchSchedules();
+  };
+
+  const handleDeleteSchedule = async (id: string) => {
+    await supabase.from('email_schedules').delete().eq('id', id);
+    fetchSchedules();
+  };
+
+  const cronLabel = (cron: string) => ({
+    every_monday_12am: 'Lunes 00:00 hs',
+    every_friday_6pm: 'Viernes 18:00 hs',
+    every_first_month_9am: 'Día 1 del mes 09:00 hs',
+  }[cron] || cron);
 
   // Filtered clients list based on search query
   const filteredClients = useMemo(() => {
@@ -182,32 +310,7 @@ export default function CampanasPage() {
     setTimeout(() => setAlert(null), 4000);
   };
 
-  // Save default email draft / schedule
-  const handleSaveMailSettings = async () => {
-    try {
-      setIsSavingMail(true);
-      const updates = [
-        { key: 'default_email_title', value: emailTitle },
-        { key: 'default_email_body', value: emailBody },
-        { key: 'email_schedule_type', value: scheduleType },
-        { key: 'email_schedule_cron', value: scheduleCron }
-      ];
 
-      const { error } = await supabase.from('site_settings').upsert(updates);
-      if (error) throw error;
-
-      logger.success('Publicidad', 'Configuración de campaña de correo guardada con éxito');
-      showNotice('success', 'Configuración de correo guardada.');
-    } catch (e: any) {
-      console.error(e);
-      logger.error('Publicidad', 'Error al guardar configuración de correo', e);
-      showNotice('error', 'Error al guardar configuración.');
-    } finally {
-      setIsSavingMail(false);
-    }
-  };
-
-  // Simulate sending manual emails
   const handleSendEmailsManual = async () => {
     if (selectedClients.size === 0) {
       showNotice('error', 'Debes seleccionar al menos un destinatario.');
@@ -219,33 +322,49 @@ export default function CampanasPage() {
     }
 
     const selectedList = clients.filter(c => selectedClients.has(c.id));
-    setSendingProgress({
-      active: true,
-      current: 0,
-      total: selectedList.length,
-      currentName: selectedList[0].name
-    });
+    setSendingProgress({ active: true, current: 0, total: selectedList.length, currentName: selectedList[0].name });
+
+    let sent = 0;
+    let failed = 0;
 
     for (let i = 0; i < selectedList.length; i++) {
       const client = selectedList[i];
       setSendingProgress(prev => prev ? { ...prev, current: i, currentName: client.name } : null);
-      
-      // Simulate network delay for sending
-      await new Promise(resolve => setTimeout(resolve, 300));
+      try {
+        await emailjs.send(
+          EMAILJS_SERVICE_ID,
+          EMAILJS_CAMPAIGN_TEMPLATE,
+          {
+            to_name: client.name,
+            to_email: client.email,
+            html_body: stripHtml(emailTitle),
+            message: stripHtml(emailBody),
+          },
+          EMAILJS_PUBLIC_KEY
+        );
+        sent++;
+      } catch (err) {
+        console.error(`Error enviando a ${client.email}:`, err);
+        failed++;
+      }
     }
 
     setSendingProgress(prev => prev ? { ...prev, current: selectedList.length, currentName: 'Finalizado' } : null);
-    
-    // Log in system console
-    logger.success('Publicidad', `Campaña de correo "${emailTitle}" enviada manualmente`, {
-      recipients_count: selectedList.length,
+
+    logger.success('Publicidad', `Campaña "${emailTitle}" enviada`, {
+      sent,
+      failed,
       recipients: selectedList.map(c => c.email)
     });
 
     setTimeout(() => {
       setSendingProgress(null);
-      showNotice('success', `¡Campaña enviada con éxito a ${selectedList.length} clientes!`);
-    }, 1000);
+      if (failed === 0) {
+        showNotice('success', `¡Campaña enviada con éxito a ${sent} cliente${sent !== 1 ? 's' : ''}!`);
+      } else {
+        showNotice('error', `Enviado a ${sent}, fallaron ${failed}. Verificá el template de EmailJS.`);
+      }
+    }, 800);
   };
 
   // Save popup settings
@@ -320,63 +439,41 @@ export default function CampanasPage() {
       {/* Tab Contents */}
       <div className="tab-content-wrapper">
         {activeTab === 'mail' ? (
-          <div className="mail-campaigns-grid">
-            {/* Left side: Recipient selector */}
-            <div className="glass-card campaign-card">
-              <div className="card-header border-bottom">
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <Users size={20} className="text-accent" />
-                  <h4>Destinatarios ({selectedClients.size} seleccionados)</h4>
-                </div>
-              </div>
-              <div className="card-body search-filter-body">
-                <div className="search-input-wrapper mb-3">
-                  <Search size={16} />
-                  <input
-                    type="text"
-                    placeholder="Buscar cliente por nombre o email..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                  />
-                </div>
+          <div className="mail-3col-grid">
 
-                <div className="select-all-row mb-3">
-                  <label className="checkbox-container">
+            {/* COL 1: Destinatarios */}
+            <div className="col-recipients">
+              <div className="col-label"><Users size={15} /> Destinatarios</div>
+              <div className="glass-card campaign-card" style={{ flex: 1 }}>
+                <div className="col1-inner">
+                  <div className="selected-badge">
+                    {selectedClients.size > 0
+                      ? <><CheckCircle size={14} /> {selectedClients.size} seleccionado{selectedClients.size !== 1 ? 's' : ''}</>
+                      : 'Ninguno seleccionado'}
+                  </div>
+                  <div className="search-input-wrapper">
+                    <Search size={14} />
                     <input
-                      type="checkbox"
-                      checked={isAllSelected}
-                      onChange={handleToggleSelectAll}
+                      type="text"
+                      placeholder="Buscar..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
                     />
+                  </div>
+                  <label className="checkbox-container select-all-label">
+                    <input type="checkbox" checked={isAllSelected} onChange={handleToggleSelectAll} />
                     <span className="checkmark"></span>
-                    <span className="checkbox-label font-bold text-sm">
-                      {isAllSelected ? 'Deseleccionar Todos' : 'Seleccionar Todos'} ({filteredClients.length} filtrados)
-                    </span>
+                    <span className="checkbox-label">{isAllSelected ? 'Quitar todos' : 'Todos'} ({filteredClients.length})</span>
                   </label>
-                </div>
-
-                <div className="clients-list-container">
-                  {loadingClients ? (
-                    <div className="loading-sublist">
-                      <Loader2 className="spinner" size={24} />
-                      <p>Cargando clientes...</p>
-                    </div>
-                  ) : filteredClients.length === 0 ? (
-                    <div className="empty-sublist text-center py-4 text-secondary">
-                      Ningún cliente coincide con la búsqueda.
-                    </div>
-                  ) : (
-                    filteredClients.map(c => (
-                      <div
-                        key={c.id}
-                        className={`client-row-item ${selectedClients.has(c.id) ? 'selected' : ''}`}
-                        onClick={() => handleToggleClient(c.id)}
-                      >
-                        <label className="checkbox-container" onClick={(e) => e.stopPropagation()}>
-                          <input
-                            type="checkbox"
-                            checked={selectedClients.has(c.id)}
-                            onChange={() => handleToggleClient(c.id)}
-                          />
+                  <div className="clients-list-container">
+                    {loadingClients ? (
+                      <div className="loading-sublist"><Loader2 className="spinner" size={20} /></div>
+                    ) : filteredClients.length === 0 ? (
+                      <p className="text-secondary text-sm text-center py-4">Sin resultados.</p>
+                    ) : filteredClients.map(c => (
+                      <div key={c.id} className={`client-row-item ${selectedClients.has(c.id) ? 'selected' : ''}`} onClick={() => handleToggleClient(c.id)}>
+                        <label className="checkbox-container" onClick={e => e.stopPropagation()}>
+                          <input type="checkbox" checked={selectedClients.has(c.id)} onChange={() => handleToggleClient(c.id)} />
                           <span className="checkmark"></span>
                         </label>
                         <div className="client-item-info">
@@ -384,140 +481,153 @@ export default function CampanasPage() {
                           <span className="client-item-email text-xs text-secondary">{c.email}</span>
                         </div>
                       </div>
-                    ))
-                  )}
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
 
-            {/* Right side: Email composition */}
-            <div className="glass-card campaign-card compose-card">
-              <div className="card-header border-bottom">
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <Mail size={20} className="text-accent" />
-                  <h4>Redactar Campaña</h4>
-                </div>
-              </div>
-              <div className="card-body">
-                <div className="form-group mb-3">
-                  <label className="text-xs font-bold uppercase text-secondary mb-2 block">Asunto / Título del Correo</label>
+            {/* COL 2: Redactar */}
+            <div className="col-compose">
+              <div className="col-label"><Mail size={15} /> Redactar Campaña</div>
+              <div className="glass-card campaign-card">
+                <div className="card-body" style={{ padding: '1.5rem' }}>
                   <input
                     type="text"
-                    className="form-input"
-                    placeholder="Ej: ¡Descuento exclusivo en tu próximo viaje a Europa! ✈️"
+                    className="form-input compose-subject-input mb-3"
+                    placeholder="Asunto del correo..."
                     value={emailTitle}
                     onChange={(e) => setEmailTitle(e.target.value)}
                   />
-                </div>
-
-                <div className="form-group mb-3">
-                  <label className="text-xs font-bold uppercase text-secondary mb-2 block">Cuerpo del Correo</label>
                   <div className="rich-editor-wrapper">
                     <ReactQuill
+                      ref={quillRef}
                       theme="snow"
                       value={emailBody}
                       onChange={setEmailBody}
                       modules={quillModules}
+                      placeholder="Escribí tu mensaje. Usá el ícono de imagen en el toolbar para insertar fotos inline..."
                     />
                   </div>
                 </div>
+              </div>
 
-                {/* Drag and Drop Zone */}
-                <div
-                  className="drag-drop-zone mb-4"
-                  onDragOver={(e) => e.preventDefault()}
-                  onDrop={(e) => {
-                    e.preventDefault();
-                    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-                      handleImageUpload(e.dataTransfer.files[0], 'email');
-                    }
-                  }}
-                >
-                  <ImageIcon size={28} className="text-secondary mb-2" />
-                  <p className="text-sm font-bold text-primary">Arrastra una imagen aquí para insertarla en el correo</p>
-                  <p className="text-xs text-secondary mt-1">O selecciona una de tu PC</p>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => {
-                      if (e.target.files && e.target.files[0]) {
-                        handleImageUpload(e.target.files[0], 'email');
-                      }
-                    }}
-                    style={{ marginTop: '10px' }}
-                  />
+              {/* Scheduling */}
+              <div className="schedule-section-flat">
+                <div className="schedule-options-row">
+                  <button type="button" className={`schedule-pill ${scheduleType === 'manual' ? 'active' : ''}`} onClick={() => setScheduleType('manual')}>
+                    <span className="schedule-pill-icon"><Send size={14} /></span> Envío Manual
+                  </button>
+                  <button type="button" className={`schedule-pill ${scheduleType === 'scheduled' ? 'active' : ''}`} onClick={() => setScheduleType('scheduled')}>
+                    <span className="schedule-pill-icon"><Clock size={14} /></span> Envío Programado
+                  </button>
                 </div>
-
-                {/* Scheduling config */}
-                <div className="schedule-section glass-card mb-4">
-                  <div className="section-title mb-3" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <Calendar size={18} className="text-accent" />
-                    <span className="font-bold text-sm">Programación de Envío</span>
-                  </div>
-                  <div className="schedule-options-row">
-                    <label className="radio-container text-sm">
-                      <input
-                        type="radio"
-                        name="scheduleType"
-                        checked={scheduleType === 'manual'}
-                        onChange={() => setScheduleType('manual')}
-                      />
-                      <span>Envío Manual</span>
-                    </label>
-                    <label className="radio-container text-sm">
-                      <input
-                        type="radio"
-                        name="scheduleType"
-                        checked={scheduleType === 'scheduled'}
-                        onChange={() => setScheduleType('scheduled')}
-                      />
-                      <span>Envío Programado (Automático)</span>
-                    </label>
-                  </div>
-
-                  {scheduleType === 'scheduled' && (
-                    <div className="schedule-config mt-3 animate-fade-in">
-                      <label className="text-xs font-bold uppercase text-secondary mb-2 block">Frecuencia</label>
-                      <select
-                        className="form-input"
-                        value={scheduleCron}
-                        onChange={(e) => setScheduleCron(e.target.value)}
-                      >
-                        <option value="every_monday_12am">Todos los lunes a las 12:00 AM</option>
-                        <option value="every_first_month_9am">Primer día del mes a las 9:00 AM</option>
-                        <option value="every_friday_6pm">Todos los viernes a las 6:00 PM</option>
-                      </select>
-                      <p className="text-xs text-accent mt-2">
-                        💡 Próximo envío estimado: {
-                          scheduleCron === 'every_monday_12am' ? 'Próximo Lunes 00:00 hs' :
-                          scheduleCron === 'every_friday_6pm' ? 'Próximo Viernes 18:00 hs' : 'Día 1 del próximo mes 09:00 hs'
-                        }
-                      </p>
+                {scheduleType === 'scheduled' && (
+                  <div className="schedule-builder animate-fade-in">
+                    <div className="schedule-freq-row">
+                      <button type="button" className={`freq-pill ${scheduleFreq === 'weekly' ? 'active' : ''}`} onClick={() => setScheduleFreq('weekly')}>Semanal</button>
+                      <button type="button" className={`freq-pill ${scheduleFreq === 'monthly' ? 'active' : ''}`} onClick={() => setScheduleFreq('monthly')}>Mensual</button>
                     </div>
-                  )}
-                </div>
+                    {scheduleFreq === 'weekly' && (
+                      <div className="days-picker">
+                        {['D','L','M','X','J','V','S'].map((d, i) => (
+                          <button key={i} type="button"
+                            className={`day-btn ${scheduleDays.includes(i) ? 'active' : ''}`}
+                            onClick={() => setScheduleDays(prev => prev.includes(i) ? prev.filter(x => x !== i) : [...prev, i])}
+                          >{d}</button>
+                        ))}
+                      </div>
+                    )}
+                    {scheduleFreq === 'monthly' && (
+                      <div className="month-day-row">
+                        <span className="schedule-label-sm">Día del mes:</span>
+                        <input type="number" min={1} max={28} className="form-input month-day-input"
+                          value={scheduleMonthDay} onChange={e => setScheduleMonthDay(Number(e.target.value))} />
+                      </div>
+                    )}
+                    <div className="time-row">
+                      <span className="schedule-label-sm">Horario:</span>
+                      <input type="time" className="form-input time-input"
+                        value={scheduleTime} onChange={e => setScheduleTime(e.target.value)} />
+                      <span className="schedule-hint">{buildCronLabel()}</span>
+                    </div>
+                  </div>
+                )}
+              </div>
 
-                {/* Mail actions */}
-                <div className="actions-footer">
-                  <button
-                    className="btn btn-outline"
-                    onClick={handleSaveMailSettings}
-                    disabled={isSavingMail}
-                  >
-                    <Save size={18} />
-                    {isSavingMail ? 'Guardando...' : 'Guardar Plantilla'}
+              <div className="compose-actions">
+                <button className="btn btn-outline" onClick={() => { setTemplateName(''); setShowSaveTemplateModal(true); }}>
+                  <Save size={16} /> Guardar Plantilla
+                </button>
+                {scheduleType === 'scheduled' && (
+                  <button className="btn btn-outline" onClick={handleSaveSchedule} disabled={isSavingSchedule}>
+                    <Calendar size={16} /> {isSavingSchedule ? 'Guardando...' : 'Programar'}
                   </button>
-                  <button
-                    className="btn btn-primary"
-                    onClick={handleSendEmailsManual}
-                    disabled={sendingProgress !== null || selectedClients.size === 0}
-                  >
-                    <Send size={18} />
-                    Enviar Ahora
-                  </button>
-                </div>
+                )}
+                <button className="btn btn-primary compose-send-btn" onClick={handleSendEmailsManual} disabled={sendingProgress !== null || selectedClients.size === 0}>
+                  <Send size={16} /> Enviar Ahora
+                </button>
               </div>
             </div>
+
+            {/* COL 3: Plantillas & Programados */}
+            <div className="col-library">
+              {/* Templates */}
+              <div className="col-label"><Save size={15} /> Plantillas <span className="badge-count">{templates.length}</span></div>
+              <div className="glass-card campaign-card library-card">
+                {templates.length === 0 ? (
+                  <div className="library-empty">
+                    <Save size={24} style={{ opacity: 0.2 }} />
+                    <p>Guardá plantillas para reutilizarlas</p>
+                  </div>
+                ) : (
+                  <div className="library-list">
+                    {templates.map(t => (
+                      <div key={t.id} className="list-item-row">
+                        <div className="list-item-info">
+                          <span className="list-item-name">{t.name}</span>
+                          <span className="list-item-sub">{t.subject}</span>
+                        </div>
+                        <div style={{ display: 'flex', gap: '0.4rem' }}>
+                          <button className="btn-icon btn-icon-accent" onClick={() => handleLoadTemplate(t)} title="Cargar en editor"><Mail size={14} /></button>
+                          <button className="btn-icon btn-icon-danger" onClick={() => handleDeleteTemplate(t.id)} title="Eliminar"><Trash2 size={14} /></button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Schedules */}
+              <div className="col-label" style={{ marginTop: '1.5rem' }}><Clock size={15} /> Programados <span className="badge-count">{schedules.length}</span></div>
+              <div className="glass-card campaign-card library-card">
+                {schedules.length === 0 ? (
+                  <div className="library-empty">
+                    <Clock size={24} style={{ opacity: 0.2 }} />
+                    <p>No hay envíos programados</p>
+                  </div>
+                ) : (
+                  <div className="library-list">
+                    {schedules.map(s => (
+                      <div key={s.id} className="list-item-row">
+                        <div className="list-item-info">
+                          <span className="list-item-name">{s.name}</span>
+                          <span className="list-item-sub">{cronLabel(s.cron_type)}</span>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                          <label className="switch" style={{ transform: 'scale(0.8)' }} title={s.active ? 'Activo' : 'Inactivo'}>
+                            <input type="checkbox" checked={s.active} onChange={() => handleToggleSchedule(s.id, s.active)} />
+                            <span className="slider round"></span>
+                          </label>
+                          <button className="btn-icon btn-icon-danger" onClick={() => handleDeleteSchedule(s.id)} title="Eliminar"><Trash2 size={14} /></button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
           </div>
         ) : (
           /* Tab Popup Config */
@@ -638,6 +748,32 @@ export default function CampanasPage() {
           </div>
         )}
       </div>
+
+      {/* Save template modal */}
+      {showSaveTemplateModal && (
+        <div className="modal-overlay" style={{ zIndex: 1500 }} onClick={() => setShowSaveTemplateModal(false)}>
+          <div className="glass-card animate-scale-in" style={{ maxWidth: '420px', width: '90%', padding: '2rem', borderRadius: '20px', background: 'white' }} onClick={e => e.stopPropagation()}>
+            <h3 style={{ fontWeight: 700, color: 'var(--color-primary)', marginBottom: '0.5rem' }}>Guardar Plantilla</h3>
+            <p className="text-secondary text-sm mb-4">Dale un nombre para identificarla fácilmente.</p>
+            <input
+              type="text"
+              className="form-input mb-4"
+              placeholder="Ej: Promo Europa Julio, Newsletter Mensual..."
+              value={templateName}
+              onChange={e => setTemplateName(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && handleSaveTemplate()}
+              autoFocus
+            />
+            <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
+              <button className="btn btn-outline" onClick={() => setShowSaveTemplateModal(false)}>Cancelar</button>
+              <button className="btn btn-primary" onClick={handleSaveTemplate} disabled={isSavingTemplate}>
+                <Save size={16} />
+                {isSavingTemplate ? 'Guardando...' : 'Guardar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Sending progress modal */}
       {sendingProgress && (

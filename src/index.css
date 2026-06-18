@@ -30,6 +30,12 @@
 
 html {
   scroll-behavior: smooth;
+  overflow-x: hidden;
+}
+
+#root {
+  overflow-x: hidden;
+  max-width: 100%;
 }
 
 * {
@@ -492,4 +498,157 @@ button {
   gap: 1rem;
   border-top: 1px solid rgba(0,0,0,0.05);
   background: #f8fafc;
+}
+
+/* ═══════════════════════════════════════
+   GLOBAL RESPONSIVE — Mobile / Tablet
+═══════════════════════════════════════ */
+
+/* Page headers */
+@media (max-width: 768px) {
+  .page-header-centered h1 {
+    font-size: 1.8rem !important;
+  }
+  .page-header-centered p {
+    font-size: 0.95rem;
+  }
+
+  /* Grids → single column */
+  .agenda-grid-2-col,
+  .features-grid,
+  .popup-layout-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Tables → scroll */
+  .table-wrapper,
+  table {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Modals full screen */
+  .modal-content,
+  .modal-content-pro {
+    width: 95vw !important;
+    max-width: 95vw !important;
+    margin: 1rem !important;
+    border-radius: 20px !important;
+  }
+
+  /* Buttons */
+  .btn {
+    font-size: 0.9rem;
+    padding: 0.75rem 1.25rem;
+  }
+
+  /* Forms */
+  .form-input {
+    font-size: 16px !important; /* prevents iOS zoom */
+  }
+
+  /* Cards */
+  .glass-card {
+    border-radius: 16px !important;
+  }
+
+  /* Actions footers */
+  .actions-footer,
+  .compose-actions {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  .actions-footer .btn,
+  .compose-actions .btn {
+    flex: 1;
+    min-width: 120px;
+  }
+}
+
+/* Safe area for iPhone notch / home bar */
+@supports (padding: env(safe-area-inset-bottom)) {
+  .admin-main {
+    padding-bottom: calc(1rem + env(safe-area-inset-bottom));
+  }
+}
+
+/* ═══════════════════════════════════════
+   MOBILE RESPONSIVE — Specific selectors only
+   (never touch calendar grids or internal UI grids)
+═══════════════════════════════════════ */
+@media (max-width: 768px) {
+
+  /* Page headers */
+  .page-header-centered { margin-bottom: 1.5rem !important; }
+  .page-header-centered h1 { font-size: 1.7rem !important; }
+  .page-header-centered p { font-size: 0.9rem; }
+
+  /* Cards */
+  .glass-card { border-radius: 14px !important; }
+  .card-body { padding: 1rem !important; }
+  .card-header { padding: 0.9rem 1.1rem !important; }
+
+  /* Tabs */
+  .tabs-container { max-width: 100% !important; }
+
+  /* Tables scroll */
+  table { min-width: 480px; }
+
+  /* Modals */
+  .modal-content,
+  .modal-content-pro {
+    width: 96vw !important;
+    max-width: 96vw !important;
+    border-radius: 18px !important;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+
+  /* Action footers wrap */
+  .actions-footer,
+  .compose-actions {
+    flex-wrap: wrap !important;
+    gap: 0.5rem !important;
+  }
+  .actions-footer .btn,
+  .compose-actions .btn {
+    flex: 1;
+    min-width: 120px;
+  }
+
+  /* Prevent overflow */
+  img { max-width: 100%; height: auto; }
+
+  /* inputs: prevent iOS zoom */
+  input, textarea, select { font-size: 16px !important; }
+}
+
+/* ─── Modal de destino (LandingPage) ─── */
+@media (max-width: 768px) {
+  /* El modal en sí ya tiene width:95% pero la imagen es muy alta */
+  .modal-overlay .glass-card > div:first-child {
+    height: 260px !important;
+    min-height: 260px !important;
+  }
+
+  /* Título h3 del destino: 3.5rem → compacto */
+  .modal-overlay .glass-card h3 {
+    font-size: 2rem !important;
+    overflow-wrap: break-word !important;
+    word-break: normal !important;
+    hyphens: none !important;
+  }
+
+  /* Padding del contenido: 3rem → 1.25rem */
+  .modal-overlay .glass-card > div:last-child {
+    padding: 1.25rem !important;
+    gap: 1rem !important;
+  }
+
+  /* Botón CTA ancho completo */
+  .modal-overlay .glass-card .btn-primary {
+    min-width: unset !important;
+    width: 100% !important;
+  }
 }

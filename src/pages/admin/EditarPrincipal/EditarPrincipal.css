@@ -151,17 +151,50 @@
   .edit-sections-grid {
     grid-template-columns: 1fr;
   }
-  
+
   .grid-3 {
     grid-template-columns: 1fr;
     gap: 1.5rem;
   }
-  
+
   .border-left {
     border-left: none;
     border-top: 1px solid rgba(0, 0, 0, 0.05);
     padding-left: 0;
     padding-top: 1.5rem;
+  }
+}
+
+/* ─── MOBILE ≤ 768px ─── */
+@media (max-width: 768px) {
+  /* Header: apilar título + botones */
+  .editar-principal .page-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+  .editar-principal .page-header h1 {
+    font-size: 1.8rem;
+    margin: 0 0 0.35rem 0;
+  }
+  .editar-principal .page-header p {
+    font-size: 0.9rem;
+  }
+
+  /* Botones: ocupar ancho y repartirse */
+  .header-actions {
+    width: 100%;
+    gap: 0.75rem;
+  }
+  .header-actions .btn {
+    flex: 1;
+    justify-content: center;
+  }
+
+  /* Editor Quill: que no desborde */
+  .editar-principal .ql-toolbar {
+    flex-wrap: wrap;
   }
 }
 

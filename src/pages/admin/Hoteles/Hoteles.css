@@ -313,3 +313,14 @@
 }
 
 
+
+/* ─── MOBILE ≤ 768px ─── */
+@media (max-width: 768px) {
+  .folder-detail-container {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  .hotels-grid {
+    grid-template-columns: 1fr;
+  }
+}

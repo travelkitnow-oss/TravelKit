@@ -293,3 +293,46 @@
   padding: 5rem !important;
   text-align: center;
 }
+
+/* ─── MOBILE ≤ 768px ─── */
+@media (max-width: 768px) {
+  /* Página: padding reducido para no desbordar */
+  .respuestas-viaje-page {
+    padding: 0;
+  }
+
+  /* Stats: 2 columnas en vez de 3 */
+  .respuestas-viaje-page .stats-row {
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem !important;
+  }
+
+  /* Stat card: más compacta */
+  .respuestas-viaje-page .premium-stat-card {
+    padding: 1rem;
+    border-radius: 16px;
+  }
+
+  /* Toolbar: apilar búsqueda y filtros */
+  .respuestas-viaje-page .card-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
+    padding: 1rem;
+  }
+
+  /* Search: ancho completo */
+  .respuestas-viaje-page .search-container {
+    width: 100%;
+  }
+
+  /* Tabla: scroll horizontal */
+  .respuestas-viaje-page .main-dashboard-card {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .respuestas-viaje-page .dashboard-table {
+    min-width: 420px;
+  }
+}

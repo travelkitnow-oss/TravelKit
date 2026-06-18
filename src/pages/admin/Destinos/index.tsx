@@ -185,7 +185,7 @@ export default function DestinosPage() {
 
   return (
     <div className="destinos-admin-page animate-fade-in">
-      <header className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+      <header className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
           <h1 style={{ fontSize: '2.5rem', fontFamily: "'Playfair Display', serif", fontWeight: 900, color: 'var(--color-primary)', margin: '0 0 0.5rem 0' }}>Recomendaciones de Destinos</h1>
           <p style={{ color: '#64748b', fontSize: '1.1rem', margin: 0 }}>Carga imágenes y descripciones para inspirar a tus futuros clientes.</p>

@@ -408,7 +408,7 @@ export default function HotelesPage() {
         </div>
       ) : (
         <div className="folder-detail-view">
-          <div className="folder-detail-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2.5rem' }}>
+          <div className="folder-detail-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2.5rem', flexWrap: 'wrap', gap: '1rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
               <button className="btn-icon" onClick={() => currentPath.length === 1 ? goHome() : navigateToPath(currentPath.length - 2)}>
                 <ChevronLeft size={20} />

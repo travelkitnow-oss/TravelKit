@@ -270,19 +270,70 @@ main {
   .features-grid {
     grid-template-columns: 1fr;
   }
-  
+
   .carousel-card {
-    flex: 0 0 100%;
+    flex: 0 0 85%;
+    min-width: 0;
   }
-  
+
   .footer-container {
     flex-direction: column;
     text-align: center;
     gap: 2rem;
   }
-  
+
   .section-padding {
     padding: 4rem 0;
+  }
+
+  /* Secciones: forzar layout en bloque y sin desborde */
+  .section-header,
+  .section-header > *,
+  .subtitle,
+  .subtitle * {
+    max-width: 100% !important;
+    width: auto !important;
+    overflow-wrap: break-word !important;
+    word-break: break-word !important;
+    display: block !important;
+  }
+  .section-header {
+    margin-bottom: 2rem;
+  }
+  .section-header h2,
+  .section-header h2 * {
+    font-size: 1.8rem !important;
+  }
+  /* Rich text interno de Quill: nunca más ancho que el padre */
+  .rich-text-content,
+  .rich-text-content *,
+  [dangerouslySetInnerHTML] {
+    max-width: 100% !important;
+  }
+
+  /* Container con menos padding lateral */
+  .container {
+    padding: 0 1.25rem;
+  }
+
+  /* Flechas del carousel pegadas a los bordes */
+  .benefits-carousel-wrapper {
+    padding: 1rem 0.5rem;
+  }
+
+  /* Títulos de sección con inline font-size → forzar mobile */
+  #destinos h2,
+  #destinos h3,
+  #servicios h2,
+  #inicio h1,
+  .section-padding h2 {
+    font-size: 1.75rem !important;
+    overflow-wrap: break-word !important;
+    word-break: normal !important;
+    hyphens: none !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    white-space: normal !important;
   }
 }
 

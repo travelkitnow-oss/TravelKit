@@ -294,3 +294,22 @@
 .quill-destino .ql-editor {
   min-height: 200px;
 }
+
+/* ─── MOBILE ≤ 768px ─── */
+@media (max-width: 768px) {
+  .destinos-admin-page {
+    padding: 0;
+  }
+  .destinos-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+    margin-top: 1.25rem;
+  }
+  /* Título más chico para que no desborde */
+  .destinos-admin-page .page-header h1 {
+    font-size: 1.8rem !important;
+  }
+  .destinos-admin-page .page-header p {
+    font-size: 0.9rem !important;
+  }
+}

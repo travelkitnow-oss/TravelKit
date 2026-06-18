@@ -403,3 +403,14 @@
   transform: scale(1.1) rotate(-5deg);
   color: var(--color-accent);
 }
+
+/* ─── MOBILE ≤ 768px ─── */
+@media (max-width: 768px) {
+  .folder-detail-container {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  .excursiones-grid {
+    grid-template-columns: 1fr;
+  }
+}

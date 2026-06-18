@@ -249,14 +249,31 @@
   .hero-title-wrapper p,
   .hero-title-wrapper h1,
   .hero h1 {
-    font-size: 3rem;
+    font-size: 2.4rem;
+    max-width: 100%;
+    overflow-wrap: break-word;
+    word-break: break-word;
   }
-  
+
+  .hero-description {
+    max-width: 100%;
+  }
+
   .hero-actions {
     flex-direction: column;
+    width: 100%;
   }
-  
+  .hero-actions .btn {
+    width: 100%;
+    justify-content: center;
+  }
+
   .main-hero-image {
     height: 400px;
+  }
+
+  /* Blobs decorativos no deben generar scroll */
+  .blob-1, .blob-2 {
+    display: none;
   }
 }
