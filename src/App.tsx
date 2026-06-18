@@ -33,6 +33,7 @@ import ServiciosContratadosPage from './pages/client/ServiciosContratados';
 import HistorialViajesAdminPage from './pages/admin/HistorialViajes';
 import HistorialViajesClientePage from './pages/client/HistorialViajes';
 import LogsPage from './pages/admin/Logs';
+import CampanasPage from './pages/admin/Campanas';
 import NavigationLogger from './components/NavigationLogger';
 import './App.css';
 
@@ -68,6 +69,7 @@ function App() {
         <Route path="/historial" element={<HistorialViajesAdminPage />} />
         <Route path="/gestion-usuarios" element={<GestionUsuariosPage />} />
         <Route path="/logs" element={<LogsPage />} />
+        <Route path="/campanas" element={<CampanasPage />} />
         <Route path="/configuracion" element={<AdminConfigPage />} />
         
         {/* Redirect from old dashboard or just to default */}

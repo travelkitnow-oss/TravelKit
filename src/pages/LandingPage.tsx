@@ -1,7 +1,7 @@
 import Navbar from '../components/Navbar';
 import Hero from '../components/Hero';
 import Calendar from '../components/Calendar';
-import { Plane, CalendarCheck, Shield, Star, MapPin, Heart, Compass, ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { Plane, CalendarCheck, Shield, Star, MapPin, Heart, Compass, ChevronLeft, ChevronRight, X, Megaphone } from 'lucide-react';
 import { useSiteSettings } from '../hooks/useSiteSettings';
 import { useRef, useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
@@ -17,6 +17,25 @@ export default function LandingPage() {
   
   const [reviews, setReviews] = useState<any[]>([]);
   const [currentReviewIndex, setCurrentReviewIndex] = useState(0);
+
+  const [showPopupAd, setShowPopupAd] = useState(false);
+
+  useEffect(() => {
+    if (settings.popup_ad_enabled === 'true') {
+      const alreadyShown = sessionStorage.getItem('travelkit_popup_ad_shown');
+      if (alreadyShown !== 'true') {
+        const timer = setTimeout(() => {
+          setShowPopupAd(true);
+        }, 1200);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [settings.popup_ad_enabled]);
+
+  const handleClosePopupAd = () => {
+    setShowPopupAd(false);
+    sessionStorage.setItem('travelkit_popup_ad_shown', 'true');
+  };
 
   const [destinations, setDestinations] = useState<any[]>([]);
   const [currentDestIndex, setCurrentDestIndex] = useState(0);
@@ -460,6 +479,117 @@ export default function LandingPage() {
           <p>&copy; {new Date().getFullYear()} Travel Kit. Todos los derechos reservados.</p>
         </div>
       </footer>
+
+      {/* Promotional Popup Modal */}
+      {showPopupAd && (
+        <div className="modal-overlay animate-fade-in" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000 }} onClick={handleClosePopupAd}>
+          <div
+            className="glass-card animate-scale-in"
+            style={{
+              width: '90%',
+              maxWidth: '500px',
+              backgroundColor: 'white',
+              borderRadius: '24px',
+              overflow: 'hidden',
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+              border: '1px solid rgba(255, 255, 255, 0.4)',
+              color: '#1f3a4d',
+              position: 'relative'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Close Button */}
+            <button
+              onClick={handleClosePopupAd}
+              style={{
+                position: 'absolute',
+                top: '14px',
+                right: '14px',
+                background: 'none',
+                border: 'none',
+                color: '#ef4444',
+                cursor: 'pointer',
+                zIndex: 10,
+                padding: '4px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                opacity: 0.85,
+                transition: 'opacity 0.2s, transform 0.2s',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.opacity = '1';
+                e.currentTarget.style.transform = 'scale(1.15)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.opacity = '0.85';
+                e.currentTarget.style.transform = 'scale(1)';
+              }}
+              aria-label="Cerrar"
+            >
+              <X size={22} />
+            </button>
+
+            {/* Ad Image */}
+            {settings.popup_ad_image ? (
+              <div style={{ width: '100%', height: '220px', overflow: 'hidden', backgroundColor: '#f1f5f9', borderRadius: '24px 24px 0 0' }}>
+                <img
+                  src={settings.popup_ad_image}
+                  alt={settings.popup_ad_title || 'Publicidad'}
+                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                />
+              </div>
+                        ) : (
+              <div style={{ width: '100%', height: '120px', background: 'linear-gradient(135deg, #1f3a4d 0%, #294c63 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', borderRadius: '24px 24px 0 0' }}>
+                <Megaphone size={40} style={{ opacity: 0.8 }} />
+              </div>
+            )}
+
+            {/* Content */}
+            <div style={{ padding: '2rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <h3 style={{
+                fontSize: '1.5rem',
+                fontWeight: 800,
+                color: '#1f3a4d',
+                margin: 0,
+                fontFamily: "'Outfit', sans-serif",
+                lineHeight: '1.3'
+              }}>
+                {settings.popup_ad_title}
+              </h3>
+              
+              <p style={{
+                fontSize: '0.95rem',
+                color: '#64748b',
+                lineHeight: '1.6',
+                margin: 0,
+                whiteSpace: 'pre-wrap'
+              }}>
+                {settings.popup_ad_description}
+              </p>
+
+              <button
+                className="btn btn-primary"
+                onClick={() => {
+                  handleClosePopupAd();
+                  document.getElementById('sesion')?.scrollIntoView({ behavior: 'smooth' });
+                }}
+                style={{
+                  marginTop: '1rem',
+                  padding: '0.85rem',
+                  borderRadius: '12px',
+                  fontWeight: 600,
+                  fontSize: '1rem',
+                  fontFamily: "'Outfit', sans-serif",
+                  boxShadow: '0 4px 12px rgba(31, 58, 77, 0.15)'
+                }}
+              >
+                ¡Quiero más información!
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

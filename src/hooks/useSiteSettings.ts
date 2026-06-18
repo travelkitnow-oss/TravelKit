@@ -12,7 +12,15 @@ const DEFAULT_CONTENT = {
     { id: '3', title: 'Asistencia en viaje', description: 'Viaja con tranquilidad. Estaremos disponibles para resolver cualquier imprevisto durante tu aventura.', icon: 'Shield' }
   ]),
   destinations_title: 'Inspiración para tu próximo viaje',
-  destinations_subtitle: 'Descubre algunos de los destinos que hemos preparado para nuestros viajeros.'
+  destinations_subtitle: 'Descubre algunos de los destinos que hemos preparado para nuestros viajeros.',
+  popup_ad_enabled: 'false',
+  popup_ad_title: '¡Nueva Promoción Especial!',
+  popup_ad_description: '',
+  popup_ad_image: '',
+  default_email_title: '',
+  default_email_body: '',
+  email_schedule_type: 'manual',
+  email_schedule_cron: 'every_monday_12am'
 };
 
 export function useSiteSettings() {

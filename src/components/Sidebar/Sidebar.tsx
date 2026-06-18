@@ -22,7 +22,8 @@ import {
   ShieldCheck,
   Star,
   History,
-  Terminal
+  Terminal,
+  Megaphone
 } from 'lucide-react';
 import './Sidebar.css';
 
@@ -100,6 +101,15 @@ export default function Sidebar({ userEmail, handleLogout }: SidebarProps) {
         >
           <Users size={20} />
           Clientes
+        </NavLink>
+
+        {/* 4.5. Publicidad */}
+        <NavLink
+          to="/campanas"
+          className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
+        >
+          <Megaphone size={20} />
+          Publicidad
         </NavLink>
 
         {/* 5. Tareas */}
