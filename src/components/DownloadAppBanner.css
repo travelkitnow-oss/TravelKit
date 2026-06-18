@@ -1,13 +1,14 @@
 .download-app-banner {
-  position: sticky;
+  position: fixed;
   top: 0;
   left: 0;
   right: 0;
-  z-index: 1000;
+  z-index: 1100;
   display: none;
   align-items: center;
   gap: 0.75rem;
   padding: 0.6rem 0.75rem;
+  height: 56px;
   background: linear-gradient(135deg, #1F3A4D 0%, #2c5364 100%);
   color: white;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
@@ -87,4 +88,90 @@
   .download-app-banner {
     display: flex;
   }
+}
+
+/* Modal de instrucciones para iOS / fallback */
+.install-help-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  z-index: 1200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.install-help-card {
+  background: white;
+  border-radius: 20px;
+  padding: 2rem 1.5rem 1.75rem;
+  max-width: 360px;
+  width: 100%;
+  position: relative;
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3);
+  animation: pop 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes pop {
+  from { opacity: 0; transform: scale(0.92); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.install-help-close {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  background: rgba(0, 0, 0, 0.05);
+  border: none;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #64748b;
+}
+
+.install-help-card h3 {
+  margin: 0 0 0.75rem;
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: var(--color-primary, #1F3A4D);
+  font-family: var(--font-serif, 'Playfair Display', serif);
+}
+
+.install-help-card p {
+  margin: 0 0 1rem;
+  color: #64748b;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.install-help-card ol {
+  margin: 0;
+  padding-left: 1.25rem;
+  color: var(--color-primary, #1F3A4D);
+  font-size: 0.95rem;
+  line-height: 1.7;
+}
+
+.install-help-card ol li {
+  margin-bottom: 0.5rem;
+}
+
+.install-help-card ol strong {
+  background: rgba(200, 155, 90, 0.15);
+  color: var(--color-primary, #1F3A4D);
+  padding: 0.05rem 0.4rem;
+  border-radius: 6px;
 }
