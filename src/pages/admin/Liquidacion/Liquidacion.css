@@ -549,3 +549,45 @@
   .brand-logo-large { width: 50px; height: 50px; }
   .brand-text h2 { font-size: 1.3rem; }
 }
+
+/* Extra mobile fixes para items de cliente */
+@media (max-width: 768px) {
+  .liquidacion-page {
+    overflow-x: hidden;
+    max-width: 100%;
+  }
+  .liq-sidebar,
+  .liq-main-grid,
+  .clients-list-premium {
+    overflow-x: hidden;
+    max-width: 100%;
+  }
+
+  .client-item-premium {
+    padding: 0.85rem 1rem;
+    min-width: 0;
+  }
+
+  .client-info-main {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .client-text-liq {
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .client-text-liq h4,
+  .client-text-liq p {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* Reducir gap entre avatar/texto/acciones */
+  .client-item-premium {
+    gap: 0.5rem;
+  }
+}

@@ -102,6 +102,12 @@
 
   .admin-content {
     padding: 1.25rem 1rem 5rem 1rem;
+    overflow-x: hidden;
+    max-width: 100%;
+  }
+  .admin-content > * {
+    max-width: 100%;
+    box-sizing: border-box;
   }
 }
 
