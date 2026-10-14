@@ -14,11 +14,12 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { supabase } from '../../../lib/supabase';
+import { db } from '../../../lib/db';
 import Calendar from '../../../components/Calendar';
 import ConfirmationModal from '../../../components/ConfirmationModal/ConfirmationModal';
 import './Agenda.css';
 
+import PageHeader from '../../../components/PageHeader/PageHeader';
 interface Reservation {
   id: string;
   client: string;
@@ -65,7 +66,7 @@ export default function AgendaPage() {
 
   const fetchReservations = async () => {
     setLoading(true);
-    const { data, error } = await supabase.from('admin_meetings').select('*');
+    const { data, error } = await db.from('admin_meetings').select('*');
     if (error) console.error('Error fetching meetings:', error);
     else {
       const mapped: Reservation[] = (data || []).map(r => {
@@ -95,7 +96,7 @@ export default function AgendaPage() {
   console.log('Selected date:', selectedDateStr, 'Reservations count:', dayReservations.length);
 
   const handleMarkCompleted = async (res: Reservation) => {
-    const { error } = await supabase.from('admin_meetings').update({ status: 'completed' }).eq('id', res.id);
+    const { error } = await db.from('admin_meetings').update({ status: 'completed' }).eq('id', res.id);
     if (!error) {
       fetchReservations();
       setCompletedRes(res);
@@ -105,7 +106,7 @@ export default function AgendaPage() {
   };
 
   const handleSaveNewClient = async (res: Reservation) => {
-    const { data: newClients, error } = await supabase.from('clients').insert([{ 
+    const { data: newClients, error } = await db.from('clients').insert([{ 
       name: res.client,
       email: res.email || '',
       phone: res.phone || '',
@@ -117,7 +118,7 @@ export default function AgendaPage() {
     } else {
       const clientId = newClients && newClients[0] ? newClients[0].id : null;
       if (clientId && res.dest && res.dest !== 'Por definir') {
-        await supabase.from('client_billing').insert([{
+        await db.from('client_billing').insert([{
           client_id: clientId,
           destination: res.dest,
           tasks: [],
@@ -126,7 +127,7 @@ export default function AgendaPage() {
         }]);
       }
 
-      await supabase.from('admin_meetings').update({ status: 'client_saved' }).eq('id', res.id);
+      await db.from('admin_meetings').update({ status: 'client_saved' }).eq('id', res.id);
       alert('Cliente guardado correctamente');
       fetchReservations();
     }
@@ -135,14 +136,14 @@ export default function AgendaPage() {
 
   const handleDeleteClient = async (res: Reservation) => {
     if (!window.confirm('¿Estás seguro de descartar este cliente?')) return;
-    await supabase.from('admin_meetings').update({ status: 'client_rejected' }).eq('id', res.id);
+    await db.from('admin_meetings').update({ status: 'client_rejected' }).eq('id', res.id);
     fetchReservations();
     setCompletedRes(null);
   };
 
   const handlePermanentlyDelete = async (resId: string) => {
     if (!window.confirm('¿Estás seguro de eliminar esta reunión de la vista?')) return;
-    const { error } = await supabase.from('admin_meetings').delete().eq('id', resId);
+    const { error } = await db.from('admin_meetings').delete().eq('id', resId);
     if (!error) fetchReservations();
   };
 
@@ -153,7 +154,7 @@ export default function AgendaPage() {
   const confirmCancel = async () => {
     if (!deleteConfirmData) return;
     const { resId } = deleteConfirmData;
-    const { error } = await supabase.from('admin_meetings').update({ status: 'cancelled' }).eq('id', resId);
+    const { error } = await db.from('admin_meetings').update({ status: 'cancelled' }).eq('id', resId);
     if (!error) fetchReservations();
     setDeleteConfirmData(null);
   };
@@ -162,7 +163,7 @@ export default function AgendaPage() {
     setAttemptedSubmit(true);
     if (!postponeData || !newPostponeDate || !newPostponeTime) return;
 
-    const { error } = await supabase.from('admin_meetings').update({
+    const { error } = await db.from('admin_meetings').update({
       meeting_date: newPostponeDate,
       meeting_time: newPostponeTime,
       status: 'confirmed'
@@ -187,7 +188,7 @@ export default function AgendaPage() {
       return;
     }
 
-    const { error } = await supabase.from('admin_meetings').insert([{
+    const { error } = await db.from('admin_meetings').insert([{
       client_name: newResName,
       destination: newResDest || 'Por definir',
       email: newResEmail,
@@ -215,7 +216,7 @@ export default function AgendaPage() {
   };
 
   const handleUpdateLink = async (resId: string, link: string) => {
-    const { error } = await supabase.from('admin_meetings').update({ google_meet_url: link }).eq('id', resId);
+    const { error } = await db.from('admin_meetings').update({ google_meet_url: link }).eq('id', resId);
     if (!error) {
       setAllReservations(prev => prev.map(r => r.id === resId ? { ...r, googleMeet: link } : r));
       setToast({ message: 'Link actualizado con éxito', type: 'success' });
@@ -229,7 +230,7 @@ export default function AgendaPage() {
 
     try {
       // 1. Fetch service price
-      const { data: services } = await supabase.from('services').select('*').ilike('name', '%sesi%n%');
+      const { data: services } = await db.from('services').select('*').ilike('name', '%sesi%n%');
       const meetingService = services?.[0];
       const totalPrice = meetingService ? meetingService.price : 50000; 
       const chargeAmount = totalPrice / 2;
@@ -243,7 +244,7 @@ export default function AgendaPage() {
       }
       updates.paid_amount = (res.paidAmount || 0) + chargeAmount;
 
-      const { error } = await supabase.from('admin_meetings').update(updates).eq('id', res.id);
+      const { error } = await db.from('admin_meetings').update(updates).eq('id', res.id);
       if (error) throw error;
 
       setToast({ 
@@ -290,10 +291,11 @@ export default function AgendaPage() {
             <button className="toast-close" onClick={() => setToast(null)}><X size={14} /></button>
           </div>
         )}
-      <header className="page-header-centered">
-        <h1>Hola, Lucía 👋</h1>
-        <p>Aquí tienes el resumen de tu agenda para organizar viajes y reuniones.</p>
-      </header>
+      <PageHeader
+        section="Mi agenda"
+        title="Hola, Lucía"
+        subtitle="Aquí tienes el resumen de tu agenda para organizar viajes y reuniones."
+      />
 
       <div className="agenda-grid-2-col">
         <div className="calendar-card glass-card">
@@ -350,7 +352,7 @@ export default function AgendaPage() {
                           <>
                             <span className="res-status" style={{ 
                               backgroundColor: res.status === 'client_saved' ? 'rgba(16, 185, 129, 0.1)' : res.status === 'client_rejected' ? 'rgba(107, 114, 128, 0.1)' : 'rgba(59, 130, 246, 0.1)', 
-                              color: res.status === 'client_saved' ? '#10b981' : res.status === 'client_rejected' ? '#6b7280' : '#3b82f6' 
+                              color: res.status === 'client_saved' ? '#10b981' : res.status === 'client_rejected' ? '#6b7280' : '#3E6A87' 
                             }}>
                               {res.status === 'client_saved' ? 'Cliente Guardado' : res.status === 'client_rejected' ? 'Cliente Descartado' : 'Completada'}
                             </span>
@@ -469,9 +471,9 @@ export default function AgendaPage() {
                               <button 
                                 className="btn btn-xs" 
                                 style={{ 
-                                  backgroundColor: res.advancePaid ? '#e2e8f0' : 'transparent',
-                                  color: res.advancePaid ? '#475569' : 'var(--color-primary)',
-                                  border: '1px solid ' + (res.advancePaid ? '#cbd5e1' : 'var(--color-tertiary)'),
+                                  backgroundColor: res.advancePaid ? '#E7E1D8' : 'transparent',
+                                  color: res.advancePaid ? '#4F6878' : 'var(--color-primary)',
+                                  border: '1px solid ' + (res.advancePaid ? '#D8D0C4' : 'var(--color-tertiary)'),
                                   cursor: res.advancePaid ? 'default' : 'pointer',
                                   fontWeight: res.advancePaid ? '800' : '500',
                                   opacity: res.advancePaid ? 0.8 : 1
@@ -484,9 +486,9 @@ export default function AgendaPage() {
                               <button 
                                 className="btn btn-xs" 
                                 style={{ 
-                                  backgroundColor: res.finalPaid ? '#e2e8f0' : 'transparent',
-                                  color: res.finalPaid ? '#475569' : 'var(--color-primary)',
-                                  border: '1px solid ' + (res.finalPaid ? '#cbd5e1' : 'var(--color-tertiary)'),
+                                  backgroundColor: res.finalPaid ? '#E7E1D8' : 'transparent',
+                                  color: res.finalPaid ? '#4F6878' : 'var(--color-primary)',
+                                  border: '1px solid ' + (res.finalPaid ? '#D8D0C4' : 'var(--color-tertiary)'),
                                   cursor: res.finalPaid ? 'default' : 'pointer',
                                   fontWeight: res.finalPaid ? '800' : '500',
                                   opacity: res.finalPaid ? 0.8 : 1

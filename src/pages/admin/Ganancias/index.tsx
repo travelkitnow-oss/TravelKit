@@ -15,9 +15,10 @@ import {
   CreditCard,
   Check
 } from 'lucide-react';
-import { supabase } from '../../../lib/supabase';
+import { db } from '../../../lib/db';
 import './Ganancias.css';
 
+import PageHeader from '../../../components/PageHeader/PageHeader';
 export default function GananciasPage() {
   const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState('este-mes');
@@ -31,7 +32,7 @@ export default function GananciasPage() {
     setLoading(true);
     
     // 1. Fetch Billing and join with Clients
-    const { data: billingData } = await supabase
+    const { data: billingData } = await db
       .from('client_billing')
       .select('tasks, client_id, clients(name)');
 
@@ -84,7 +85,7 @@ export default function GananciasPage() {
     });
 
     // 2. Fetch Meetings and extract session payments
-    const { data: meetingsData } = await supabase.from('admin_meetings').select('*');
+    const { data: meetingsData } = await db.from('admin_meetings').select('*');
     const sessionsCount = meetingsData?.filter(m => m.status === 'confirmed').length || 0;
 
     (meetingsData || []).forEach((m) => {
@@ -139,7 +140,7 @@ export default function GananciasPage() {
     confirmedTransactions.sort((a, b) => b.timestamp - a.timestamp);
 
     // 3. Fetch Clients
-    const { data: clientsData } = await supabase.from('clients').select('id, name, created_at').order('created_at', { ascending: false });
+    const { data: clientsData } = await db.from('clients').select('id, name, created_at').order('created_at', { ascending: false });
     const clientsCount = clientsData?.length || 0;
 
     // 4. Update Stats
@@ -185,7 +186,7 @@ export default function GananciasPage() {
 
   const handleConfirmPayment = async (request: any) => {
     try {
-      const { data: billing } = await supabase.from('client_billing').select('tasks').eq('client_id', request.clientId).single();
+      const { data: billing } = await db.from('client_billing').select('tasks').eq('client_id', request.clientId).single();
       if (!billing) return;
 
       const tasks = [...(billing.tasks as any[])];
@@ -197,7 +198,7 @@ export default function GananciasPage() {
         paidAt: new Date().toISOString()
       };
 
-      await supabase.from('client_billing').update({ tasks }).eq('client_id', request.clientId);
+      await db.from('client_billing').update({ tasks }).eq('client_id', request.clientId);
       fetchFinancialData();
     } catch (e) { console.error(e); }
   };
@@ -205,13 +206,13 @@ export default function GananciasPage() {
   const handleRejectPayment = async (request: any) => {
     if (!window.confirm('¿Rechazar solicitud? El servicio volverá a estar pendiente.')) return;
     try {
-      const { data: billing } = await supabase.from('client_billing').select('tasks').eq('client_id', request.clientId).single();
+      const { data: billing } = await db.from('client_billing').select('tasks').eq('client_id', request.clientId).single();
       if (!billing) return;
 
       const tasks = [...(billing.tasks as any[])];
       tasks[request.taskIndex].payment_status = 'pending';
 
-      await supabase.from('client_billing').update({ tasks }).eq('client_id', request.clientId);
+      await db.from('client_billing').update({ tasks }).eq('client_id', request.clientId);
       fetchFinancialData();
     } catch (e) { console.error(e); }
   };
@@ -220,7 +221,7 @@ export default function GananciasPage() {
     if (!window.confirm('¿Estás seguro de que quieres eliminar este registro de cobro? El servicio volverá a estar pendiente de pago.')) return;
 
     try {
-      const { data: billing, error: fetchError } = await supabase
+      const { data: billing, error: fetchError } = await db
         .from('client_billing')
         .select('tasks')
         .eq('client_id', tx.clientId)
@@ -244,7 +245,7 @@ export default function GananciasPage() {
           };
         }
 
-        const { error: updateError } = await supabase
+        const { error: updateError } = await db
           .from('client_billing')
           .update({ tasks })
           .eq('client_id', tx.clientId);
@@ -260,10 +261,11 @@ export default function GananciasPage() {
 
   return (
     <div className="ganancias-page animate-fade-in">
-      <header className="page-header-centered">
-        <h1>Resumen Financiero</h1>
-        <p>Visualiza tus ingresos proyectados y confirmados para tener un control total de tu rentabilidad.</p>
-      </header>
+      <PageHeader
+        section="Monetización"
+        title="Resumen Financiero"
+        subtitle="Visualiza tus ingresos proyectados y confirmados para tener un control total de tu rentabilidad."
+      />
 
       {loading ? (
         <div className="p-5 text-center">

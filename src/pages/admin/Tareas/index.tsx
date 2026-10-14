@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect, useRef } from 'react';
 import { 
-  Search, 
+  
   FileText, 
   Plus, 
   Trash2, 
@@ -15,9 +15,11 @@ import {
   DollarSign
 } from 'lucide-react';
 import MDEditor from '@uiw/react-md-editor';
-import { supabase } from '../../../lib/supabase';
+import { db } from '../../../lib/db';
 import './Tareas.css';
 
+import PageHeader from '../../../components/PageHeader/PageHeader';
+import SearchBar from '../../../components/SearchBar/SearchBar';
 interface ServiceItem {
   id: string;
   name: string;
@@ -129,7 +131,7 @@ export default function TareasPage() {
 
   const fetchClients = async () => {
     setLoadingClients(true);
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from('clients')
       .select('id, name, email, phone, source')
       .neq('source', 'agenda_session_only')
@@ -142,7 +144,7 @@ export default function TareasPage() {
 
   const fetchServices = async () => {
     // Solo traemos servicios de la tabla 'services' (Costos)
-    const { data: genericServices } = await supabase.from('services').select('*').order('name');
+    const { data: genericServices } = await db.from('services').select('*').order('name');
     
     const mappedGeneric: ServiceItem[] = (genericServices || []).map(s => ({
       ...s,
@@ -156,7 +158,7 @@ export default function TareasPage() {
 
   const fetchBilling = async (clientId: string) => {
     setLoadingBilling(true);
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from('client_billing')
       .select('*')
       .eq('client_id', clientId)
@@ -230,7 +232,7 @@ export default function TareasPage() {
       passengers: updatedData.passengers
     };
 
-    const { error } = await supabase
+    const { error } = await db
       .from('client_billing')
       .upsert(dbData, { onConflict: 'client_id' });
 
@@ -426,23 +428,16 @@ export default function TareasPage() {
 
   return (
     <div className="tareas-page animate-fade-in">
-      <header className="page-header-centered">
-        <h1>Gestión de Tareas y Boletas</h1>
-        <p>Registra cada acción realizada para tus clientes y genera sus estados de cuenta actualizados.</p>
-      </header>
+      <PageHeader
+        section="Gestión"
+        title="Gestión de Tareas y Boletas"
+        subtitle="Registra cada acción realizada para tus clientes y genera sus estados de cuenta actualizados."
+      />
 
       <div className="tareas-container">
         {/* Left Panel: Client List */}
         <div className="clients-sidebar glass-card">
-          <div className="sidebar-search">
-            <Search size={18} className="search-icon" />
-            <input 
-              type="text" 
-              placeholder="Buscar cliente..." 
-              value={searchTerm}
-              onChange={e => setSearchTerm(e.target.value)}
-            />
-          </div>
+          <SearchBar placeholder="Buscar cliente..." value={searchTerm} onChange={setSearchTerm} />
           
           <div className="client-list custom-scrollbar" style={{ maxHeight: 'calc(100vh - 350px)', overflowY: 'auto' }}>
             {loadingClients ? (
@@ -550,9 +545,9 @@ export default function TareasPage() {
                                     {task.paid ? (
                                       <div className="paid-badge-mini"><Check size={10} /> PAGADO</div>
                                     ) : task.payment_status === 'requested' ? (
-                                      <div className="pending-badge-mini" style={{ background: '#fffbeb', color: '#92400e', border: '1px solid #fde68a', fontSize: '0.65rem', fontWeight: 800 }}>SOLICITUD PENDIENTE</div>
+                                      <div className="pending-badge-mini" style={{ background: '#fffbeb', color: '#92400e', border: '1px solid #fde68a', fontSize: '0.65rem', fontWeight: 700 }}>SOLICITUD PENDIENTE</div>
                                     ) : (
-                                      <div className="pending-badge-mini" style={{ fontSize: '0.65rem', fontWeight: 800, color: '#94a3b8' }}>PENDIENTE</div>
+                                      <div className="pending-badge-mini" style={{ fontSize: '0.65rem', fontWeight: 700, color: '#8FA2AF' }}>PENDIENTE</div>
                                     )}
                                   <button className="btn-delete-task" onClick={() => handleRemoveTask(idx)}>
                                     <Trash2 size={14} />
@@ -585,7 +580,7 @@ export default function TareasPage() {
                                   <span style={{ fontSize: '0.75rem', color: '#047857', display: 'block', opacity: 0.8 }}>{new Date(task.date).toLocaleDateString()}</span>
                                 </div>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                                  <span style={{ fontWeight: 900, color: '#059669', fontSize: '1.1rem' }}>+${Math.abs(task.price).toLocaleString('es-AR')}</span>
+                                  <span style={{ fontWeight: 700, color: '#059669', fontSize: '1.1rem' }}>+${Math.abs(task.price).toLocaleString('es-AR')}</span>
                                   <button className="btn-delete-task" style={{ background: 'white' }} onClick={() => handleRemoveTask(idx)}>
                                     <Trash2 size={14} />
                                   </button>
@@ -700,23 +695,21 @@ export default function TareasPage() {
 
       {isAddingTask && (
         <div className="modal-overlay animate-fade-in" style={{ zIndex: 1400 }}>
-          <div className="modal-content glass-card animate-scale-in" style={{ maxWidth: '420px', padding: 0, borderRadius: '20px', overflow: 'hidden' }}>
-            <div style={{ padding: '1.5rem', background: 'var(--color-primary)', color: 'white', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                <div style={{ background: 'rgba(255,255,255,0.15)', padding: '6px', borderRadius: '8px' }}>
-                  <Plus size={18} color="white" />
-                </div>
-                <div>
-                  <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 700, color: 'white' }}>Agregar Servicio</h3>
-                  <p style={{ margin: 0, fontSize: '0.75rem', opacity: 0.8 }}>Selecciona para añadir a la cuenta</p>
+          <div className="modal-content-pro modal-sm">
+            <div className="modal-header-pro">
+              <div className="header-left">
+                <div className="header-icon"><Plus size={20} /></div>
+                <div className="header-text">
+                  <h3>Agregar servicio</h3>
+                  <p>Seleccioná para añadir a la cuenta</p>
                 </div>
               </div>
-              <button onClick={() => setIsAddingTask(false)} style={{ background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '50%', padding: '6px', cursor: 'pointer', color: 'white' }}>
+              <button onClick={() => setIsAddingTask(false)} className="close-modal-btn" aria-label="Cerrar">
                 <X size={18} />
               </button>
             </div>
             
-            <div className="custom-scrollbar" style={{ padding: '1.25rem', maxHeight: '50vh', overflowY: 'auto' }}>
+            <div className="modal-body-pro">
               {services.filter(s => !s.name.startsWith('[')).length > 0 ? (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                   {services.filter(s => !s.name.startsWith('[')).map(service => (
@@ -743,7 +736,7 @@ export default function TareasPage() {
                         <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--color-primary)' }}></div>
                         <span style={{ fontWeight: 600, fontSize: '0.95rem', color: 'var(--text-primary)' }}>{service.name}</span>
                       </div>
-                      <span style={{ fontWeight: 800, color: 'var(--color-primary)', fontSize: '1rem' }}>${service.price.toLocaleString('es-AR')}</span>
+                      <span style={{ fontWeight: 700, color: 'var(--color-primary)', fontSize: '1rem' }}>${service.price.toLocaleString('es-AR')}</span>
                     </button>
                   ))}
                 </div>
@@ -759,25 +752,23 @@ export default function TareasPage() {
 
       {showPaymentModal && (
         <div className="modal-overlay animate-fade-in" style={{ zIndex: 1500 }}>
-          <div className="modal-content glass-card animate-scale-in" style={{ maxWidth: '480px', padding: 0, borderRadius: '20px', overflow: 'hidden' }}>
-            <div style={{ padding: '1.25rem 1.5rem', background: 'var(--color-primary)', color: 'white', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                <div style={{ background: 'rgba(16, 185, 129, 0.2)', color: '#10b981', padding: '8px', borderRadius: '10px', display: 'flex' }}>
-                  <DollarSign size={20} />
-                </div>
-                <div>
-                  <h3 style={{ margin: 0, color: 'white', fontSize: '1.1rem', fontWeight: 700 }}>Registrar Cobro</h3>
-                  <p style={{ margin: '0 0 0 0', color: 'rgba(255,255,255,0.7)', fontSize: '0.8rem', fontWeight: 500 }}>Cliente: {selectedClient?.name}</p>
+          <div className="modal-content-pro modal-sm">
+            <div className="modal-header-pro">
+              <div className="header-left">
+                <div className="header-icon success"><DollarSign size={20} /></div>
+                <div className="header-text">
+                  <h3>Registrar cobro</h3>
+                  <p>Cliente: <strong>{selectedClient?.name}</strong></p>
                 </div>
               </div>
-              <button onClick={() => setShowPaymentModal(false)} style={{ background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '50%', padding: '6px', cursor: 'pointer', color: 'white' }}>
+              <button onClick={() => setShowPaymentModal(false)} className="close-modal-btn" aria-label="Cerrar">
                 <X size={18} />
               </button>
             </div>
 
-            <div style={{ padding: '1.25rem 1.5rem' }}>
+            <div className="modal-body-pro">
               <div style={{ marginBottom: '1rem' }}>
-                <label style={{ fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--text-secondary)', letterSpacing: '0.5px', marginBottom: '0.5rem', display: 'block' }}>Servicios Pendientes a Cobrar</label>
+                <label style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-secondary)', letterSpacing: '0.5px', marginBottom: '0.5rem', display: 'block' }}>Servicios Pendientes a Cobrar</label>
                 
                 <div className="custom-scrollbar" style={{ maxHeight: '180px', display: 'flex', flexDirection: 'column', gap: '0.5rem', overflowY: 'auto' }}>
                   {billingData?.tasks.filter(t => !t.paid && t.price > 0 && t.serviceId !== 'payment-record').length ?? 0 > 0 ? (
@@ -804,12 +795,12 @@ export default function TareasPage() {
                             <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 500 }}>{new Date(task.date).toLocaleDateString('es-AR')}</span>
                           </div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                            <span style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--text-primary)' }}>${task.price.toLocaleString('es-AR')}</span>
+                            <span style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-primary)' }}>${task.price.toLocaleString('es-AR')}</span>
                             <div style={{ 
                               width: '20px', 
                               height: '20px', 
                               borderRadius: '5px', 
-                              border: isSelected ? 'none' : '2px solid #cbd5e1',
+                              border: isSelected ? 'none' : '2px solid #D8D0C4',
                               background: isSelected ? '#10b981' : 'transparent',
                               display: 'flex',
                               alignItems: 'center',
@@ -833,7 +824,7 @@ export default function TareasPage() {
               <div style={{ background: 'rgba(0,0,0,0.02)', borderRadius: '16px', padding: '1rem', marginBottom: '1.25rem', border: '1px solid rgba(0,0,0,0.05)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', paddingBottom: '0.75rem', borderBottom: '1px dashed rgba(0,0,0,0.1)' }}>
                   <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Total Seleccionado</span>
-                  <span style={{ fontSize: '1.2rem', fontWeight: 900, color: 'var(--color-primary)' }}>${selectedTaskIndices.reduce((sum, i) => sum + (billingData?.tasks[i]?.price || 0), 0).toLocaleString('es-AR')}</span>
+                  <span style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--color-primary)' }}>${selectedTaskIndices.reduce((sum, i) => sum + (billingData?.tasks[i]?.price || 0), 0).toLocaleString('es-AR')}</span>
                 </div>
                 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr', gap: '1rem' }}>
@@ -843,7 +834,7 @@ export default function TareasPage() {
                       <DollarSign size={16} color="var(--color-primary)" />
                       <input 
                         type="number" 
-                        style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--color-primary)', height: '42px', border: 'none', background: 'transparent', width: '100%', outline: 'none', paddingLeft: '5px' }}
+                        style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--color-primary)', height: '42px', border: 'none', background: 'transparent', width: '100%', outline: 'none', paddingLeft: '5px' }}
                         value={paymentAmount}
                         onChange={e => setPaymentAmount(e.target.value)}
                       />
@@ -862,26 +853,8 @@ export default function TareasPage() {
                   </div>
                 </div>
               </div>
-
-              <button 
-                onClick={handleConfirmPayment} 
-                style={{ 
-                  width: '100%', 
-                  borderRadius: '12px', 
-                  fontSize: '1rem', 
-                  fontWeight: 700, 
-                  padding: '1rem', 
-                  background: 'var(--color-primary)',
-                  color: 'white',
-                  border: 'none',
-                  cursor: 'pointer',
-                  boxShadow: '0 4px 12px rgba(31, 58, 77, 0.2)', 
-                  display: 'flex', 
-                  justifyContent: 'center', 
-                  alignItems: 'center', 
-                  gap: '0.5rem'
-                }}
-              >
+            </div>
+            <div className="modal-footer-pro"><button onClick={handleConfirmPayment} className="btn btn-primary">
                 <Check size={18} /> Confirmar y Registrar
               </button>
             </div>

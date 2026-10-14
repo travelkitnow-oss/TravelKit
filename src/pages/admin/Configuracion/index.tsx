@@ -1,12 +1,14 @@
 import './Configuracion.css';
 
+import PageHeader from '../../../components/PageHeader/PageHeader';
 export default function ConfiguracionPage() {
   return (
     <div className="config-page animate-fade-in">
-      <header className="page-header-centered">
-        <h1>Configuración del Sistema</h1>
-        <p>Personaliza los parámetros de tu plataforma y gestiona tus preferencias de usuario.</p>
-      </header>
+      <PageHeader
+        section="Gestión"
+        title="Configuración del Sistema"
+        subtitle="Personaliza los parámetros de tu plataforma y gestiona tus preferencias de usuario."
+      />
 
       <div className="glass-card">
         <div className="card-header border-bottom">

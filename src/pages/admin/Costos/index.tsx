@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { Plus, Trash2, Edit2, X, Check, Ticket, DollarSign, Package, Briefcase } from 'lucide-react';
 import ConfirmationModal from '../../../components/ConfirmationModal/ConfirmationModal';
-import { supabase } from '../../../lib/supabase';
+import { db } from '../../../lib/db';
 import './Costos.css';
 
+import PageHeader from '../../../components/PageHeader/PageHeader';
 interface ServiceItem {
   id: string;
   name: string;
@@ -25,7 +26,7 @@ export default function CostosPage() {
 
   const fetchServices = async () => {
     setLoading(true);
-    const { data, error } = await supabase.from('services').select('*').order('name');
+    const { data, error } = await db.from('services').select('*').order('name');
     if (error) {
       console.error('Error fetching services:', error);
     } else {
@@ -36,7 +37,7 @@ export default function CostosPage() {
 
   const handleAddService = async () => {
     if (!newName || !newPrice) return;
-    const { data, error } = await supabase.from('services').insert([
+    const { data, error } = await db.from('services').insert([
       { name: newName, price: parseFloat(newPrice) }
     ]).select();
 
@@ -53,7 +54,7 @@ export default function CostosPage() {
 
   const handleUpdateService = async () => {
     if (!editingService) return;
-    const { error } = await supabase
+    const { error } = await db
       .from('services')
       .update({ name: editingService.name, price: editingService.price })
       .eq('id', editingService.id);
@@ -69,7 +70,7 @@ export default function CostosPage() {
 
   const handleDeleteService = async () => {
     if (isDeleting) {
-      const { error } = await supabase.from('services').delete().eq('id', isDeleting);
+      const { error } = await db.from('services').delete().eq('id', isDeleting);
       if (error) {
         console.error('Error deleting service:', error);
         alert('Error al eliminar servicio: ' + error.message);
@@ -82,10 +83,11 @@ export default function CostosPage() {
 
   return (
     <div className="costos-page animate-fade-in">
-      <header className="page-header-centered">
-        <h1>Tarifario de Servicios</h1>
-        <p>Define los precios de tus asesorías y servicios personalizados para mantener la transparencia con tus viajeros.</p>
-      </header>
+      <PageHeader
+        section="Gestión"
+        title="Tarifario de Servicios"
+        subtitle="Define los precios de tus asesorías y servicios personalizados para mantener la transparencia con tus viajeros."
+      />
 
       <div className="glass-card mb-4" style={{ borderLeft: '4px solid var(--color-accent)', background: 'rgba(212, 175, 55, 0.05)' }}>
         <div className="card-body py-3">
@@ -203,22 +205,23 @@ export default function CostosPage() {
 
       {showAddModal && (
         <div className="modal-overlay animate-fade-in" style={{ zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div className="modal-content animate-scale-in" style={{ maxWidth: '420px', padding: 0, overflow: 'hidden' }}>
-            <div className="modal-header-v2" style={{ background: 'var(--color-primary)', padding: '1.5rem 2rem', color: 'white', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                <div style={{ background: 'rgba(255,255,255,0.15)', padding: '8px', borderRadius: '10px' }}>
-                  <Package size={20} color="white" />
+          <div className="modal-content-pro modal-sm">
+            <div className="modal-header-pro">
+              <div className="header-left">
+                <div className="header-icon"><Package size={20} /></div>
+                <div className="header-text">
+                  <h3>Nueva tarea / costo</h3>
+                  <p>Se suma al tarifario de servicios</p>
                 </div>
-                <h3 style={{ margin: 0, color: 'white', fontSize: '1.2rem' }}>Nueva Tarea / Costo</h3>
               </div>
-              <button onClick={() => setShowAddModal(false)} style={{ background: 'none', border: 'none', color: 'white', opacity: 0.7, cursor: 'pointer' }}>
-                <X size={20} />
+              <button onClick={() => setShowAddModal(false)} className="close-modal-btn" aria-label="Cerrar">
+                <X size={18} />
               </button>
             </div>
             
-            <div className="modal-body" style={{ padding: '2rem' }}>
+            <div className="modal-body-pro">
               <div className="form-group mb-4">
-                <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--text-secondary)', marginBottom: '0.5rem', letterSpacing: '0.5px' }}>Nombre del Servicio</label>
+                <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-secondary)', marginBottom: '0.5rem', letterSpacing: '0.5px' }}>Nombre del Servicio</label>
                 <div className="input-with-icon" style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
                   <Briefcase size={18} style={{ position: 'absolute', left: '1rem', color: 'var(--color-primary)', opacity: 0.5 }} />
                   <input 
@@ -232,7 +235,7 @@ export default function CostosPage() {
                 </div>
               </div>
               <div className="form-group mb-4">
-                <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--text-secondary)', marginBottom: '0.5rem', letterSpacing: '0.5px' }}>Precio Sugerido</label>
+                <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-secondary)', marginBottom: '0.5rem', letterSpacing: '0.5px' }}>Precio Sugerido</label>
                 <div className="input-with-icon" style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
                   <DollarSign size={18} style={{ position: 'absolute', left: '1rem', color: '#10b981' }} />
                   <input 
@@ -253,9 +256,9 @@ export default function CostosPage() {
               </div>
             </div>
  
-            <div className="modal-footer" style={{ padding: '1.5rem 2rem', background: '#f8fafc', display: 'flex', gap: '1rem' }}>
-              <button className="btn btn-outline w-100" style={{ margin: 0 }} onClick={() => setShowAddModal(false)}>Cancelar</button>
-              <button className="btn btn-primary w-100" style={{ margin: 0 }} onClick={handleAddService}>Guardar Servicio</button>
+            <div className="modal-footer-pro">
+              <button onClick={() => setShowAddModal(false)} className="btn btn-outline">Cancelar</button>
+              <button onClick={handleAddService} className="btn btn-primary">Guardar Servicio</button>
             </div>
           </div>
         </div>

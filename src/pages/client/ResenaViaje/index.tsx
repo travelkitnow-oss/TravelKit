@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { Star, Send, CheckCircle2 } from 'lucide-react';
-import { supabase } from '../../../lib/supabase';
+import { db } from '../../../lib/db';
 import './ResenaViaje.css';
 
 export default function ResenaViajePage() {
@@ -18,7 +18,7 @@ export default function ResenaViajePage() {
     // Check if the user already submitted a review
     const checkReview = async () => {
       if (!clientId) return;
-      const { data } = await supabase
+      const { data } = await db
         .from('client_reviews')
         .select('*')
         .eq('client_id', clientId)
@@ -60,8 +60,8 @@ export default function ResenaViajePage() {
     }
 
     setLoading(true);
-    // If the table doesn't exist, this might fail, but supabase handles it gracefully (throws error).
-    const { error } = await supabase.from('client_reviews').insert([{
+    // If the table doesn't exist, this might fail, but the API returns an error (throws error).
+    const { error } = await db.from('client_reviews').insert([{
       client_id: clientId,
       rating,
       comment,

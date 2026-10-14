@@ -14,10 +14,11 @@ import {
   MapPin,
   X
 } from 'lucide-react';
-import { supabase } from '../../../lib/supabase';
+import { db } from '../../../lib/db';
 import ConfirmationModal from '../../../components/ConfirmationModal/ConfirmationModal';
 import './Transportes.css';
 
+import PageHeader from '../../../components/PageHeader/PageHeader';
 interface TransportLink {
   label: string;
   url: string;
@@ -84,7 +85,7 @@ export default function TransportesPage() {
 
   const fetchFolders = async () => {
     setLoading(true);
-    const { data: folderData, error: folderError } = await supabase
+    const { data: folderData, error: folderError } = await db
       .from('catalog_folders')
       .select('*')
       .eq('type', 'transport')
@@ -102,7 +103,7 @@ export default function TransportesPage() {
       return;
     }
 
-    const { data: itemData, error: itemError } = await supabase
+    const { data: itemData, error: itemError } = await db
       .from('catalog_items')
       .select('*')
       .in('folder_id', folderData.map(f => f.id));
@@ -141,7 +142,7 @@ export default function TransportesPage() {
       ? `${currentPath.join(' / ')} / ${newFolderName.trim()}`
       : newFolderName.trim();
 
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from('catalog_folders')
       .insert([
         { name: fullFolderName, type: 'hotel' },
@@ -172,13 +173,13 @@ export default function TransportesPage() {
     if (!id) return;
 
     // Borramos items primero
-    const { error: itemsError } = await supabase.from('catalog_items').delete().eq('folder_id', id);
+    const { error: itemsError } = await db.from('catalog_items').delete().eq('folder_id', id);
     if (itemsError) {
       alert('Error al eliminar los transportes de la carpeta: ' + itemsError.message);
       return;
     }
 
-    const { error: folderError } = await supabase.from('catalog_folders').delete().eq('id', id);
+    const { error: folderError } = await db.from('catalog_folders').delete().eq('id', id);
     if (!folderError) {
       setFolders(folders.filter(f => f.id !== id));
       if (selectedFolderId === id) setSelectedFolderId(null);
@@ -205,14 +206,14 @@ export default function TransportesPage() {
     };
 
     if (editingTransportId) {
-      const { error } = await supabase.from('catalog_items').update(dbData).eq('id', editingTransportId);
+      const { error } = await db.from('catalog_items').update(dbData).eq('id', editingTransportId);
       if (error) alert('Error al actualizar transporte');
       else {
         fetchFolders();
         setShowTransportModal(false);
       }
     } else {
-      const { error } = await supabase.from('catalog_items').insert([dbData]);
+      const { error } = await db.from('catalog_items').insert([dbData]);
       if (error) alert('Error al guardar transporte');
       else {
         fetchFolders();
@@ -223,14 +224,14 @@ export default function TransportesPage() {
 
   const handleDeleteTransport = async (id: string) => {
     if (window.confirm('¿Eliminar este transporte?')) {
-      const { error } = await supabase.from('catalog_items').delete().eq('id', id);
+      const { error } = await db.from('catalog_items').delete().eq('id', id);
       if (!error) fetchFolders();
     }
   };
 
   const handleMoveTransport = async (targetFolderId: string) => {
     if (!movingTransport) return;
-    const { error } = await supabase
+    const { error } = await db
       .from('catalog_items')
       .update({ folder_id: targetFolderId })
       .eq('id', movingTransport.id);
@@ -298,10 +299,11 @@ export default function TransportesPage() {
 
   return (
     <div className="transportes-page animate-fade-in">
-      <header className="page-header-centered">
-        <h1>Catálogo de Transportes</h1>
-        <p>Gestiona opciones de traslados, vuelos y buses por región.</p>
-      </header>
+      <PageHeader
+        section="Viaje"
+        title="Catálogo de Transportes"
+        subtitle="Gestiona opciones de traslados, vuelos y buses por región."
+      />
 
       {/* Dollar rate banner */}
       <div className="dollar-info-bar mb-4">
@@ -319,17 +321,17 @@ export default function TransportesPage() {
         <button 
           className={`breadcrumb-item ${currentPath.length === 0 ? 'active' : ''}`} 
           onClick={goHome}
-          style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontSize: '0.9rem', fontWeight: currentPath.length === 0 ? 700 : 500, color: currentPath.length === 0 ? 'var(--color-primary)' : '#64748b' }}
+          style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontSize: '0.9rem', fontWeight: currentPath.length === 0 ? 700 : 500, color: currentPath.length === 0 ? 'var(--color-primary)' : '#5A7181' }}
         >
           Catálogo
         </button>
         {currentPath.map((part, index) => (
           <Fragment key={index}>
-            <span style={{ color: '#cbd5e1' }}>/</span>
+            <span style={{ color: '#D8D0C4' }}>/</span>
             <button 
               className={`breadcrumb-item ${index === currentPath.length - 1 ? 'active' : ''}`}
               onClick={() => navigateToPath(index)}
-              style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontSize: '0.9rem', fontWeight: index === currentPath.length - 1 ? 700 : 500, color: index === currentPath.length - 1 ? 'var(--color-primary)' : '#64748b' }}
+              style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontSize: '0.9rem', fontWeight: index === currentPath.length - 1 ? 700 : 500, color: index === currentPath.length - 1 ? 'var(--color-primary)' : '#5A7181' }}
             >
               {part}
             </button>
@@ -392,7 +394,7 @@ export default function TransportesPage() {
               <button className="btn-icon" onClick={() => currentPath.length === 1 ? goHome() : navigateToPath(currentPath.length - 2)}>
                 <ChevronLeft size={20} />
               </button>
-              <h2 className="m-0" style={{ fontWeight: 800, fontSize: '2rem' }}>{selectedFolder ? getDisplayName(selectedFolder.name) : (currentPath[currentPath.length - 1] || '')}</h2>
+              <h2 className="m-0" style={{ fontWeight: 700, fontSize: '2rem' }}>{selectedFolder ? getDisplayName(selectedFolder.name) : (currentPath[currentPath.length - 1] || '')}</h2>
             </div>
             <div style={{ display: 'flex', gap: '1rem' }}>
               <button className="btn btn-outline" onClick={() => setShowFolderModal(true)}>
@@ -659,7 +661,7 @@ export default function TransportesPage() {
                     />
                   </div>
                   {(newTransport.cost_usd || 0) > 0 && (
-                    <span style={{ fontSize: '0.7rem', color: '#64748b', marginTop: '4px', display: 'block' }}>
+                    <span style={{ fontSize: '0.7rem', color: '#5A7181', marginTop: '4px', display: 'block' }}>
                       {newTransport.currency === 'ARS' ? 
                         `Equiv: u$s ${Math.round((newTransport.cost_usd || 0) / (dollarRate || 1))}` : 
                         `Equiv: $${Math.round((newTransport.cost_usd || 0) * dollarRate).toLocaleString('es-AR')} ARS`
@@ -728,50 +730,41 @@ export default function TransportesPage() {
       {/* Modal para Mover Transporte */}
       {showMoveModal && (
         <div className="modal-overlay" style={{ backdropFilter: 'blur(10px)', backgroundColor: 'rgba(15,23,42,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
-          <div style={{ width: '100%', maxWidth: '480px', borderRadius: '24px', overflow: 'hidden', boxShadow: '0 32px 64px -12px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.08)' }}>
+          <div className="modal-content-pro modal-sm">
             {/* Header con gradiente oscuro */}
-            <div style={{ background: 'linear-gradient(135deg, var(--color-primary) 0%, #0f2132 100%)', padding: '2rem 2rem 1.75rem', position: 'relative' }}>
-              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '1rem' }}>
-                <div style={{ background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(8px)', padding: '0.875rem', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.2)', flexShrink: 0 }}>
-                  <Move size={22} color="white" />
+            <div className="modal-header-pro">
+              <div className="header-left">
+                <div className="header-icon"><Move size={20} /></div>
+                <div className="header-text">
+                  <h3>Mover transporte</h3>
+                  <p>Elegí el destino para <strong>{movingTransport?.name}</strong></p>
                 </div>
-                <div style={{ flex: 1 }}>
-                  <h3 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 800, color: 'white', lineHeight: 1.2 }}>Mover transporte</h3>
-                  <p style={{ margin: '0.4rem 0 0', fontSize: '0.875rem', color: 'rgba(255,255,255,0.65)', lineHeight: 1.4 }}>
-                    Seleccioná el destino para <strong style={{ color: 'rgba(255,255,255,0.95)' }}>{movingTransport?.name}</strong>
-                  </p>
-                </div>
-                <button 
-                  onClick={() => setShowMoveModal(false)}
-                  style={{ background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '50%', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'white', flexShrink: 0, transition: 'all 0.2s' }}
-                  onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.25)'; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.12)'; }}
-                >
-                  <X size={16} />
-                </button>
               </div>
+              <button onClick={() => setShowMoveModal(false)} className="close-modal-btn" aria-label="Cerrar">
+                <X size={18} />
+              </button>
             </div>
 
             {/* Lista de carpetas */}
-            <div style={{ background: '#f8fafc', padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.625rem', maxHeight: '360px', overflowY: 'auto' }}>
+            <div style={{ background: '#F8F5F0', padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.625rem', maxHeight: '360px', overflowY: 'auto' }}>
               {folders.filter(f => f.id !== selectedFolderId).length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '2rem', color: '#94a3b8' }}>
+                <div style={{ textAlign: 'center', padding: '2rem', color: '#8FA2AF' }}>
                   <Folder size={40} style={{ margin: '0 auto 0.75rem', display: 'block', opacity: 0.4 }} />
                   <p style={{ margin: 0, fontSize: '0.9rem' }}>No hay otras carpetas disponibles</p>
                 </div>
               ) : folders.filter(f => f.id !== selectedFolderId).map(folder => (
                 <div
                   key={folder.id}
-                  style={{ background: 'white', borderRadius: '14px', border: '1.5px solid #e2e8f0', padding: '1rem 1.25rem', display: 'flex', alignItems: 'center', gap: '1rem', transition: 'all 0.2s' }}
+                  style={{ background: 'white', borderRadius: '14px', border: '1.5px solid #E7E1D8', padding: '1rem 1.25rem', display: 'flex', alignItems: 'center', gap: '1rem', transition: 'all 0.2s' }}
                   onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'rgba(31,58,77,0.3)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.06)'; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.boxShadow = 'none'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#E7E1D8'; e.currentTarget.style.boxShadow = 'none'; }}
                 >
                   <div style={{ background: 'rgba(31,58,77,0.08)', padding: '0.6rem', borderRadius: '10px', flexShrink: 0 }}>
                     <Folder size={20} color="var(--color-primary)" fill="rgba(31,58,77,0.15)" />
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <span style={{ fontWeight: 700, color: '#1e293b', fontSize: '0.95rem', display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{getDisplayName(folder.name)}</span>
-                    <span style={{ fontSize: '0.78rem', color: '#94a3b8' }}>{folder.transports?.length || 0} transportes</span>
+                    <span style={{ fontWeight: 700, color: '#1F3A4D', fontSize: '0.95rem', display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{getDisplayName(folder.name)}</span>
+                    <span style={{ fontSize: '0.78rem', color: '#8FA2AF' }}>{folder.transports?.length || 0} transportes</span>
                   </div>
                   <button
                     onClick={() => handleMoveTransport(folder.id)}
@@ -786,13 +779,8 @@ export default function TransportesPage() {
             </div>
 
             {/* Footer */}
-            <div style={{ background: 'white', padding: '1.25rem 1.5rem', borderTop: '1px solid #f1f5f9' }}>
-              <button
-                onClick={() => setShowMoveModal(false)}
-                style={{ width: '100%', background: 'transparent', border: '1.5px solid #e2e8f0', borderRadius: '12px', padding: '0.875rem', fontSize: '0.9rem', fontWeight: 600, color: '#64748b', cursor: 'pointer', transition: 'all 0.2s' }}
-                onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#cbd5e1'; e.currentTarget.style.color = '#334155'; }}
-                onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.color = '#64748b'; }}
-              >
+            <div className="modal-footer-pro">
+              <button onClick={() => setShowMoveModal(false)} className="btn btn-outline">
                 Cancelar
               </button>
             </div>

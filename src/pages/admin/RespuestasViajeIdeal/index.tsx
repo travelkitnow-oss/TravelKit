@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '../../../lib/supabase';
-import { Target, Calendar, User, Search, MapPin, Compass, ChevronDown } from 'lucide-react';
+import { db } from '../../../lib/db';
+import { Target, Calendar, User, Search, MapPin, ChevronDown } from 'lucide-react';
 import './RespuestasViajeIdeal.css';
 
+import PageHeader from '../../../components/PageHeader/PageHeader';
+import SearchBar from '../../../components/SearchBar/SearchBar';
 interface Submission {
   id: string;
   client_name: string;
@@ -23,7 +25,7 @@ export default function RespuestasViajeIdealPage() {
   const fetchSubmissions = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase.from('viaje_ideal_submissions').select('*').order('created_at', { ascending: false });
+      const { data, error } = await db.from('viaje_ideal_submissions').select('*').order('created_at', { ascending: false });
       
       if (error) {
         // If table doesn't exist (PGRST205), we show mock data silently
@@ -69,16 +71,11 @@ export default function RespuestasViajeIdealPage() {
   return (
     <div className="respuestas-viaje-page animate-fade-in">
       {/* Header Section */}
-      <div className="dashboard-header mb-5">
-        <div className="header-info centered">
-          <div className="header-badge">
-            <Compass size={14} />
-            <span>Módulo de Inteligencia</span>
-          </div>
-          <h1 className="display-title">Resultados del Test</h1>
-          <p className="subtitle">Analiza las preferencias de tus clientes y segmenta tus estrategias de venta.</p>
-        </div>
-      </div>
+      <PageHeader
+        section="Formularios"
+        title="Resultados del Test"
+        subtitle="Analiza las preferencias de tus clientes y segmenta tus estrategias de venta."
+      />
 
       {/* Stats Summary Area */}
       <div className="stats-row mb-5">
@@ -86,7 +83,6 @@ export default function RespuestasViajeIdealPage() {
           <div className="stat-content">
             <span className="stat-label">Total Viajeros</span>
             <span className="stat-number">{submissions.length}</span>
-            <span className="stat-trend positive">+12% este mes</span>
           </div>
           <div className="stat-icon-wrapper blue">
             <User size={24} />
@@ -119,15 +115,7 @@ export default function RespuestasViajeIdealPage() {
       {/* Main Content Area */}
       <div className="main-dashboard-card glass-card shadow-2xl">
         <div className="card-toolbar">
-          <div className="search-container">
-            <Search size={18} className="search-icon" />
-            <input 
-              type="text" 
-              placeholder="Buscar por cliente, destino o ID..." 
-              value={searchTerm}
-              onChange={e => setSearchTerm(e.target.value)}
-            />
-          </div>
+          <SearchBar className="search-grow" placeholder="Buscar por cliente, destino o ID..." value={searchTerm} onChange={setSearchTerm} />
           <div className="toolbar-info">
             <div className="result-pill">
               <div className="pulse-dot"></div>

@@ -35,9 +35,12 @@ import HistorialViajesClientePage from './pages/client/HistorialViajes';
 import LogsPage from './pages/admin/Logs';
 import CampanasPage from './pages/admin/Campanas';
 import NavigationLogger from './components/NavigationLogger';
+import { useModalEscape } from './hooks/useModalEscape';
 import './App.css';
 
 function App() {
+  useModalEscape();
+
   return (
     <>
       <NavigationLogger />

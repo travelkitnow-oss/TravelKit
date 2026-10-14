@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
+import { db } from '../lib/db';
 
 const DEFAULT_CONTENT = {
   hero_title: 'Organiza el viaje de tu vida con Travel Kit',
@@ -30,7 +30,7 @@ export function useSiteSettings() {
   useEffect(() => {
     async function fetchSettings() {
       try {
-        const { data, error } = await supabase.from('site_settings').select('*');
+        const { data, error } = await db.from('site_settings').select('*');
         
         if (error) throw error;
 

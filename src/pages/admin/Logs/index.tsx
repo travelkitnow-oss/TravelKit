@@ -3,6 +3,7 @@ import { logger } from '../../../lib/logger';
 import { Trash2, Terminal, Search, Filter, AlertCircle, CheckCircle, Info, AlertTriangle } from 'lucide-react';
 import './Logs.css';
 
+import PageHeader from '../../../components/PageHeader/PageHeader';
 interface LogEntry {
   id: string;
   timestamp: string;
@@ -21,8 +22,8 @@ export default function Logs() {
     // Initial local load
     setLogs(logger.getLogs());
     
-    // Fetch from Supabase for global logs
-    logger.fetchLogsFromSupabase();
+    // Trae los logs globales desde la base
+    logger.fetchRemoteLogs();
 
     const unsubscribe = logger.subscribe((newLogs) => {
       setLogs(newLogs);
@@ -41,8 +42,8 @@ export default function Logs() {
   });
 
   const clearLogs = () => {
-    if (window.confirm('¿Estás seguro de que quieres borrar todos los logs de Supabase? Esta acción afectará a todos los administradores.')) {
-      logger.clearSupabaseLogs();
+    if (window.confirm('¿Estás seguro de que quieres borrar todos los logs del sistema? Esta acción afectará a todos los administradores.')) {
+      logger.clearRemoteLogs();
       logger.clearLogs();
     }
   };
@@ -62,19 +63,19 @@ export default function Logs() {
   };
 
   return (
-    <div className="logs-container">
-      <div className="logs-header">
-        <div className="header-title">
-          <Terminal size={24} />
-          <h1>Consola del Sistema</h1>
-        </div>
-        <div className="header-actions">
-          <button onClick={clearLogs} className="btn-secondary danger">
-            <Trash2 size={18} />
-            Borrar Todo
+    <>
+      <PageHeader
+        section="Sistema"
+        title="Consola del Sistema"
+        subtitle="Registro de eventos, errores y actividad de la plataforma."
+        actions={
+          <button onClick={clearLogs} className="btn btn-outline btn-danger-outline">
+            <Trash2 size={16} />
+            Borrar todo
           </button>
-        </div>
-      </div>
+        }
+      />
+    <div className="logs-container">
 
       <div className="logs-toolbar">
         <div className="search-box">
@@ -124,5 +125,6 @@ export default function Logs() {
         </div>
       </div>
     </div>
+    </>
   );
 }

@@ -32,7 +32,7 @@
   background: rgba(var(--color-accent-rgb), 0.1);
   color: var(--color-accent);
   padding: 0.25rem 0.75rem;
-  border-radius: 20px;
+  border-radius: 16px;
   font-size: 0.75rem;
   font-weight: 600;
 }
@@ -210,8 +210,8 @@
 .ql-customColor::after {
   content: "HEX";
   font-size: 11px;
-  font-weight: 800;
-  color: #475569;
+  font-weight: 700;
+  color: #4F6878;
   letter-spacing: 0.5px;
 }
 

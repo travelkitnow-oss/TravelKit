@@ -12,7 +12,7 @@ import {
   User
 } from 'lucide-react';
 import jsPDF from 'jspdf';
-import { supabase } from '../../../lib/supabase';
+import { db } from '../../../lib/db';
 import logo from '../../../assets/logo.jpg';
 import './LiquidacionCliente.css';
 
@@ -49,26 +49,26 @@ export default function LiquidacionClientePage() {
   }, [clientId]);
 
   const fetchClientInfo = async () => {
-    const { data } = await supabase.from('clients').select('name').eq('id', clientId).single();
+    const { data } = await db.from('clients').select('name').eq('id', clientId).single();
     if (data) setClientName(data.name);
   };
 
   const fetchLiquidacionData = async () => {
     setLoading(true);
-    const { data: tickets } = await supabase.from('tickets').select('amount').eq('client_id', clientId);
+    const { data: tickets } = await db.from('tickets').select('amount').eq('client_id', clientId);
     const ticketsTotal = (tickets || []).reduce((sum, t) => sum + (t.amount || 0), 0);
 
-    const { data: scheduled } = await supabase.from('scheduled_items').select('*').eq('client_id', clientId);
+    const { data: scheduled } = await db.from('scheduled_items').select('*').eq('client_id', clientId);
     const itemIds = (scheduled || []).map(s => s.item_id).filter(id => !!id);
     const { data: catalogItems } = itemIds.length > 0 
-      ? await supabase.from('catalog_items').select('id, cost_usd').in('id', itemIds)
+      ? await db.from('catalog_items').select('id, cost_usd').in('id', itemIds)
       : { data: [] };
 
     const priceMap: Record<string, number> = {};
     (catalogItems || []).forEach(item => { priceMap[item.id] = item.cost_usd || 0; });
 
-    const { data: billing } = await supabase.from('client_billing').select('tasks').eq('client_id', clientId).maybeSingle();
-    const { data: serviceFees } = await supabase.from('services').select('name');
+    const { data: billing } = await db.from('client_billing').select('tasks').eq('client_id', clientId).maybeSingle();
+    const { data: serviceFees } = await db.from('services').select('name');
     const luciaFeeNames = (serviceFees || []).map(s => s.name.toLowerCase());
 
     const billingTasks: TaskItem[] = billing?.tasks || [];

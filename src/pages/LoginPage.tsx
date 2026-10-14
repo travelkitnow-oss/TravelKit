@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Lock, User } from 'lucide-react';
-import { supabase } from '../lib/supabase';
+import { db } from '../lib/db';
 import { Link } from 'react-router-dom';
 import { logger } from '../lib/logger';
 import '../App.css';
+import './LoginPage.css';
 
 export default function LoginPage() {
   const [username, setUsername] = useState('');
@@ -25,7 +26,7 @@ export default function LoginPage() {
     }
 
     // 2. Check for Client Portal Users
-    const { data: profile } = await supabase
+    const { data: profile } = await db
       .from('client_profiles')
       .select('*, clients(name)')
       .eq('email', username)
@@ -33,7 +34,7 @@ export default function LoginPage() {
 
     if (profile) {
       // Record last login
-      const { error: updateError } = await supabase.from('client_profiles').update({ last_login: new Date().toISOString() }).eq('id', profile.id);
+      const { error: updateError } = await db.from('client_profiles').update({ last_login: new Date().toISOString() }).eq('id', profile.id);
       
       if (updateError) {
         logger.error('Database', 'Error al actualizar último login', updateError);
@@ -59,104 +60,89 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="login-page" style={{ 
-      minHeight: '100vh', 
-      display: 'flex', 
-      alignItems: 'center', 
-      justifyContent: 'center',
-      backgroundColor: 'var(--color-bg)',
-      padding: '2rem'
-    }}>
-      <div className="login-card glass" style={{
-        maxWidth: '400px',
-        width: '100%',
-        padding: '3rem 2rem',
-        borderRadius: 'var(--radius-lg)',
-        boxShadow: 'var(--shadow-xl)',
-        textAlign: 'center'
-      }}>
-        <div style={{ marginBottom: '2rem' }}>
-          <img 
-            src="/travel-kit-logo.jpg" 
-            alt="Travel Kit Logo" 
-            style={{ 
-              width: '80px', 
-              height: '80px', 
-              borderRadius: '50%', 
-              objectFit: 'cover',
-              border: '3px solid var(--color-accent)',
-              marginBottom: '1rem'
-            }} 
-          />
-          <h2 style={{ fontFamily: 'var(--font-serif)', color: 'var(--color-primary)' }}>Acceso Portal</h2>
-          <p style={{ color: 'var(--color-secondary)', fontSize: '0.9rem' }}>Ingresa tus credenciales para continuar</p>
+    <div className="login-page">
+      <aside className="login-visual" aria-hidden="true">
+        <img
+          src="https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=1600&auto=format&fit=crop"
+          alt=""
+          className="login-visual-img"
+        />
+        <div className="login-visual-overlay" />
+        <div className="login-visual-content">
+          <div className="login-brand">
+            <img src="/travel-kit-logo.jpg" alt="" />
+            <span>Travel Kit</span>
+          </div>
+          <blockquote>
+            Cada viaje empieza con una buena planificación.
+          </blockquote>
+          <p>Gestioná tus viajes, agenda y servicios desde un solo lugar.</p>
         </div>
+      </aside>
 
-        <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-          <div style={{ position: 'relative' }}>
-            <div style={{ position: 'absolute', top: '50%', left: '1rem', transform: 'translateY(-50%)', color: 'var(--color-tertiary)' }}>
-              <User size={18} />
-            </div>
-            <input 
-              type="text" 
-              placeholder="Usuario o Correo" 
-              value={username}
-              onChange={(e) => {
-                setUsername(e.target.value);
-                setError(false);
-              }}
-              style={{
-                width: '100%',
-                padding: '1rem 1rem 1rem 2.5rem',
-                borderRadius: 'var(--radius-md)',
-                border: `1px solid ${error && !username ? 'red' : 'var(--color-tertiary)'}`,
-                outline: 'none',
-                fontFamily: 'var(--font-main)'
-              }}
-            />
-          </div>
-
-          <div style={{ position: 'relative' }}>
-            <div style={{ position: 'absolute', top: '50%', left: '1rem', transform: 'translateY(-50%)', color: 'var(--color-tertiary)' }}>
-              <Lock size={18} />
-            </div>
-            <input 
-              type="password" 
-              placeholder="Contraseña" 
-              value={password}
-              onChange={(e) => {
-                setPassword(e.target.value);
-                setError(false);
-              }}
-              style={{
-                width: '100%',
-                padding: '1rem 1rem 1rem 2.5rem',
-                borderRadius: 'var(--radius-md)',
-                border: `1px solid ${error && !password ? 'red' : 'var(--color-tertiary)'}`,
-                outline: 'none',
-                fontFamily: 'var(--font-main)'
-              }}
-            />
-          </div>
-          
-          <button type="submit" className="btn btn-primary" style={{ width: '100%', justifyContent: 'center' }}>
-            Ingresar
-          </button>
-        </form>
-
-        <div style={{ marginTop: '2rem' }}>
-          <Link to="/" style={{ 
-            display: 'inline-flex', 
-            alignItems: 'center', 
-            gap: '0.5rem', 
-            color: 'var(--color-secondary)',
-            fontSize: '0.875rem',
-            textDecoration: 'none'
-          }}>
-            <ArrowLeft size={16} /> Volver a la página principal
+      <main className="login-panel">
+        <div className="login-card animate-fade-in">
+          <Link to="/" className="login-back">
+            <ArrowLeft size={16} /> Volver al sitio
           </Link>
+
+          <div className="login-header">
+            <img src="/travel-kit-logo.jpg" alt="Travel Kit" className="login-logo-mobile" />
+            <h1>Bienvenido de nuevo</h1>
+            <p>Ingresá tus credenciales para acceder al portal.</p>
+          </div>
+
+          <form onSubmit={handleLogin} className="login-form" noValidate>
+            <div className="form-group">
+              <label htmlFor="login-user">Usuario o correo</label>
+              <div className="input-with-icon">
+                <User size={18} />
+                <input
+                  id="login-user"
+                  type="text"
+                  autoComplete="username"
+                  className={`form-input ${error ? 'is-invalid' : ''}`}
+                  placeholder="tu@correo.com"
+                  value={username}
+                  onChange={(e) => {
+                    setUsername(e.target.value);
+                    setError(false);
+                  }}
+                />
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="login-pass">Contraseña</label>
+              <div className="input-with-icon">
+                <Lock size={18} />
+                <input
+                  id="login-pass"
+                  type="password"
+                  autoComplete="current-password"
+                  className={`form-input ${error ? 'is-invalid' : ''}`}
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    setError(false);
+                  }}
+                />
+              </div>
+            </div>
+
+            {error && (
+              <p className="login-error" role="alert">
+                Usuario o contraseña incorrectos. Revisá los datos e intentá de nuevo.
+              </p>
+            )}
+
+            <button type="submit" className="btn btn-primary btn-lg login-submit">
+              Ingresar
+            </button>
+          </form>
         </div>
-      </div>
+      </main>
     </div>
   );
 }

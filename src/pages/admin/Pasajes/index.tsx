@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { 
   Plane, 
-  Search, 
+  
   Plus, 
   Trash2, 
   DollarSign, 
@@ -15,9 +15,11 @@ import {
   X,
   PlaneLanding
 } from 'lucide-react';
-import { supabase } from '../../../lib/supabase';
+import { db } from '../../../lib/db';
 import './Pasajes.css';
 
+import PageHeader from '../../../components/PageHeader/PageHeader';
+import SearchBar from '../../../components/SearchBar/SearchBar';
 interface Client {
   id: string;
   name: string;
@@ -136,7 +138,7 @@ export default function PasajesPage() {
 
   const fetchClients = async () => {
     setLoadingClients(true);
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from('clients')
       .select('id, name, email, phone')
       .neq('source', 'agenda_session_only')
@@ -149,7 +151,7 @@ export default function PasajesPage() {
 
   const fetchTickets = async (clientId: string) => {
     setLoadingTickets(true);
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from('tickets')
       .select('*')
       .eq('client_id', clientId)
@@ -180,14 +182,14 @@ export default function PasajesPage() {
     const fileName = `${selectedClientId}/${Date.now()}.${fileExt}`;
     const filePath = `tickets/${fileName}`;
 
-    const { error: uploadError } = await supabase.storage
+    const { error: uploadError } = await db.storage
       .from('documents')
       .upload(filePath, file);
 
     if (uploadError) {
       alert('Error al subir el archivo');
     } else {
-      const { data: { publicUrl } } = supabase.storage
+      const { data: { publicUrl } } = db.storage
         .from('documents')
         .getPublicUrl(filePath);
       
@@ -224,9 +226,9 @@ export default function PasajesPage() {
 
     let result;
     if (editingId) {
-      result = await supabase.from('tickets').update(payload).eq('id', editingId).select();
+      result = await db.from('tickets').update(payload).eq('id', editingId).select();
     } else {
-      result = await supabase.from('tickets').insert([payload]).select();
+      result = await db.from('tickets').insert([payload]).select();
     }
 
     if (result.error) {
@@ -300,7 +302,7 @@ export default function PasajesPage() {
 
   const handleDelete = async (id: string) => {
     if (!window.confirm('¿Estás seguro de eliminar este pasaje?')) return;
-    const { error } = await supabase.from('tickets').delete().eq('id', id);
+    const { error } = await db.from('tickets').delete().eq('id', id);
     if (!error) setTickets(tickets.filter(t => t.id !== id));
   };
 
@@ -328,19 +330,15 @@ export default function PasajesPage() {
 
   return (
     <div className="pasajes-page animate-fade-in">
-      <header className="page-header-premium centered">
-        <div className="header-content">
-          <h1>Gestión de Pasajes ✈️</h1>
-          <p>Control total de vuelos, pasajeros y documentación.</p>
-        </div>
-      </header>
+      <PageHeader
+        section="Viaje"
+        title="Gestión de Pasajes"
+        subtitle="Control total de vuelos, pasajeros y documentación."
+      />
 
       <div className="admin-grid">
         <div className="client-sidebar glass-card">
-          <div className="search-box">
-            <Search size={18} />
-            <input type="text" placeholder="Buscar cliente..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
-          </div>
+          <SearchBar placeholder="Buscar cliente..." value={searchTerm} onChange={setSearchTerm} />
           <div className="client-list">
             {loadingClients ? (
               <div className="loader-container"><div className="loader-premium"></div></div>
@@ -427,7 +425,7 @@ export default function PasajesPage() {
                               <span className="price-value" style={{ fontSize: '1.2rem' }}>
                                 {ticket.flight_info?.currency === 'ARS' ? '$' : 'USD'} {ticket.amount.toLocaleString()}
                               </span>
-                              <span style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: '600' }}>
+                              <span style={{ fontSize: '0.75rem', color: '#5A7181', fontWeight: '600' }}>
                                 {ticket.flight_info?.currency === 'ARS' ? 
                                   `USD ${(ticket.amount / 1250).toLocaleString(undefined, {maximumFractionDigits: 0})}` : 
                                   `$ ${(ticket.amount * 1250).toLocaleString()} ARS`
@@ -442,7 +440,7 @@ export default function PasajesPage() {
                                 <span className="price-value" style={{ fontSize: '0.95rem' }}>
                                   {ticket.flight_info?.currency === 'ARS' ? '$' : 'USD'} {(ticket.amount / (ticket.passenger_count || 1)).toLocaleString()}
                                 </span>
-                                <span style={{ fontSize: '0.65rem', color: '#64748b', fontWeight: '600' }}>
+                                <span style={{ fontSize: '0.65rem', color: '#5A7181', fontWeight: '600' }}>
                                   {ticket.flight_info?.currency === 'ARS' ? 
                                     `USD ${((ticket.amount / (ticket.passenger_count || 1)) / 1250).toLocaleString(undefined, {maximumFractionDigits: 0})}` : 
                                     `$ ${((ticket.amount / (ticket.passenger_count || 1)) * 1250).toLocaleString()} ARS`
@@ -555,7 +553,7 @@ export default function PasajesPage() {
                         <div className="form-group flex-1">
                           <label className="text-xs font-semibold uppercase text-secondary display-block">Monto Total</label>
                           <div className="input-with-icon">
-                            {formData.currency === 'ARS' ? <span style={{fontSize: '14px', fontWeight: 'bold', color: '#64748b', marginLeft: '8px'}}>$</span> : <DollarSign size={16} />}
+                            {formData.currency === 'ARS' ? <span style={{fontSize: '14px', fontWeight: 'bold', color: '#5A7181', marginLeft: '8px'}}>$</span> : <DollarSign size={16} />}
                             <input type="number" className="form-input" value={formData.amount} onChange={e => setFormData({ ...formData, amount: parseFloat(e.target.value) || 0 })} />
                           </div>
                         </div>
@@ -634,7 +632,7 @@ export default function PasajesPage() {
               {activeTab === 'outbound' && (
                 <div className="tab-content-pane">
                   <div className="form-block">
-                    <div className="checkbox-pro-group" style={{ background: '#eff6ff', borderColor: '#bfdbfe' }}>
+                    <div className="checkbox-pro-group" style={{ background: '#EEF3F6', borderColor: '#bfdbfe' }}>
                       <input id="round-trip" type="checkbox" checked={formData.is_round_trip} onChange={e => setFormData({ ...formData, is_round_trip: e.target.checked })} />
                       <label htmlFor="round-trip">Es un viaje de IDA Y VUELTA?</label>
                     </div>

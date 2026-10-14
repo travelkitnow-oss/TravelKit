@@ -6,7 +6,7 @@
   display: flex;
   flex-direction: column;
   gap: 3rem;
-  background-color: #f8f9fa; /* Gris muy claro para mejor contraste */
+  background-color: #F8F5F0; /* Gris muy claro para mejor contraste */
   min-height: 100vh;
 }
 
@@ -34,7 +34,7 @@
   left: 1.25rem;
   top: 50%;
   transform: translateY(-50%);
-  color: #94a3b8;
+  color: #8FA2AF;
 }
 
 .search-box-premium input {
@@ -69,7 +69,7 @@
   justify-content: space-between;
   padding: 1.25rem 1.5rem;
   background: white;
-  border-radius: 20px;
+  border-radius: 16px;
   border: 1px solid rgba(226, 232, 240, 0.5);
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -98,13 +98,13 @@
 .client-avatar-mini {
   width: 48px;
   height: 48px;
-  background: #f1f5f9;
+  background: #F3EEE7;
   color: #1F3A4D;
   border-radius: 14px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: 800;
+  font-weight: 700;
   font-size: 1.1rem;
 }
 
@@ -133,7 +133,7 @@
 .btn-icon-trash {
   background: none;
   border: none;
-  color: #94a3b8;
+  color: #8FA2AF;
   cursor: pointer;
   padding: 0.5rem;
   border-radius: 8px;
@@ -162,14 +162,14 @@
 .total-cost-hero-premium {
   background: #1F3A4D;
   padding: 4rem;
-  border-radius: 40px;
+  border-radius: 16px;
   color: white;
   display: flex;
   justify-content: space-between;
   align-items: center;
   position: relative;
   overflow: hidden;
-  box-shadow: 0 25px 50px -12px rgba(31, 58, 77, 0.35);
+  box-shadow: var(--shadow-lg);
 }
 
 .hero-bg-accent {
@@ -190,14 +190,14 @@
   text-transform: uppercase;
   letter-spacing: 4px;
   color: #C89B5A;
-  font-weight: 800;
+  font-weight: 700;
   margin-bottom: 1rem;
   display: block;
 }
 
 .hero-amount-premium {
   font-size: 6rem;
-  font-weight: 900;
+  font-weight: 700;
   margin: 0;
   display: flex;
   align-items: baseline;
@@ -247,7 +247,7 @@
   justify-content: space-between;
   align-items: flex-start;
   padding-bottom: 2rem;
-  border-bottom: 2px solid #f1f5f9;
+  border-bottom: 2px solid #F3EEE7;
   margin-bottom: 2rem;
 }
 
@@ -269,7 +269,7 @@
   margin: 0;
   font-size: 1.8rem;
   color: #1F3A4D;
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: -1px;
 }
 
@@ -289,7 +289,7 @@
 
 .meta-label {
   font-size: 0.75rem;
-  color: #64748b; /* Oscurecido para mejor contraste */
+  color: #5A7181; /* Oscurecido para mejor contraste */
   text-transform: uppercase;
   letter-spacing: 1.5px;
   font-weight: 700;
@@ -321,16 +321,16 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: #f8fafc;
+  background: #F8F5F0;
   padding: 1.5rem 2rem;
   border-radius: 16px;
   margin-bottom: 2rem;
-  border: 1px solid #f1f5f9;
+  border: 1px solid #F3EEE7;
 }
 
 .box-label {
   font-size: 0.75rem;
-  color: #64748b;
+  color: #5A7181;
   text-transform: uppercase;
   letter-spacing: 1.5px;
   margin-bottom: 0.4rem;
@@ -342,12 +342,12 @@
   margin: 0;
   font-size: 1.3rem;
   color: #1F3A4D;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .client-data-box p {
   margin: 4px 0 0;
-  color: #475569;
+  color: #4F6878;
   font-size: 0.9rem;
   font-weight: 500;
 }
@@ -359,14 +359,14 @@
 .total-label {
   font-size: 0.8rem;
   color: #a37c46;
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: 1.5px;
 }
 
 .total-value {
   margin: 0;
   font-size: 2.2rem;
-  font-weight: 900;
+  font-weight: 700;
   color: #1F3A4D;
   letter-spacing: -1px;
 }
@@ -380,29 +380,29 @@
 .receipt-table th {
   text-align: left;
   padding: 1rem 0;
-  color: #64748b;
+  color: #5A7181;
   font-size: 0.8rem;
   text-transform: uppercase;
   letter-spacing: 1.5px;
-  font-weight: 800;
-  border-bottom: 2px solid #e2e8f0;
+  font-weight: 700;
+  border-bottom: 2px solid #E7E1D8;
 }
 
 .category-header td {
   padding: 1.5rem 0 0.75rem;
   font-size: 0.95rem;
-  font-weight: 800;
+  font-weight: 700;
   color: #1F3A4D;
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  border-bottom: 1px solid #f1f5f9;
+  border-bottom: 1px solid #F3EEE7;
 }
 
 .service-row td {
   padding: 0.85rem 0;
-  border-bottom: 1px solid #f8fafc;
-  color: #334155;
+  border-bottom: 1px solid #F8F5F0;
+  color: #2B4A5E;
   font-size: 0.95rem;
   font-weight: 500;
 }
@@ -417,13 +417,13 @@
   justify-content: space-between;
   align-items: flex-end;
   padding-top: 2rem;
-  border-top: 2px solid #f1f5f9;
+  border-top: 2px solid #F3EEE7;
 }
 
 .footer-notes p {
   margin: 4px 0;
   font-size: 0.75rem;
-  color: #94a3b8;
+  color: #8FA2AF;
   font-style: italic;
 }
 
@@ -433,14 +433,14 @@
 
 .final-label {
   font-size: 0.85rem;
-  font-weight: 800;
+  font-weight: 700;
   color: #1F3A4D;
   margin-bottom: 0.4rem;
 }
 
 .final-value {
   font-size: 1.8rem;
-  font-weight: 900;
+  font-weight: 700;
   color: #C89B5A;
 }
 
@@ -464,7 +464,7 @@
   padding: 8rem 0;
   text-align: center;
   background: white;
-  border-radius: 40px;
+  border-radius: 16px;
   border: 2px dashed #B7C5CF;
 }
 

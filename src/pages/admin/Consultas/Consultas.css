@@ -78,12 +78,12 @@
 .submissions-list {
   background: rgba(255, 255, 255, 0.6);
   backdrop-filter: blur(15px);
-  border-radius: 20px;
+  border-radius: 16px;
   border: 1px solid rgba(255, 255, 255, 0.4);
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 20px 40px rgba(31, 58, 77, 0.05);
+  box-shadow: var(--shadow-md);
 }
 
 .submissions-list .card-header {
@@ -175,7 +175,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: 800;
+  font-weight: 700;
   flex-shrink: 0;
   font-size: 1.1rem;
   box-shadow: 0 8px 16px rgba(31, 58, 77, 0.15);
@@ -230,7 +230,7 @@
 
 .aceptado-mini-tag, .rechazado-mini-tag {
   font-size: 0.65rem;
-  font-weight: 800;
+  font-weight: 700;
   padding: 0.15rem 0.6rem;
   border-radius: 100px;
   text-transform: uppercase;
@@ -249,7 +249,7 @@
 .details-card {
   background: rgba(255, 255, 255, 0.8);
   backdrop-filter: blur(20px);
-  border-radius: 24px;
+  border-radius: 16px;
   border: 1px solid rgba(255, 255, 255, 0.5);
   box-shadow: 0 15px 35px rgba(31, 58, 77, 0.08);
   display: flex;
@@ -287,7 +287,7 @@
 .details-user h2 {
   margin: 0;
   font-size: 1.5rem;
-  font-weight: 900;
+  font-weight: 700;
   letter-spacing: -0.02em;
   color: var(--color-primary);
 }
@@ -299,7 +299,7 @@
   padding: 0.4rem 1rem;
   border-radius: 100px;
   font-size: 0.8rem;
-  font-weight: 800;
+  font-weight: 700;
   text-transform: uppercase;
   margin-top: 0.5rem;
 }
@@ -329,8 +329,8 @@
 .btn-accept { background: #10b981; color: white; }
 .btn-accept:hover { background: #059669; transform: translateY(-2px); box-shadow: 0 8px 16px rgba(16, 185, 129, 0.3); }
 
-.btn-reject { background: #f1f5f9; color: #64748b; }
-.btn-reject:hover { background: #e2e8f0; color: #ef4444; transform: translateY(-2px); }
+.btn-reject { background: #F3EEE7; color: #5A7181; }
+.btn-reject:hover { background: #E7E1D8; color: #ef4444; transform: translateY(-2px); }
 
 .btn-delete { background: #fee2e2; color: #ef4444; }
 .btn-delete:hover { background: #fecaca; transform: translateY(-2px); }
@@ -346,7 +346,7 @@
   align-items: center;
   gap: 0.5rem;
   font-size: 0.9rem;
-  font-weight: 800;
+  font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: var(--color-secondary);
@@ -392,7 +392,7 @@
 .contact-label {
   font-size: 0.65rem;
   font-weight: 700;
-  color: #94a3b8;
+  color: #8FA2AF;
   text-transform: uppercase;
 }
 
@@ -424,7 +424,7 @@
 .appointment-info h4 {
   margin: 0 0 0.25rem 0;
   font-size: 1.1rem;
-  font-weight: 800;
+  font-weight: 700;
   line-height: 1.2;
 }
 
@@ -452,7 +452,7 @@
   min-width: 70px;
 }
 
-.date-pill .day { font-size: 1.4rem; font-weight: 900; line-height: 1; margin-bottom: 0.1rem; }
+.date-pill .day { font-size: 1.4rem; font-weight: 700; line-height: 1; margin-bottom: 0.1rem; }
 .date-pill .month { font-size: 0.7rem; text-transform: uppercase; font-weight: 700; line-height: 1; }
 
 .time-pill {
@@ -461,7 +461,7 @@
   padding: 0.75rem 1.25rem;
   border-radius: 14px;
   font-size: 1.25rem;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 /* Form Answers Pro */
@@ -499,9 +499,9 @@
 .answer-card label {
   display: block;
   font-size: 0.7rem;
-  font-weight: 800;
+  font-weight: 700;
   text-transform: uppercase;
-  color: #94a3b8;
+  color: #8FA2AF;
   margin-bottom: 0.25rem;
   letter-spacing: 0.05em;
 }
@@ -532,19 +532,19 @@
   width: 120px;
   height: 120px;
   background: white;
-  border-radius: 40px;
+  border-radius: 16px;
   display: flex;
   align-items: center;
   justify-content: center;
   margin: 0 auto 2.5rem;
   color: var(--color-accent);
-  box-shadow: 0 20px 40px rgba(0,0,0,0.05);
+  box-shadow: var(--shadow-md);
   transform: rotate(-5deg);
 }
 
 .hero-box h3 {
   font-size: 1.8rem;
-  font-weight: 900;
+  font-weight: 700;
   letter-spacing: -0.02em;
   margin-bottom: 1rem;
 }

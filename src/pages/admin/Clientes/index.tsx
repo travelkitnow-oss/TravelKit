@@ -14,10 +14,11 @@ import {
   Eye,
   EyeOff
 } from 'lucide-react';
-import { supabase } from '../../../lib/supabase';
+import { db } from '../../../lib/db';
 import ConfirmationModal from '../../../components/ConfirmationModal/ConfirmationModal';
 import './Clientes.css';
 
+import PageHeader from '../../../components/PageHeader/PageHeader';
 interface Client {
   id: string;
   name: string;
@@ -60,13 +61,13 @@ export default function ClientesPage() {
   const fetchClients = async () => {
     setLoading(true);
     // Fetch clients
-    const { data: clientsData, error: clientsError } = await supabase
+    const { data: clientsData, error: clientsError } = await db
       .from('clients')
       .select('*')
       .order('name', { ascending: true });
 
     // Fetch existing profiles to disable button
-    const { data: profilesData } = await supabase
+    const { data: profilesData } = await db
       .from('client_profiles')
       .select('id');
 
@@ -88,7 +89,7 @@ export default function ClientesPage() {
       return;
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from('clients')
       .insert([
         { name: newName, email: newEmail, phone: newPhone, source: 'manual' }
@@ -110,7 +111,7 @@ export default function ClientesPage() {
   const handleEditClient = async () => {
     if (!editingClient) return;
 
-    const { error } = await supabase
+    const { error } = await db
       .from('clients')
       .update({
         name: editingClient.name,
@@ -131,7 +132,7 @@ export default function ClientesPage() {
   const confirmDelete = async () => {
     if (!deletingClientId) return;
 
-    const { error } = await supabase
+    const { error } = await db
       .from('clients')
       .delete()
       .eq('id', deletingClientId);
@@ -165,7 +166,7 @@ export default function ClientesPage() {
     setLoading(true);
     // In a real scenario, this would call a Supabase Edge Function or use the Admin API
     // For now, we'll simulate the creation and maybe save it to a profiles/users table
-    const { error } = await supabase
+    const { error } = await db
       .from('client_profiles')
       .upsert({
         id: selectedClientForUser.id,
@@ -210,10 +211,11 @@ export default function ClientesPage() {
 
   return (
     <div className="clientes-page animate-fade-in">
-      <header className="page-header-centered">
-        <h1>Base de Datos de Clientes</h1>
-        <p>Administra la información de tus viajeros, unifica contactos y mantén tu historial organizado.</p>
-      </header>
+      <PageHeader
+        section="Gestión"
+        title="Base de Datos de Clientes"
+        subtitle="Administra la información de tus viajeros, unifica contactos y mantén tu historial organizado."
+      />
 
       <div className="glass-card">
         <div className="card-header border-bottom">
@@ -333,23 +335,21 @@ export default function ClientesPage() {
 
       {showAddModal && (
         <div className="modal-overlay animate-fade-in" style={{ zIndex: 1400 }}>
-          <div className="modal-content glass-card animate-scale-in p-0 overflow-hidden" style={{ maxWidth: '440px', border: 'none', borderRadius: '24px' }}>
-            <div className="modal-header-full">
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
-                <div style={{ background: 'rgba(255, 255, 255, 0.1)', color: 'white', padding: '0.6rem', borderRadius: '10px' }}>
-                  <Users size={22} />
-                </div>
-                <div>
-                  <h3 style={{ margin: 0, fontSize: '1.2rem', color: 'white', fontWeight: 800 }}>Nuevo Cliente</h3>
-                  <p style={{ margin: 0, fontSize: '0.85rem', opacity: 0.8, fontWeight: 500 }}>Registra un nuevo viajero</p>
+          <div className="modal-content-pro modal-sm">
+            <div className="modal-header-pro">
+              <div className="header-left">
+                <div className="header-icon"><Users size={20} /></div>
+                <div className="header-text">
+                  <h3>Nuevo cliente</h3>
+                  <p>Registrá un nuevo viajero</p>
                 </div>
               </div>
-              <button onClick={() => { setShowAddModal(false); setAttemptedSubmit(false); }} className="close-modal-btn-white">
+              <button onClick={() => { setShowAddModal(false); setAttemptedSubmit(false); }} className="close-modal-btn" aria-label="Cerrar">
                 <X size={18} />
               </button>
             </div>
 
-            <div className="modal-body">
+            <div className="modal-body-pro">
               <div className="form-group mb-4">
                 <label className="text-xs font-bold uppercase text-secondary mb-2 block">Nombre Completo</label>
                 <div className="input-with-icon-pro">
@@ -408,27 +408,21 @@ export default function ClientesPage() {
 
       {showCreateUserModal && selectedClientForUser && (
         <div className="modal-overlay animate-fade-in" style={{ zIndex: 1400 }}>
-          <div className="modal-content glass-card animate-scale-in p-0 overflow-hidden" style={{ maxWidth: '440px', border: 'none', borderRadius: '24px' }}>
-            <div className="modal-header-full" style={{ background: 'var(--color-primary)', padding: '1.25rem 1.75rem', color: 'white', position: 'relative' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
-                <div style={{ background: 'rgba(255, 255, 255, 0.1)', color: 'white', padding: '0.6rem', borderRadius: '10px' }}>
-                  <UserPlus size={22} />
-                </div>
-                <div>
-                  <h3 style={{ margin: 0, fontSize: '1.2rem', color: 'white', fontWeight: 800 }}>Habilitar Acceso</h3>
-                  <p style={{ margin: 0, fontSize: '0.85rem', opacity: 0.9, fontWeight: 500 }}>Para: <strong>{selectedClientForUser.name}</strong></p>
+          <div className="modal-content-pro modal-sm">
+            <div className="modal-header-pro">
+              <div className="header-left">
+                <div className="header-icon"><UserPlus size={20} /></div>
+                <div className="header-text">
+                  <h3>Habilitar acceso</h3>
+                  <p>Para: <strong>{selectedClientForUser.name}</strong></p>
                 </div>
               </div>
-              <button
-                onClick={() => { setShowCreateUserModal(false); setNewPassword(''); }}
-                className="close-modal-btn-white"
-                style={{ width: '30px', height: '30px' }}
-              >
+              <button onClick={() => { setShowCreateUserModal(false); setNewPassword(''); }} className="close-modal-btn" aria-label="Cerrar">
                 <X size={18} />
               </button>
             </div>
 
-            <div className="modal-body" style={{ padding: '0.75rem 1.75rem' }}>
+            <div className="modal-body-pro">
               <div className="form-group mb-2">
                 <label className="text-xs font-bold uppercase text-secondary mb-1 block">Usuario / Email</label>
                 <div className="input-with-icon" style={{ opacity: 0.8 }}>
@@ -502,23 +496,21 @@ export default function ClientesPage() {
 
       {editingClient && (
         <div className="modal-overlay animate-fade-in" style={{ zIndex: 1400 }}>
-          <div className="modal-content glass-card animate-scale-in p-0 overflow-hidden" style={{ maxWidth: '440px', border: 'none', borderRadius: '24px' }}>
-            <div className="modal-header-full">
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
-                <div style={{ background: 'rgba(255, 255, 255, 0.1)', color: 'white', padding: '0.6rem', borderRadius: '10px' }}>
-                  <Edit2 size={22} />
-                </div>
-                <div>
-                  <h3 style={{ margin: 0, fontSize: '1.2rem', color: 'white', fontWeight: 800 }}>Editar Cliente</h3>
-                  <p style={{ margin: 0, fontSize: '0.85rem', opacity: 0.8, fontWeight: 500 }}>Modifica los datos del viajero</p>
+          <div className="modal-content-pro modal-sm">
+            <div className="modal-header-pro">
+              <div className="header-left">
+                <div className="header-icon"><Edit2 size={20} /></div>
+                <div className="header-text">
+                  <h3>Editar cliente</h3>
+                  <p>Modificá los datos del viajero</p>
                 </div>
               </div>
-              <button onClick={() => setEditingClient(null)} className="close-modal-btn-white">
+              <button onClick={() => setEditingClient(null)} className="close-modal-btn" aria-label="Cerrar">
                 <X size={18} />
               </button>
             </div>
 
-            <div className="modal-body">
+            <div className="modal-body-pro">
               <div className="form-group mb-4">
                 <label className="text-xs font-bold uppercase text-secondary mb-2 block">Nombre Completo</label>
                 <div className="input-with-icon-pro">

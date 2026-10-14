@@ -79,7 +79,7 @@
 }
 
 .city-code {
-  font-family: 'Outfit', sans-serif;
+  font-family: 'Inter', sans-serif;
   font-size: 1.5rem;
   font-weight: 900;
   color: var(--color-primary);
@@ -253,7 +253,7 @@
   font-weight: 900;
   color: var(--color-primary);
   text-transform: capitalize;
-  font-family: 'Outfit', sans-serif;
+  font-family: 'Inter', sans-serif;
 }
 
 .calendar-day-label {

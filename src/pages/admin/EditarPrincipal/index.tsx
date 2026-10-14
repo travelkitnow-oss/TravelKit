@@ -1,10 +1,11 @@
 import { useState, useEffect, useMemo } from 'react';
-import { supabase } from '../../../lib/supabase';
+import { db } from '../../../lib/db';
 import { Save, X, Info, Plus, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
 import './EditarPrincipal.css';
 
+import PageHeader from '../../../components/PageHeader/PageHeader';
 interface Setting {
   key: string;
   value: string;
@@ -93,8 +94,8 @@ export default function EditarPrincipal() {
           container.style.width = '100%';
           container.style.padding = '8px 6px';
           container.style.marginTop = '4px';
-          container.style.borderTop = '1px solid #e2e8f0';
-          container.style.backgroundColor = '#f8fafc';
+          container.style.borderTop = '1px solid #E7E1D8';
+          container.style.backgroundColor = '#F8F5F0';
           container.style.display = 'flex';
           container.style.gap = '4px';
           container.style.alignItems = 'center';
@@ -119,7 +120,7 @@ export default function EditarPrincipal() {
           input.placeholder = 'Ej: #C89B5A';
           input.style.width = '100%';
           input.style.padding = '4px 8px';
-          input.style.border = '1px solid #cbd5e1';
+          input.style.border = '1px solid #D8D0C4';
           input.style.borderRadius = '4px';
           input.style.fontSize = '12px';
           input.style.outline = 'none';
@@ -129,7 +130,7 @@ export default function EditarPrincipal() {
           input.onfocus = () => {
             input.style.borderColor = 'var(--color-accent)';
           };
-          input.onblur = () => input.style.borderColor = '#cbd5e1';
+          input.onblur = () => input.style.borderColor = '#D8D0C4';
 
           const applyBtn = document.createElement('button');
           applyBtn.innerHTML = '✓';
@@ -198,7 +199,7 @@ export default function EditarPrincipal() {
   async function fetchContent() {
     try {
       setLoading(true);
-      const { data, error } = await supabase.from('site_settings').select('*');
+      const { data, error } = await db.from('site_settings').select('*');
       
       if (error) throw error;
 
@@ -254,7 +255,7 @@ export default function EditarPrincipal() {
         upsertData.push({ key: 'benefits_list', value: JSON.stringify(benefits) });
       }
 
-      const { error } = await supabase.from('site_settings').upsert(upsertData);
+      const { error } = await db.from('site_settings').upsert(upsertData);
 
       if (error) throw error;
 
@@ -268,25 +269,38 @@ export default function EditarPrincipal() {
   };
 
   if (loading) {
-    return <div className="loading-container">Cargando contenido...</div>;
+    return (
+      <div className="editar-principal">
+        <PageHeader
+          section="Página principal"
+          title="Editar Principal"
+          subtitle="Personaliza los textos que ven tus clientes en la página de inicio."
+        />
+        <div className="loading-state-premium">
+          <div className="loader-premium"></div>
+          <p>Cargando contenido...</p>
+        </div>
+      </div>
+    );
   }
 
   return (
     <div className="editar-principal animate-fade-in">
-      <header className="page-header">
-        <div>
-          <h1>Editar Principal</h1>
-          <p>Personaliza los textos que ven tus clientes en la página de inicio.</p>
-        </div>
-        <div className="header-actions">
-          <button className="btn btn-outline" onClick={handleCancel} disabled={saving}>
-            <X size={18} /> Cancelar
-          </button>
-          <button className="btn btn-primary" onClick={handlePublish} disabled={saving}>
-            <Save size={18} /> {saving ? 'Publicando...' : 'Publicar Cambios'}
-          </button>
-        </div>
-      </header>
+      <PageHeader
+        section="Página principal"
+        title="Editar Principal"
+        subtitle="Personaliza los textos que ven tus clientes en la página de inicio."
+        actions={
+          <>
+            <button className="btn btn-outline" onClick={handleCancel} disabled={saving}>
+              <X size={18} /> Cancelar
+            </button>
+            <button className="btn btn-primary" onClick={handlePublish} disabled={saving}>
+              <Save size={18} /> {saving ? 'Publicando...' : 'Publicar Cambios'}
+            </button>
+          </>
+        }
+      />
 
       {message && (
         <div className={`alert alert-${message.type}`}>

@@ -36,7 +36,7 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
 
   return (
     <div className="modal-overlay confirmation-overlay">
-      <div className={`modal-content-pro confirmation-modal-pro animate-modal-in ${type}`}>
+      <div className={`modal-content-pro modal-sm confirmation-modal-pro ${type === 'danger' ? 'modal-danger' : ''}`} role="alertdialog" aria-modal="true">
         <div className="modal-header-pro">
           <div className="header-left">
             <div className={`header-icon-box ${type}`}>
@@ -44,7 +44,7 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
             </div>
             <div className="header-text">
               <h3>{title}</h3>
-              <p>{type === 'danger' ? 'Acción Requerida' : 'Confirmación'}</p>
+              <p>{type === 'danger' ? 'Esta acción no se puede deshacer' : 'Confirmá para continuar'}</p>
             </div>
           </div>
           <button onClick={onClose} className="close-modal-btn" aria-label="Cerrar">

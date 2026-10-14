@@ -18,8 +18,7 @@ import {
   Folder,
   ChevronDown,
   Archive,
-  AlertTriangle,
-  Search
+  AlertTriangle
 } from 'lucide-react';
 import {
   format,
@@ -38,10 +37,12 @@ import {
 } from 'date-fns';
 import { es } from 'date-fns/locale';
 import jsPDF from 'jspdf';
-import { supabase } from '../../../lib/supabase';
+import { db } from '../../../lib/db';
 import logo from '../../../assets/logo.jpg';
 import './AgendaClientes.css';
 
+import PageHeader from '../../../components/PageHeader/PageHeader';
+import SearchBar from '../../../components/SearchBar/SearchBar';
 export default function AgendaClientesPage() {
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
   const [currentMonth, setCurrentMonth] = useState(new Date());
@@ -81,15 +82,15 @@ export default function AgendaClientesPage() {
   }, [selectedClientId]);
 
   const fetchInitialData = async () => {
-    const { data: clientsData } = await supabase
+    const { data: clientsData } = await db
       .from('clients')
       .select('*')
       .neq('source', 'agenda_session_only')
       .order('name');
     setClients(clientsData || []);
 
-    const { data: foldersData } = await supabase.from('catalog_folders').select('*');
-    const { data: itemsData } = await supabase.from('catalog_items').select('*');
+    const { data: foldersData } = await db.from('catalog_folders').select('*');
+    const { data: itemsData } = await db.from('catalog_items').select('*');
 
     const combinedFolders = (foldersData || []).map(f => ({
       ...f,
@@ -99,18 +100,18 @@ export default function AgendaClientesPage() {
   };
 
   const fetchClientData = async (clientId: string) => {
-    const { data: bData } = await supabase.from('client_billing').select('*').eq('client_id', clientId).maybeSingle();
+    const { data: bData } = await db.from('client_billing').select('*').eq('client_id', clientId).maybeSingle();
     if (bData) {
       setBillingData(prev => ({ ...prev, [clientId]: bData }));
     }
 
-    const { data: sItems } = await supabase.from('scheduled_items').select('*').eq('client_id', clientId).order('date');
+    const { data: sItems } = await db.from('scheduled_items').select('*').eq('client_id', clientId).order('date');
     setScheduledItems(sItems || []);
   };
 
   const fetchTickets = async (clientId: string) => {
     // Sort by created_at to avoid 400 error if departure_date column is missing
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from('tickets')
       .select('*')
       .eq('client_id', clientId)
@@ -214,7 +215,7 @@ export default function AgendaClientesPage() {
 
     const itemDetails = catalogFolders.flatMap(f => f.items).find(i => i.id === newSchedule.itemId);
 
-    const { data, error } = await supabase.from('scheduled_items').insert([{
+    const { data, error } = await db.from('scheduled_items').insert([{
       client_id: selectedClientId,
       type: addingType,
       item_id: newSchedule.itemId,
@@ -240,7 +241,7 @@ export default function AgendaClientesPage() {
 
   const handleRemoveItem = async (id: string) => {
     if (!window.confirm('¿Eliminar este ítem de la agenda?')) return;
-    const { error } = await supabase.from('scheduled_items').delete().eq('id', id);
+    const { error } = await db.from('scheduled_items').delete().eq('id', id);
     if (error) alert('Error al eliminar ítem');
     else setScheduledItems(scheduledItems.filter(item => item.id !== id));
   };
@@ -262,13 +263,13 @@ export default function AgendaClientesPage() {
       };
 
       // 2. Insert into travel_history
-      const { error: historyError } = await supabase.from('travel_history').insert([historyData]);
+      const { error: historyError } = await db.from('travel_history').insert([historyData]);
       if (historyError) throw historyError;
 
       // 3. Clear current data
-      await supabase.from('scheduled_items').delete().eq('client_id', selectedClientId);
+      await db.from('scheduled_items').delete().eq('client_id', selectedClientId);
       
-      await supabase.from('client_billing').update({
+      await db.from('client_billing').update({
         tasks: [],
         notes: '[]',
         departure_date: null,
@@ -701,10 +702,11 @@ export default function AgendaClientesPage() {
 
   return (
     <div className="agenda-clientes-page animate-fade-in">
-      <header className="page-header-centered">
-        <h1>Agenda de Viaje Personalizada</h1>
-        <p>Diseña el itinerario día por día para cada uno de tus clientes.</p>
-      </header>
+      <PageHeader
+        section="Viaje"
+        title="Agenda de Viaje Personalizada"
+        subtitle="Diseña el itinerario día por día para cada uno de tus clientes."
+      />
 
       <div className="agenda-client-selector glass-card">
         <div className="selector-label">
@@ -749,7 +751,7 @@ export default function AgendaClientesPage() {
                     <div className="ticket-main">
                       <div className="ticket-header-pro">
                         <div className="vuelo-tag-pro">BOARDING PASS</div>
-                        <div className="vuelo-status" style={{ background: 'rgba(0,0,0,0.05)', color: '#94a3b8' }}>PENDIENTE</div>
+                        <div className="vuelo-status" style={{ background: 'rgba(0,0,0,0.05)', color: '#8FA2AF' }}>PENDIENTE</div>
                       </div>
                       <div className="ticket-route-pro" style={{ opacity: 0.3 }}>
                         <div className="city-group"><span className="city-code">---</span><span className="city-name">ORIGEN</span></div>
@@ -815,7 +817,7 @@ export default function AgendaClientesPage() {
                         </div>
                         
                         {ticket.notes && (
-                          <div style={{ marginTop: '0.75rem', fontSize: '0.7rem', color: '#64748b', fontStyle: 'italic', background: '#f8fafc', padding: '0.5rem', borderRadius: '8px' }}>
+                          <div style={{ marginTop: '0.75rem', fontSize: '0.7rem', color: '#5A7181', fontStyle: 'italic', background: '#F8F5F0', padding: '0.5rem', borderRadius: '8px' }}>
                             {ticket.notes}
                           </div>
                         )}
@@ -983,35 +985,35 @@ export default function AgendaClientesPage() {
 
           {showFinishConfirm && (
             <div className="modal-overlay">
-              <div className="modal-content glass-card confirm-finish-modal" style={{ maxWidth: '450px', padding: 0, overflow: 'hidden' }}>
-                <div style={{ background: '#ef4444', padding: '1.5rem', display: 'flex', alignItems: 'center', gap: '1rem', color: 'white' }}>
-                  <AlertTriangle size={24} />
-                  <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 800 }}>Confirmar Finalización</h3>
+              <div className="modal-content-pro modal-sm modal-danger confirm-finish-modal">
+                <div className="modal-header-pro">
+              <div className="header-left">
+                <div className="header-icon"><AlertTriangle size={20} /></div>
+                <div className="header-text">
+                  <h3>Confirmar finalización</h3>
+                  <p>El viaje pasará al historial</p>
                 </div>
-                <div style={{ padding: '2rem' }}>
-                  <p style={{ color: 'var(--color-primary)', fontSize: '1rem', lineHeight: '1.5', margin: '0 0 1.5rem 0' }}>
+              </div>
+              <button type="button" onClick={() => setShowFinishConfirm(false)} className="close-modal-btn" aria-label="Cerrar">
+                <X size={18} />
+              </button>
+            </div>
+                <div className="modal-body-pro">
+                  <p style={{ margin: 0 }}>
                     ¿Estás seguro de que deseas finalizar el viaje de <strong>{selectedClientData.name}</strong>?
                   </p>
-                  <p style={{ color: 'var(--color-secondary)', fontSize: '0.9rem', lineHeight: '1.5', background: '#fff7ed', padding: '1rem', borderRadius: '8px', borderLeft: '4px solid #f97316' }}>
+                  <p className="modal-note">
                     Toda la información actual (itinerario, fechas y pagos) se guardará en el historial y el cliente quedará listo para un nuevo viaje.
                   </p>
-                  <div style={{ display: 'flex', gap: '1rem', marginTop: '2rem' }}>
-                    <button 
-                      className="btn-cancel-modal" 
-                      onClick={() => setShowFinishConfirm(false)}
-                      style={{ flex: 1, padding: '0.75rem', borderRadius: '8px', border: '1px solid #e2e8f0', background: 'white', fontWeight: 700, cursor: 'pointer' }}
-                    >
+                </div>
+            <div className="modal-footer-pro">
+                    <button onClick={() => setShowFinishConfirm(false)} className="btn btn-outline">
                       Cancelar
                     </button>
-                    <button 
-                      className="btn-confirm-finish" 
-                      onClick={handleFinishTrip}
-                      style={{ flex: 1, padding: '0.75rem', borderRadius: '8px', border: 'none', background: '#ef4444', color: 'white', fontWeight: 800, cursor: 'pointer' }}
-                    >
+                    <button onClick={handleFinishTrip} className="btn btn-danger">
                       Finalizar Viaje
                     </button>
-                  </div>
-                </div>
+            </div>
               </div>
             </div>
           )}
@@ -1020,32 +1022,21 @@ export default function AgendaClientesPage() {
 
       {addingType && (
         <div className="modal-overlay">
-          <div className="modal-content glass-card" style={{ maxWidth: addingType === 'hotel' ? '650px' : '450px', width: '95%', padding: '0', overflow: 'hidden' }}>
-            <div style={{ background: 'linear-gradient(135deg, var(--color-primary) 0%, #0f2132 100%)', padding: '1.5rem 2rem', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                <div style={{ background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(8px)', padding: '0.6rem', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  {addingType === 'hotel' ? <Hotel size={20} color="white" /> : addingType === 'transport' ? <Plane size={20} color="white" /> : <MapPin size={20} color="white" />}
+          <div className={`modal-content-pro ${addingType === 'hotel' ? 'modal-lg' : 'modal-sm'}`}>
+            <div className="modal-header-pro">
+              <div className="header-left">
+                <div className="header-icon">{addingType === 'hotel' ? <Hotel size={20} /> : addingType === 'transport' ? <Plane size={20} /> : <MapPin size={20} />}</div>
+                <div className="header-text">
+                  <h3>{addingType === 'hotel' ? 'Agendar estadía de hotel' : addingType === 'transport' ? 'Agendar transporte' : 'Agendar excursión'}</h3>
+                  <p>Se agrega al itinerario del cliente</p>
                 </div>
-                <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 800, color: 'white', lineHeight: 1.2 }}>
-                  {addingType === 'hotel' ? 'Agendar Estadía de Hotel' :
-                    addingType === 'transport' ? 'Agendar Transporte' :
-                      `Agendar Excursión`}
-                </h3>
               </div>
-              <button 
-                onClick={() => {
-                  setAddingType(null);
-                  setIsSelectorOpen(false);
-                }}
-                style={{ background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'white', transition: 'all 0.2s' }}
-                onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.25)'; }}
-                onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.12)'; }}
-              >
-                <X size={16} />
+              <button onClick={() => { setAddingType(null); setIsSelectorOpen(false); }} className="close-modal-btn" aria-label="Cerrar">
+                <X size={18} />
               </button>
             </div>
 
-            <div style={{ padding: '2rem' }}>
+            <div className="modal-body-pro">
               <div className="form-group mb-3">
               <label className="text-xs font-bold uppercase text-secondary mb-1 display-block">Seleccionar del Catálogo</label>
               
@@ -1063,20 +1054,17 @@ export default function AgendaClientesPage() {
 
                 {isSelectorOpen && (
                   <div className="selector-dropdown custom-scrollbar">
-                    <div className="selector-search-wrapper" onClick={e => e.stopPropagation()}>
-                      <Search size={14} className="search-icon" />
-                      <input 
-                        type="text" 
-                        placeholder="Buscar..." 
-                        className="selector-search-input"
-                        value={searchTerm}
-                        onChange={e => {
-                          setSearchTerm(e.target.value);
-                          if (!e.target.value) setCurrentFolderPath([]);
-                        }}
-                        autoFocus
-                      />
-                    </div>
+                    <SearchBar
+                      size="sm"
+                      className="selector-search"
+                      onClick={e => e.stopPropagation()}
+                      placeholder="Buscar..."
+                      value={searchTerm}
+                      onChange={value => {
+                        setSearchTerm(value);
+                        if (!value) setCurrentFolderPath([]);
+                      }}
+                    />
 
                     {!searchTerm && (
                       <div className="selector-navigation-bar">
@@ -1268,17 +1256,12 @@ export default function AgendaClientesPage() {
                 />
               </div>
             </div>
-
-            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1.5rem', paddingTop: '1.5rem', borderTop: '1px solid rgba(0,0,0,0.05)' }}>
-              <button 
-                className="btn btn-primary" 
-                onClick={handleScheduleItem}
-                style={{ borderRadius: '12px', padding: '0.75rem 2rem' }}
-              >
+          </div>
+            <div className="modal-footer-pro">
+              <button onClick={handleScheduleItem} className="btn btn-primary">
                 Confirmar en Agenda
               </button>
             </div>
-          </div>
         </div>
       </div>
     )}
@@ -1356,20 +1339,21 @@ export default function AgendaClientesPage() {
 
       {selectedItemForDetails && (
         <div className="modal-overlay">
-          <div className="modal-content glass-card item-details-modal animate-scale-in">
-            <div className={`item-modal-header ${selectedItemForDetails.type}`}>
-              <div className="header-icon">
-                {selectedItemForDetails.type === 'hotel' ? <Hotel size={32} /> :
-                  selectedItemForDetails.type === 'transport' ? <Plane size={32} /> : <MapPin size={32} />}
+          <div className="modal-content-pro item-details-modal">
+            <div className="modal-header-pro">
+              <div className="header-left">
+                <div className="header-icon">{selectedItemForDetails.type === 'hotel' ? <Hotel size={20} /> : selectedItemForDetails.type === 'transport' ? <Plane size={20} /> : <MapPin size={20} />}</div>
+                <div className="header-text">
+                  <h3>{selectedItemForDetails.name}</h3>
+                  <p>{selectedItemForDetails.type === 'hotel' ? 'Hotel' : selectedItemForDetails.type === 'transport' ? 'Transporte' : 'Excursión'}</p>
+                </div>
               </div>
-              <div className="header-titles">
-                <span className="type-badge">{selectedItemForDetails.type}</span>
-                <h3 className="item-name">{selectedItemForDetails.name}</h3>
-              </div>
-              <button onClick={() => setSelectedItemForDetails(null)} className="close-modal-btn white"><X size={24} /></button>
+              <button onClick={() => setSelectedItemForDetails(null)} className="close-modal-btn" aria-label="Cerrar">
+                <X size={18} />
+              </button>
             </div>
 
-            <div className="item-modal-body">
+            <div className="modal-body-pro item-modal-body">
               <div className="info-grid-premium">
                 <div className={`info-box-pro ${selectedItemForDetails.type === 'hotel' ? 'checkin' : ''}`}>
                   <div className="box-icon"><CalendarIcon size={20} /></div>
@@ -1434,8 +1418,8 @@ export default function AgendaClientesPage() {
                   </div>
                 )}
               </div>
-
-              <button className="btn-modal-confirm" onClick={() => setSelectedItemForDetails(null)}>
+            </div>
+            <div className="modal-footer-pro"><button onClick={() => setSelectedItemForDetails(null)} className="btn btn-outline">
                 Cerrar
               </button>
             </div>

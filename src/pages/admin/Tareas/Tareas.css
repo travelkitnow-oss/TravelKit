@@ -169,7 +169,7 @@
   align-items: center;
   justify-content: center;
   background: white;
-  border-radius: 30px;
+  border-radius: 16px;
   border: 1px solid rgba(31, 58, 77, 0.05);
   box-shadow: 0 10px 30px rgba(0,0,0,0.02);
   min-height: 500px;
@@ -188,7 +188,7 @@
 .icon-circle {
   width: 100px;
   height: 100px;
-  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  background: linear-gradient(135deg, #F8F5F0 0%, #F3EEE7 100%);
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -200,7 +200,7 @@
 
 .empty-state-content h3 {
   font-size: 1.75rem;
-  font-weight: 800;
+  font-weight: 700;
   color: var(--color-primary);
   margin: 0;
 }
@@ -231,7 +231,7 @@
 .mini-stat strong {
   font-size: 1.25rem;
   color: var(--color-primary);
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .mini-stat span {
@@ -319,7 +319,7 @@
 }
 
 .billing-total-badge.selected .amount {
-  color: #3b82f6;
+  color: #3E6A87;
 }
 
 .billing-total-badge .label {
@@ -334,7 +334,7 @@
 
 .billing-total-badge .amount {
   font-size: 1.6rem;
-  font-weight: 800;
+  font-weight: 700;
   font-family: var(--font-main);
 }
 
@@ -550,7 +550,7 @@
   align-items: center;
   padding: 0.875rem 1rem;
   background: white;
-  border: 1px solid #e2e8f0;
+  border: 1px solid #E7E1D8;
   border-radius: 12px;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -594,10 +594,10 @@
 }
 
 .payment-summary-box {
-  background: #f8fafc;
+  background: #F8F5F0;
   padding: 1.25rem;
   border-radius: 16px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid #E7E1D8;
   margin-bottom: 1.5rem;
 }
 
@@ -610,7 +610,7 @@
 .payment-summary-row:last-child {
   margin-bottom: 0;
   padding-top: 0.5rem;
-  border-top: 1px dashed #cbd5e1;
+  border-top: 1px dashed #D8D0C4;
   margin-top: 0.5rem;
 }
 
@@ -634,7 +634,7 @@
   background: rgba(16, 185, 129, 0.1);
   color: #10b981;
   font-size: 0.65rem;
-  font-weight: 800;
+  font-weight: 700;
   padding: 0.25rem 0.5rem;
   border-radius: 6px;
   display: flex;
@@ -646,7 +646,7 @@
   background: rgba(31, 58, 77, 0.05);
   color: var(--color-primary);
   font-size: 0.6rem;
-  font-weight: 800;
+  font-weight: 700;
   padding: 0.15rem 0.4rem;
   border-radius: 4px;
   letter-spacing: 0.05em;
@@ -654,10 +654,10 @@
 }
 
 .selected-tasks-summary {
-  background: #f8fafc;
+  background: #F8F5F0;
   padding: 1rem;
   border-radius: 12px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid #E7E1D8;
 }
 
 .selected-tasks-list {
@@ -676,7 +676,7 @@
   padding: 0.4rem 0.75rem;
   background: white;
   border-radius: 8px;
-  border: 1px solid #f1f5f9;
+  border: 1px solid #F3EEE7;
 }
 
 .selected-task-pill strong {
@@ -685,9 +685,9 @@
 
 .pending-badge-mini {
   background: rgba(148, 163, 184, 0.1);
-  color: #64748b;
+  color: #5A7181;
   font-size: 0.6rem;
-  font-weight: 800;
+  font-weight: 700;
   padding: 0.2rem 0.5rem;
   border-radius: 6px;
   letter-spacing: 0.05em;
@@ -698,12 +698,12 @@
   flex: 1;
   width: 100%;
   padding: 1.25rem;
-  border: 1.5px solid #e2e8f0;
+  border: 1.5px solid #E7E1D8;
   border-radius: 16px;
   resize: none;
   font-family: var(--font-main);
   font-size: 0.95rem;
-  background: #F8FAFC;
+  background: #F8F5F0;
   transition: all 0.2s ease;
 }
 
@@ -880,11 +880,11 @@ input[type="date"].form-input {
   from { opacity: 0; transform: scale(0.9); }
   to { opacity: 1; transform: scale(1); }
 }.next-day-badge {
-  background: #f1f5f9;
-  border: 1px solid #e2e8f0;
-  color: #64748b;
+  background: #F3EEE7;
+  border: 1px solid #E7E1D8;
+  color: #5A7181;
   font-size: 0.65rem;
-  font-weight: 800;
+  font-weight: 700;
   padding: 0.15rem 0.4rem;
   border-radius: 6px;
   cursor: pointer;
@@ -892,7 +892,7 @@ input[type="date"].form-input {
 }
 
 .next-day-badge:hover {
-  background: #e2e8f0;
+  background: #E7E1D8;
 }
 
 .next-day-badge.active {
@@ -929,7 +929,7 @@ input[type="date"].form-input {
 }
 
 .quill-wrapper .ql-toolbar {
-  background: #f8fafc;
+  background: #F8F5F0;
   border-radius: 12px 12px 0 0;
   border: 1px solid rgba(0,0,0,0.05);
   font-family: var(--font-family, system-ui, sans-serif);

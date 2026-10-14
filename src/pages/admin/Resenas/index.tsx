@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
-import { Star, MessageSquare, Search, User, Eye, EyeOff, Trash2 } from 'lucide-react';
-import { supabase } from '../../../lib/supabase';
+import { Star, MessageSquare, User, Eye, EyeOff, Trash2 } from 'lucide-react';
+import { db } from '../../../lib/db';
 import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import './Resenas.css';
 
+import PageHeader from '../../../components/PageHeader/PageHeader';
+import SearchBar from '../../../components/SearchBar/SearchBar';
 interface Review {
   id: string;
   client_id: string;
@@ -31,7 +33,7 @@ export default function ResenasPage() {
 
   const fetchReviews = async () => {
     setLoading(true);
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from('client_reviews')
       .select(`
         *,
@@ -55,7 +57,7 @@ export default function ResenasPage() {
   };
 
   const toggleVisibility = async (id: string, currentStatus: boolean) => {
-    const { error } = await supabase
+    const { error } = await db
       .from('client_reviews')
       .update({ is_public: !currentStatus })
       .eq('id', id);
@@ -71,7 +73,7 @@ export default function ResenasPage() {
   const deleteReview = async (id: string) => {
     if (!window.confirm('¿Estás seguro de que quieres eliminar esta reseña permanentemente?')) return;
     
-    const { error } = await supabase
+    const { error } = await db
       .from('client_reviews')
       .delete()
       .eq('id', id);
@@ -106,6 +108,11 @@ export default function ResenasPage() {
   if (loading) {
     return (
       <div className="resenas-admin-page animate-fade-in">
+        <PageHeader
+          section="Gestión"
+          title="Reseñas de Clientes"
+          subtitle="Feedback y opiniones de los viajeros sobre su experiencia con Travel Kit."
+        />
         <div className="loading-state-premium">
           <div className="loader-premium"></div>
           <p>Cargando reseñas...</p>
@@ -116,16 +123,17 @@ export default function ResenasPage() {
 
   return (
     <div className="resenas-admin-page animate-fade-in">
-      <header className="page-header-centered" style={{ marginBottom: '2.5rem' }}>
-        <h1 style={{ fontSize: '3rem', fontFamily: "'Playfair Display', serif", fontWeight: 900, color: 'var(--color-primary)', margin: '0 0 0.5rem 0' }}>Reseñas de Clientes</h1>
-        <p style={{ color: '#64748b', fontSize: '1.1rem', margin: 0 }}>Feedback y opiniones de los viajeros sobre su experiencia con Travel Kit.</p>
-      </header>
+      <PageHeader
+        section="Gestión"
+        title="Reseñas de Clientes"
+        subtitle="Feedback y opiniones de los viajeros sobre su experiencia con Travel Kit."
+      />
 
       <div className="resenas-dashboard">
         {/* Panel Izquierdo: Estadísticas y Filtros */}
         <aside className="resenas-sidebar">
           <div className="glass-card stats-card-premium">
-            <h3 className="card-title-mini">CALIFICACIÓN GLOBAL</h3>
+            <h3 className="card-title-mini">Calificación global</h3>
             <div className="global-rating">
               <span className="rating-number">{averageRating}</span>
               <div className="rating-stars-large">
@@ -134,7 +142,7 @@ export default function ResenasPage() {
                     key={star} 
                     size={28} 
                     fill={star <= Math.round(Number(averageRating)) ? '#C89B5A' : 'none'} 
-                    color={star <= Math.round(Number(averageRating)) ? '#C89B5A' : '#e2e8f0'} 
+                    color={star <= Math.round(Number(averageRating)) ? '#C89B5A' : '#E7E1D8'} 
                   />
                 ))}
               </div>
@@ -158,32 +166,36 @@ export default function ResenasPage() {
           </div>
 
           <div className="glass-card filter-card-premium">
-            <h3 className="card-title-mini">FILTRAR RESEÑAS</h3>
-            
-            <div className="search-box-pro">
-              <Search size={18} />
-              <input 
-                type="text" 
-                placeholder="Buscar por cliente o comentario..." 
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
+            <h3 className="card-title-mini">Filtrar reseñas</h3>
 
-            <div className="rating-filters">
-              <button 
+            <SearchBar placeholder="Buscar por cliente o comentario..." value={searchTerm} onChange={setSearchTerm} />
+
+            <span className="filter-group-label">Calificación</span>
+            <div className="rating-filters" role="radiogroup" aria-label="Filtrar por calificación">
+              <button
+                role="radio"
+                aria-checked={filterRating === 'all'}
                 className={`filter-btn ${filterRating === 'all' ? 'active' : ''}`}
                 onClick={() => setFilterRating('all')}
               >
-                Todas
+                <span className="filter-btn-label">Todas</span>
+                <span className="filter-btn-count">{reviews.length}</span>
               </button>
               {[5, 4, 3, 2, 1].map(stars => (
-                <button 
+                <button
                   key={stars}
+                  role="radio"
+                  aria-checked={filterRating === stars}
+                  aria-label={`${stars} ${stars === 1 ? 'estrella' : 'estrellas'}`}
                   className={`filter-btn ${filterRating === stars ? 'active' : ''}`}
                   onClick={() => setFilterRating(stars)}
                 >
-                  {stars} Estrellas
+                  <span className="filter-btn-stars" aria-hidden="true">
+                    {[1, 2, 3, 4, 5].map(i => (
+                      <Star key={i} size={14} className={i <= stars ? 'on' : 'off'} />
+                    ))}
+                  </span>
+                  <span className="filter-btn-count">{reviews.filter(r => r.rating === stars).length}</span>
                 </button>
               ))}
             </div>
@@ -215,7 +227,7 @@ export default function ResenasPage() {
                           {format(parseISO(review.created_at), "d 'de' MMMM, yyyy", { locale: es })}
                         </span>
                         {(review.destination || review.pax) && (
-                          <span style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 600 }}>
+                          <span style={{ fontSize: '0.8rem', color: '#5A7181', fontWeight: 600 }}>
                             {review.pax && `${review.pax} pax`}
                             {review.pax && review.destination && ' • '}
                             {review.destination}
@@ -230,7 +242,7 @@ export default function ResenasPage() {
                             key={star} 
                             size={16} 
                             fill={star <= review.rating ? '#C89B5A' : 'none'} 
-                            color={star <= review.rating ? '#C89B5A' : '#e2e8f0'} 
+                            color={star <= review.rating ? '#C89B5A' : '#E7E1D8'} 
                           />
                         ))}
                       </div>
@@ -241,8 +253,8 @@ export default function ResenasPage() {
                           style={{ 
                             background: 'none', border: 'none', cursor: 'pointer',
                             padding: '0.4rem', borderRadius: '50%',
-                            backgroundColor: review.is_public ? '#f0fdf4' : '#f1f5f9',
-                            color: review.is_public ? '#10b981' : '#94a3b8',
+                            backgroundColor: review.is_public ? '#f0fdf4' : '#F3EEE7',
+                            color: review.is_public ? '#10b981' : '#8FA2AF',
                             display: 'flex', alignItems: 'center', justifyItems: 'center'
                           }}
                         >

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useOutletContext } from 'react-router-dom';
-import { Receipt, CreditCard, Clock, CheckCircle2, AlertCircle, Landmark, Copy } from 'lucide-react';
-import { supabase } from '../../../lib/supabase';
+import { Receipt, CreditCard, Clock, CheckCircle2, AlertCircle, Landmark, Copy, X } from 'lucide-react';
+import { db } from '../../../lib/db';
 import './ServiciosContratados.css';
 
 interface Task {
@@ -31,13 +31,13 @@ export default function ServiciosContratadosPage() {
 
   async function fetchData() {
     setLoading(true);
-    const { data: billing } = await supabase
+    const { data: billing } = await db
       .from('client_billing')
       .select('*')
       .eq('client_id', clientId)
       .single();
 
-    const { data: settings } = await supabase
+    const { data: settings } = await db
       .from('site_settings')
       .select('key, value')
       .in('key', ['bank_name', 'bank_cbu', 'bank_alias', 'bank_holder']);
@@ -66,7 +66,7 @@ export default function ServiciosContratadosPage() {
       updatedTasks[idx].payment_status = 'requested';
     });
 
-    const { error } = await supabase
+    const { error } = await db
       .from('client_billing')
       .update({ tasks: updatedTasks })
       .eq('client_id', clientId);
@@ -204,21 +204,21 @@ export default function ServiciosContratadosPage() {
       {/* Modal de Pago */}
       {showPaymentInfo && (
         <div className="modal-overlay">
-          <div className="modal-content-premium animate-scale-in">
-            <div className="modal-header-v2">
-              <div className="header-info">
-                <div className="icon-badge">
-                  <Landmark size={24} />
-                </div>
-                <div>
-                  <h3>Detalles de Transferencia</h3>
-                  <p>Copia los datos para realizar el pago</p>
+          <div className="modal-content-pro">
+            <div className="modal-header-pro">
+              <div className="header-left">
+                <div className="header-icon"><Landmark size={20} /></div>
+                <div className="header-text">
+                  <h3>Detalles de transferencia</h3>
+                  <p>Copiá los datos para realizar el pago</p>
                 </div>
               </div>
-              <button className="close-btn" onClick={() => setShowPaymentInfo(false)}>&times;</button>
+              <button onClick={() => setShowPaymentInfo(false)} className="close-modal-btn" aria-label="Cerrar">
+                <X size={18} />
+              </button>
             </div>
             
-            <div className="modal-body-v2">
+            <div className="modal-body-pro modal-body-v2">
               <div className="payment-bill mb-6">
                 <div className="bill-row">
                   <span>Items seleccionados ({selectedTasks.length})</span>

@@ -1,17 +1,18 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect } from 'react';
 import { 
-  Archive, 
-  Search, 
+  
   Calendar, 
   MapPin, 
   ChevronRight, 
   ExternalLink,
   Trash2
 } from 'lucide-react';
-import { supabase } from '../../../lib/supabase';
+import { db } from '../../../lib/db';
 import './HistorialViajes.css';
 
+import PageHeader from '../../../components/PageHeader/PageHeader';
+import SearchBar from '../../../components/SearchBar/SearchBar';
 export default function HistorialViajesAdminPage() {
   const [history, setHistory] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -24,7 +25,7 @@ export default function HistorialViajesAdminPage() {
 
   const fetchHistory = async () => {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await db
         .from('travel_history')
         .select('*, clients(name)')
         .order('created_at', { ascending: false });
@@ -41,7 +42,7 @@ export default function HistorialViajesAdminPage() {
   const handleDeleteEntry = async (id: string) => {
     if (!window.confirm('¿Eliminar este registro del historial?')) return;
     try {
-      await supabase.from('travel_history').delete().eq('id', id);
+      await db.from('travel_history').delete().eq('id', id);
       setHistory(history.filter(h => h.id !== id));
       if (selectedTrip?.id === id) setSelectedTrip(null);
     } catch (e) {
@@ -56,29 +57,14 @@ export default function HistorialViajesAdminPage() {
 
   return (
     <div className="historial-admin-page animate-fade-in">
-      <header className="historial-top-header glass-card">
-        <div className="header-flex">
-          <div className="header-title">
-            <div className="icon-badge">
-              <Archive size={20} />
-            </div>
-            <div>
-              <h1>Historial de Viajes</h1>
-              <p>Registro de itinerarios finalizados</p>
-            </div>
-          </div>
-          
-          <div className="search-box-premium">
-            <Search size={18} />
-            <input 
-              type="text" 
-              placeholder="Buscar cliente o destino..." 
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
-        </div>
-      </header>
+      <PageHeader
+        section="Gestión"
+        title="Historial de Viajes"
+        subtitle="Registro de itinerarios finalizados."
+        actions={
+          <SearchBar className="search-header" placeholder="Buscar cliente o destino..." value={searchTerm} onChange={setSearchTerm} />
+        }
+      />
 
       <div className="historial-main-layout">
         <aside className="history-sidebar">

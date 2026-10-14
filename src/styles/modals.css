@@ -1,0 +1,421 @@
+/* ═══════════════════════════════════════════════════════
+   SISTEMA DE POPUPS — Travel Kit
+   Fuente única de estilos para todos los modales.
+   Estructura:
+     .modal-overlay
+       .modal-content-pro[.modal-sm|.modal-lg|.modal-danger]
+         .modal-header-pro
+           .header-left > .header-icon + .header-text (h3 + p)
+           .close-modal-btn
+         .modal-body-pro
+         .modal-footer-pro
+   Los selectores llevan el prefijo del overlay para ganarle a
+   reglas sueltas que aún existan en hojas de estilo de páginas.
+═══════════════════════════════════════════════════════ */
+
+/* ─── Fondo ─── */
+body .modal-overlay {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 9999;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 1.5rem;
+  background-color: rgba(15, 33, 50, 0.55) !important;
+  backdrop-filter: blur(6px) !important;
+  -webkit-backdrop-filter: blur(6px) !important;
+  animation: tkOverlayIn 0.2s ease both;
+  overflow-y: auto;
+}
+
+/* Bloquea el scroll de fondo mientras haya un popup abierto */
+body:has(.modal-overlay),
+.admin-main:has(.modal-overlay),
+.client-main:has(.modal-overlay) {
+  overflow: hidden !important;
+}
+
+@keyframes tkOverlayIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes tkModalIn {
+  from { opacity: 0; transform: translateY(12px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* ─── Contenedor ─── */
+.modal-overlay .modal-content-pro {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 560px;
+  max-height: calc(100vh - 3rem);
+  margin: auto;
+  padding: 0 !important;
+  background: var(--color-white) !important;
+  border: 1px solid var(--color-border) !important;
+  border-radius: var(--radius-lg) !important;
+  box-shadow: 0 30px 60px -15px rgba(15, 33, 50, 0.35), 0 0 0 1px rgba(15, 33, 50, 0.04) !important;
+  overflow: hidden !important;
+  animation: tkModalIn 0.28s var(--ease-out) both;
+}
+
+/* Filete dorado superior, igual que los encabezados de página */
+.modal-overlay .modal-content-pro::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--color-accent);
+  z-index: 2;
+}
+
+.modal-overlay .modal-content-pro.modal-sm { max-width: 440px; }
+.modal-overlay .modal-content-pro.modal-lg { max-width: 720px; }
+.modal-overlay .modal-content-pro.modal-xl { max-width: 960px; }
+.modal-overlay .modal-content-pro.modal-danger::before { background: var(--color-danger); }
+
+/* ─── Cabecera ─── */
+.modal-overlay .modal-header-pro {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.5rem 1.5rem 1.25rem 1.75rem !important;
+  background: var(--color-white) !important;
+  color: var(--color-primary) !important;
+  border-bottom: 1px solid var(--color-border) !important;
+}
+
+.modal-overlay .modal-header-pro .header-left {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.modal-overlay .modal-header-pro .header-icon,
+.modal-overlay .modal-header-pro .header-icon-box {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  padding: 0 !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-md) !important;
+  background: var(--color-primary) !important;
+  color: var(--color-accent) !important;
+  border: none !important;
+  backdrop-filter: none !important;
+  transform: none !important;
+}
+
+.modal-overlay .modal-header-pro .header-icon svg,
+.modal-overlay .modal-header-pro .header-icon-box svg {
+  width: 20px;
+  height: 20px;
+  color: currentColor !important;
+  stroke: currentColor;
+}
+
+.modal-overlay .modal-danger .modal-header-pro .header-icon,
+.modal-overlay .modal-header-pro .header-icon-box.danger {
+  background: #FDECEC !important;
+  color: var(--color-danger) !important;
+}
+
+.modal-overlay .modal-header-pro .header-icon-box.warning {
+  background: #FDF3E3 !important;
+  color: #B7791F !important;
+}
+
+.modal-overlay .modal-header-pro .header-icon-box.info {
+  background: #EEF3F6 !important;
+  color: var(--color-primary) !important;
+}
+
+.modal-overlay .modal-header-pro .header-icon.success {
+  background: #E8F5EE !important;
+  color: var(--color-success) !important;
+}
+
+.modal-overlay .modal-header-pro .header-text {
+  min-width: 0;
+}
+
+.modal-overlay .modal-header-pro .header-text h3 {
+  margin: 0 !important;
+  font-family: var(--font-serif) !important;
+  font-size: 1.3rem !important;
+  font-weight: 600 !important;
+  line-height: 1.25 !important;
+  letter-spacing: -0.01em !important;
+  color: var(--color-primary) !important;
+}
+
+.modal-overlay .modal-header-pro .header-text p {
+  margin: 0.2rem 0 0 !important;
+  font-family: var(--font-main) !important;
+  font-size: 0.85rem !important;
+  font-weight: 400 !important;
+  line-height: 1.45 !important;
+  color: var(--text-secondary) !important;
+  opacity: 1 !important;
+}
+
+.modal-overlay .modal-header-pro .header-text p strong {
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+/* ─── Botón cerrar (todas las variantes) ─── */
+.modal-overlay .close-modal-btn,
+.modal-overlay .close-modal-btn-white,
+.modal-overlay .close-session-modal {
+  flex-shrink: 0;
+  width: 36px !important;
+  height: 36px !important;
+  padding: 0 !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm) !important;
+  border: 1px solid transparent !important;
+  background: transparent !important;
+  color: var(--color-secondary) !important;
+  cursor: pointer;
+  transform: none !important;
+  transition: background-color var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast) !important;
+}
+
+.modal-overlay .close-modal-btn:hover,
+.modal-overlay .close-modal-btn-white:hover,
+.modal-overlay .close-session-modal:hover {
+  background: #F3EEE7 !important;
+  border-color: var(--color-border) !important;
+  color: var(--color-primary) !important;
+  transform: none !important;
+}
+
+/* ─── Cuerpo ─── */
+.modal-overlay .modal-body-pro {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 1.75rem !important;
+  margin: 0 !important;
+  color: var(--color-primary);
+}
+
+.modal-overlay .modal-body-pro::-webkit-scrollbar { width: 6px; }
+.modal-overlay .modal-body-pro::-webkit-scrollbar-thumb {
+  background: var(--color-tertiary);
+  border-radius: 10px;
+}
+
+/* Etiquetas de formularios dentro de popups: mismo estilo en todos */
+.modal-overlay .modal-body-pro label {
+  display: block;
+  font-family: var(--font-main) !important;
+  font-size: 0.8rem !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.01em !important;
+  text-transform: none !important;
+  color: var(--text-secondary) !important;
+  margin-bottom: 0.4rem;
+}
+
+.modal-overlay .modal-body-pro label.checkbox-container,
+.modal-overlay .modal-body-pro label.switch,
+.modal-overlay .modal-body-pro label[class*="toggle"] {
+  display: inline-flex;
+  margin-bottom: 0;
+}
+
+.modal-overlay .modal-body-pro .form-group + .form-group {
+  margin-top: 1.1rem;
+}
+
+/* ─── Pie ─── */
+.modal-overlay .modal-footer-pro {
+  flex-shrink: 0;
+  display: flex !important;
+  align-items: center;
+  justify-content: flex-end !important;
+  gap: 0.75rem !important;
+  padding: 1rem 1.75rem !important;
+  margin: 0 !important;
+  background: #F8F5F0 !important;
+  border-top: 1px solid var(--color-border) !important;
+}
+
+/* Botones del pie: cualquier variante heredada adopta el sistema */
+.modal-overlay .modal-footer-pro .btn,
+.modal-overlay .modal-footer-pro .btn-modal,
+.modal-overlay .modal-footer-pro .btn-modal-primary,
+.modal-overlay .modal-footer-pro .btn-modal-secondary,
+.modal-overlay .modal-footer-pro .btn-cancel-modal,
+.modal-overlay .modal-footer-pro .btn-modal-confirm {
+  flex: 0 0 auto !important;
+  min-height: 42px !important;
+  height: auto !important;
+  padding: 0.65rem 1.25rem !important;
+  border-radius: var(--radius-sm) !important;
+  font-family: var(--font-main) !important;
+  font-size: 0.9rem !important;
+  font-weight: 600 !important;
+  box-shadow: none !important;
+  transform: none !important;
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+}
+
+.modal-overlay .modal-footer-pro .btn-modal-secondary,
+.modal-overlay .modal-footer-pro .btn-cancel,
+.modal-overlay .modal-footer-pro .btn-cancel-modal,
+.modal-overlay .modal-footer-pro .btn-outline {
+  background: var(--color-white) !important;
+  color: var(--color-primary) !important;
+  border: 1px solid var(--color-border-strong) !important;
+}
+
+.modal-overlay .modal-footer-pro .btn-modal-secondary:hover,
+.modal-overlay .modal-footer-pro .btn-cancel:hover,
+.modal-overlay .modal-footer-pro .btn-cancel-modal:hover,
+.modal-overlay .modal-footer-pro .btn-outline:hover {
+  background: #F3EEE7 !important;
+  border-color: var(--color-primary) !important;
+}
+
+.modal-overlay .modal-footer-pro .btn-modal-primary,
+.modal-overlay .modal-footer-pro .btn-primary,
+.modal-overlay .modal-footer-pro .btn-confirm.info {
+  background: var(--color-primary) !important;
+  color: var(--color-white) !important;
+  border: 1px solid var(--color-primary) !important;
+}
+
+.modal-overlay .modal-footer-pro .btn-modal-primary:hover,
+.modal-overlay .modal-footer-pro .btn-primary:hover,
+.modal-overlay .modal-footer-pro .btn-confirm.info:hover {
+  background: var(--color-primary-dark) !important;
+}
+
+.modal-overlay .modal-footer-pro .btn-confirm.danger,
+.modal-overlay .modal-footer-pro .btn-modal-confirm,
+.modal-overlay .modal-footer-pro .btn-danger {
+  background: var(--color-danger) !important;
+  color: var(--color-white) !important;
+  border: 1px solid var(--color-danger) !important;
+}
+
+.modal-overlay .modal-footer-pro .btn-confirm.danger:hover,
+.modal-overlay .modal-footer-pro .btn-modal-confirm:hover,
+.modal-overlay .modal-footer-pro .btn-danger:hover {
+  background: #B91C1C !important;
+}
+
+.modal-overlay .modal-footer-pro .btn-confirm.warning {
+  background: #B7791F !important;
+  color: var(--color-white) !important;
+  border: 1px solid #B7791F !important;
+}
+
+.modal-overlay .modal-footer-pro button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* Nota/advertencia dentro de un popup */
+.modal-overlay .modal-note {
+  margin-top: 1rem;
+  padding: 0.85rem 1rem;
+  border-radius: var(--radius-sm);
+  background: #FDF6EC;
+  border: 1px solid rgba(200, 155, 90, 0.35);
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  line-height: 1.55;
+}
+
+/* ─── Popups heredados que aún usan .modal-content (formulario público, etc.) ─── */
+.modal-overlay > .modal-content {
+  border-radius: var(--radius-lg) !important;
+  border: 1px solid var(--color-border) !important;
+  box-shadow: 0 30px 60px -15px rgba(15, 33, 50, 0.35) !important;
+  max-height: calc(100vh - 3rem);
+  overflow-y: auto;
+  animation: tkModalIn 0.28s var(--ease-out) both;
+}
+
+/* ─── Móvil: hoja inferior ─── */
+@media (max-width: 640px) {
+  body .modal-overlay:has(> .modal-content-pro),
+  body .modal-overlay:has(> .modal-content) {
+    align-items: flex-end !important;
+    padding: 0 !important;
+  }
+
+  .modal-overlay .modal-content-pro,
+  .modal-overlay > .modal-content {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    max-height: 92vh;
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0 !important;
+    border-bottom: none !important;
+  }
+
+  .modal-overlay .modal-header-pro {
+    padding: 1.25rem 1.25rem 1rem !important;
+  }
+
+  .modal-overlay .modal-body-pro {
+    padding: 1.25rem !important;
+  }
+
+  .modal-overlay .modal-footer-pro {
+    padding: 0.9rem 1.25rem calc(0.9rem + env(safe-area-inset-bottom)) !important;
+  }
+
+  .modal-overlay .modal-footer-pro > * {
+    flex: 1 1 0 !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body .modal-overlay,
+  .modal-overlay .modal-content-pro,
+  .modal-overlay > .modal-content {
+    animation: none !important;
+  }
+}
+
+/* ─── Excepciones: calendario diario de la agenda del cliente (cabecera azul) ─── */
+.modal-overlay > .day-details-modal {
+  overflow: hidden;
+}
+
+.modal-overlay .agenda-day-modal-header {
+  border-bottom: 2px solid var(--color-accent) !important;
+}
+
+.modal-overlay .agenda-day-modal-header .close-modal-btn {
+  color: rgba(255, 255, 255, 0.75) !important;
+}
+
+.modal-overlay .agenda-day-modal-header .close-modal-btn:hover {
+  background: rgba(255, 255, 255, 0.12) !important;
+  border-color: rgba(255, 255, 255, 0.2) !important;
+  color: var(--color-white) !important;
+}

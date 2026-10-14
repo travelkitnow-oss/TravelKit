@@ -1,10 +1,11 @@
 .calendar-container {
   background-color: var(--color-white);
-  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
   box-shadow: var(--shadow-lg);
   padding: 2rem;
   width: 100%;
-  max-width: 550px;
+  max-width: 520px;
   margin: 0 auto;
   box-sizing: border-box;
 }
@@ -26,8 +27,9 @@
 
 .calendar-header h3 {
   font-family: var(--font-main);
+  font-family: var(--font-serif);
   font-size: 1.4rem;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--color-primary);
   text-transform: capitalize;
   margin: 0;
@@ -37,10 +39,11 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
+  width: 40px;
+  height: 40px;
   border-radius: var(--radius-full);
-  color: var(--color-secondary);
+  border: 1px solid var(--color-border);
+  color: var(--color-primary);
   transition: all var(--transition-fast);
 }
 
@@ -51,10 +54,10 @@
 
 .calendar-body {
   background-color: var(--color-white);
-  border: 1px solid var(--color-bg);
-  border-radius: 20px;
-  padding: 1rem; /* Reduced padding to fit 7 columns */
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
+  border: none;
+  border-radius: 0;
+  padding: 0;
+  box-shadow: none;
   width: 100%;
   box-sizing: border-box;
 }
@@ -70,9 +73,9 @@
 .weekday {
   font-size: 0.75rem;
   font-weight: 700;
-  color: var(--color-tertiary);
+  color: var(--color-secondary);
   text-transform: uppercase;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.06em;
   padding-bottom: 0.75rem;
   border-bottom: 1px solid var(--color-bg);
   margin-bottom: 0.5rem;
@@ -86,8 +89,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1rem;
-  font-weight: 600;
+  font-size: 0.95rem;
+  font-weight: 500;
   border-radius: var(--radius-full);
   color: var(--color-text-dark);
   transition: all var(--transition-fast);
@@ -110,7 +113,7 @@
 }
 
 .day-btn.selected {
-  background-color: var(--color-accent) !important;
+  background-color: var(--color-primary) !important;
   color: var(--color-white) !important;
 }
 
@@ -168,7 +171,8 @@
 
 .time-slot-btn {
   padding: 0.5rem;
-  border: 1px solid var(--color-tertiary);
+  min-height: 40px;
+  border: 1px solid var(--color-border-strong);
   border-radius: var(--radius-sm);
   font-size: 0.85rem;
   font-weight: 500;
@@ -197,4 +201,18 @@
 
 .generate-link-btn {
   width: 100%;
+}
+
+.day-btn.empty {
+  visibility: hidden;
+}
+
+.calendar-top h2 {
+  font-size: 1.35rem !important;
+}
+
+/* En el panel, el calendario vive dentro de una tarjeta: sin marco propio */
+.dashboard-mode.calendar-container {
+  border: none;
+  border-radius: 0;
 }

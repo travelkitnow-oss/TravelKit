@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Plus, Trash2, Settings, Eye, PlusCircle, Target, MapPin, X, ChevronDown, HelpCircle } from 'lucide-react';
-import { supabase } from '../../../lib/supabase';
+import { db } from '../../../lib/db';
 import './ViajeIdeal.css';
 
+import PageHeader from '../../../components/PageHeader/PageHeader';
 interface Option {
   id: string;
   text: string;
@@ -54,7 +55,7 @@ export default function ViajeIdealPage() {
     // Attempt to fetch from Supabase. If table doesn't exist, we'll use a mock for now
     // and instruct the user to create it if they want persistence, 
     // or I'll just handle it gracefully.
-    const { data, error } = await supabase.from('viaje_ideal_questions').select('*').order('created_at');
+    const { data, error } = await db.from('viaje_ideal_questions').select('*').order('created_at');
     
     if (error) {
       console.error('Error fetching questions:', error);
@@ -86,7 +87,7 @@ export default function ViajeIdealPage() {
       ]
     };
 
-    const { data, error } = await supabase.from('viaje_ideal_questions').insert([newQ]).select();
+    const { data, error } = await db.from('viaje_ideal_questions').insert([newQ]).select();
     
     if (error) {
       // Local fallback for demo
@@ -99,7 +100,7 @@ export default function ViajeIdealPage() {
   };
 
   const handleDeleteQuestion = async (id: string) => {
-    const { error } = await supabase.from('viaje_ideal_questions').delete().eq('id', id);
+    const { error } = await db.from('viaje_ideal_questions').delete().eq('id', id);
     if (!error || error) { // Allow local update even if DB fails for now
       setQuestions(questions.filter(q => q.id !== id));
     }
@@ -208,10 +209,11 @@ export default function ViajeIdealPage() {
 
   return (
     <div className="viaje-ideal-page animate-fade-in">
-      <header className="page-header-centered">
-        <h1>Viaje Ideal</h1>
-        <p>Configura preguntas inteligentes para ayudar a tus clientes a descubrir su próximo destino.</p>
-      </header>
+      <PageHeader
+        section="Formularios"
+        title="Viaje Ideal"
+        subtitle="Configura preguntas inteligentes para ayudar a tus clientes a descubrir su próximo destino."
+      />
 
       <div className="builder-container">
         <div className="builder-panel glass-card">
@@ -345,19 +347,21 @@ export default function ViajeIdealPage() {
 
       {showPreview && (
         <div className="modal-overlay animate-fade-in" style={{ zIndex: 3000 }}>
-          <div className="modal-content glass-card animate-scale-in" style={{ maxWidth: '500px', width: '100%', padding: 0, borderRadius: '24px', overflow: 'hidden' }}>
-            <div style={{ padding: '1.25rem 1.5rem', background: 'var(--color-primary)', color: 'white', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700, color: 'white', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <Eye size={18} /> Vista del Cliente
-                </h3>
+          <div className="modal-content-pro">
+            <div className="modal-header-pro">
+              <div className="header-left">
+                <div className="header-icon"><Eye size={20} /></div>
+                <div className="header-text">
+                  <h3>Vista del cliente</h3>
+                  <p>Así ve el test tu viajero</p>
+                </div>
               </div>
-              <button onClick={() => { setShowPreview(false); setResult(null); setAnswers({}); }} style={{ background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '50%', padding: '6px', cursor: 'pointer', color: 'white' }}>
+              <button onClick={() => { setShowPreview(false); setResult(null); setAnswers({}); }} className="close-modal-btn" aria-label="Cerrar">
                 <X size={18} />
               </button>
             </div>
             
-            <div className="card-body" style={{ padding: '2rem' }}>
+            <div className="modal-body-pro">
               {!result ? (
                 <div className="quiz-container">
                   <div className="test-icon" style={{ margin: '0 auto 1.5rem auto' }}>
@@ -365,15 +369,15 @@ export default function ViajeIdealPage() {
                   </div>
                   {questions.length > 0 && currentPreviewIndex < questions.length ? (
                     <div className="quiz-wizard animate-fade-in">
-                      <div className="wizard-progress" style={{ textAlign: 'center', marginBottom: '1.5rem', color: '#64748b', fontSize: '0.9rem', fontWeight: 600 }}>
+                      <div className="wizard-progress" style={{ textAlign: 'center', marginBottom: '1.5rem', color: '#5A7181', fontSize: '0.9rem', fontWeight: 600 }}>
                         Pregunta {currentPreviewIndex + 1} de {questions.length}
-                        <div style={{ background: '#f1f5f9', height: '6px', borderRadius: '3px', marginTop: '0.5rem', overflow: 'hidden' }}>
+                        <div style={{ background: '#F3EEE7', height: '6px', borderRadius: '3px', marginTop: '0.5rem', overflow: 'hidden' }}>
                           <div style={{ background: 'var(--color-primary)', height: '100%', width: `${((currentPreviewIndex + 1) / questions.length) * 100}%`, transition: 'width 0.3s' }}></div>
                         </div>
                       </div>
                       
                       <div className="quiz-question mb-5 text-center">
-                        <h4 className="mb-4" style={{ fontSize: '1.4rem', fontFamily: "'Playfair Display', serif", color: '#1F3A4D', fontWeight: 800, lineHeight: 1.3 }}>
+                        <h4 className="mb-4" style={{ fontSize: '1.4rem', fontFamily: 'var(--font-serif)', color: '#1F3A4D', fontWeight: 700, lineHeight: 1.3 }}>
                           {questions[currentPreviewIndex].text}
                         </h4>
                         <div className="quiz-options">
@@ -418,7 +422,7 @@ export default function ViajeIdealPage() {
               ) : (
                 <div className="result-card animate-scale-in">
                   <div className="confetti">🎉</div>
-                  <h3 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#1F3A4D' }}>¡Tu destino ideal es!</h3>
+                  <h3 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#1F3A4D' }}>¡Tu destino ideal es!</h3>
                   <div className="result-name">{result}</div>
                   <p className="mt-3 text-secondary text-center">Basado en tus preferencias, este lugar te encantará.</p>
                   <button className="btn btn-outline w-100 mt-4" onClick={() => { setResult(null); setAnswers({}); setShowPreview(false); }} style={{ padding: '1rem', borderRadius: '12px' }}>
@@ -433,20 +437,21 @@ export default function ViajeIdealPage() {
 
       {catModal.show && (
         <div className="modal-overlay animate-fade-in" style={{ zIndex: 3000 }}>
-          <div className="modal-content glass-card animate-scale-in" style={{ maxWidth: '400px', padding: 0, borderRadius: '24px', overflow: 'hidden' }}>
-            <div style={{ padding: '1.25rem 1.5rem', background: 'var(--color-primary)', color: 'white', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                <div style={{ background: 'rgba(255,255,255,0.15)', padding: '6px', borderRadius: '8px' }}>
-                  <Target size={18} color="white" />
+          <div className="modal-content-pro modal-sm">
+            <div className="modal-header-pro">
+              <div className="header-left">
+                <div className="header-icon"><Target size={20} /></div>
+                <div className="header-text">
+                  <h3>Asignar puntos</h3>
+                  <p>Definí cuánto suma esta respuesta</p>
                 </div>
-                <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700, color: 'white' }}>Asignar Puntos</h3>
               </div>
-              <button onClick={() => setCatModal({...catModal, show: false})} style={{ background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '50%', padding: '6px', cursor: 'pointer', color: 'white' }}>
+              <button onClick={() => setCatModal({...catModal, show: false})} className="close-modal-btn" aria-label="Cerrar">
                 <X size={18} />
               </button>
             </div>
             
-            <div style={{ padding: '1.5rem' }}>
+            <div className="modal-body-pro">
               <div className="form-group mb-3">
                 <label className="text-xs font-bold uppercase text-secondary mb-2 block">Categoría / Destino</label>
                 <input 

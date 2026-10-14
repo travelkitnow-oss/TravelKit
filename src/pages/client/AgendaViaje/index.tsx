@@ -29,7 +29,7 @@ import {
 } from 'date-fns';
 import { es } from 'date-fns/locale';
 import jsPDF from 'jspdf';
-import { supabase } from '../../../lib/supabase';
+import { db } from '../../../lib/db';
 import logo from '../../../assets/logo.jpg';
 import './AgendaViaje.css';
 
@@ -53,7 +53,7 @@ export default function AgendaViajePage() {
     setLoading(true);
     
     // Fetch client basic info
-    const { data: client } = await supabase
+    const { data: client } = await db
       .from('clients')
       .select('*')
       .eq('id', clientId)
@@ -61,7 +61,7 @@ export default function AgendaViajePage() {
     setClientData(client);
 
     // Fetch client billing (dates, destination, etc.)
-    const { data: bData } = await supabase
+    const { data: bData } = await db
       .from('client_billing')
       .select('*')
       .eq('client_id', clientId)
@@ -69,7 +69,7 @@ export default function AgendaViajePage() {
     setBillingData(bData);
 
     // Fetch scheduled items
-    const { data: sItems } = await supabase
+    const { data: sItems } = await db
       .from('scheduled_items')
       .select('*')
       .eq('client_id', clientId)
@@ -77,7 +77,7 @@ export default function AgendaViajePage() {
     setScheduledItems(sItems || []);
 
     // Fetch catalog items for reference (origin/destination info)
-    const { data: itemsData } = await supabase.from('catalog_items').select('*');
+    const { data: itemsData } = await db.from('catalog_items').select('*');
     setCatalogItems(itemsData || []);
 
     setLoading(false);
@@ -509,21 +509,20 @@ export default function AgendaViajePage() {
 
       {selectedItemForDetails && (
         <div className="modal-overlay" onClick={() => setSelectedItemForDetails(null)}>
-          <div className="modal-content glass-card item-details-modal animate-scale-in" onClick={e => e.stopPropagation()}>
-            <div className={`item-modal-header ${selectedItemForDetails.type}`}>
-              <div className="header-icon">
-                {selectedItemForDetails.type === 'hotel' ? <Hotel size={24} /> : 
-                 selectedItemForDetails.type === 'transport' ? <Plane size={24} /> : <MapPin size={24} />}
+          <div className="modal-content-pro item-details-modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-header-pro">
+              <div className="header-left">
+                <div className="header-icon">{selectedItemForDetails.type === 'hotel' ? <Hotel size={20} /> : selectedItemForDetails.type === 'transport' ? <Plane size={20} /> : <MapPin size={20} />}</div>
+                <div className="header-text">
+                  <h3>{selectedItemForDetails.name}</h3>
+                  <p>{selectedItemForDetails.type === 'hotel' ? 'Hotel' : selectedItemForDetails.type === 'transport' ? 'Transporte' : 'Excursión'}</p>
+                </div>
               </div>
-              <div className="header-titles">
-                <h3>{selectedItemForDetails.name}</h3>
-                <p>{selectedItemForDetails.type.toUpperCase()}</p>
-              </div>
-              <button className="close-modal-btn white" onClick={() => setSelectedItemForDetails(null)}>
-                <X size={20} />
+              <button onClick={() => setSelectedItemForDetails(null)} className="close-modal-btn" aria-label="Cerrar">
+                <X size={18} />
               </button>
             </div>
-            <div className="modal-body p-4">
+            <div className="modal-body-pro">
               <div className="detail-grid">
                 <div className="detail-item">
                   <label>Fecha</label>

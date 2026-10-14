@@ -9,7 +9,7 @@ import {
   History,
   Info
 } from 'lucide-react';
-import { supabase } from '../../../lib/supabase';
+import { db } from '../../../lib/db';
 import './HistorialViajesCliente.css';
 
 export default function HistorialViajesClientePage() {
@@ -26,7 +26,7 @@ export default function HistorialViajesClientePage() {
 
   const fetchHistory = async () => {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await db
         .from('travel_history')
         .select('*')
         .eq('client_id', clientId)

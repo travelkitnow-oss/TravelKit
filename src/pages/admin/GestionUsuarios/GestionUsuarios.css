@@ -11,7 +11,7 @@
   border-radius: 100px;
   border: 1px solid rgba(0, 0, 0, 0.05);
   width: 350px;
-  color: #64748b;
+  color: #5A7181;
 }
 
 .search-bar-premium input {
@@ -44,9 +44,9 @@
   text-align: left;
   padding: 1.25rem 1.5rem;
   font-size: 0.75rem;
-  font-weight: 800;
+  font-weight: 700;
   text-transform: uppercase;
-  color: #64748b;
+  color: #5A7181;
   background: rgba(0, 0, 0, 0.01);
   letter-spacing: 0.05em;
 }
@@ -59,10 +59,10 @@
 }
 
 .role-badge {
-  background: #f1f5f9;
-  color: #475569;
+  background: #F3EEE7;
+  color: #4F6878;
   font-size: 0.7rem;
-  font-weight: 800;
+  font-weight: 700;
   padding: 4px 8px;
   border-radius: 6px;
   text-transform: uppercase;

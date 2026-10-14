@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Plus, Trash2, GripVertical, Eye, Settings, HelpCircle, Mail, Phone, User, Check, X } from 'lucide-react';
-import { supabase } from '../../../lib/supabase';
+import { db } from '../../../lib/db';
 import './Formulario.css';
 
+import PageHeader from '../../../components/PageHeader/PageHeader';
 export interface FormQuestion {
   id: string;
   text: string;
@@ -35,7 +36,7 @@ export default function FormularioPage() {
 
   const fetchQuestions = async () => {
     setLoading(true);
-    const { data, error } = await supabase.from('form_questions').select('*').order('id');
+    const { data, error } = await db.from('form_questions').select('*').order('id');
     
     if (error) {
       console.error('Error fetching questions:', error);
@@ -45,7 +46,7 @@ export default function FormularioPage() {
     } else {
       // If table is empty, initialize with base questions
       setQuestions(BASE_QUESTIONS);
-      await supabase.from('form_questions').insert(BASE_QUESTIONS);
+      await db.from('form_questions').insert(BASE_QUESTIONS);
     }
     setLoading(false);
   };
@@ -61,7 +62,7 @@ export default function FormularioPage() {
       is_base: false
     };
 
-    const { data, error } = await supabase.from('form_questions').insert([newQ]).select();
+    const { data, error } = await db.from('form_questions').insert([newQ]).select();
 
     if (error) {
       alert('Error al añadir pregunta');
@@ -76,7 +77,7 @@ export default function FormularioPage() {
     const q = questions.find(q => q.id === id);
     if (q?.is_base) return;
 
-    const { error } = await supabase.from('form_questions').delete().eq('id', id);
+    const { error } = await db.from('form_questions').delete().eq('id', id);
     if (!error) {
       setQuestions(questions.filter(q => q.id !== id));
     }
@@ -87,7 +88,7 @@ export default function FormularioPage() {
     if (!q || q.is_base) return;
 
     const newRequired = !q.required;
-    const { error } = await supabase.from('form_questions').update({ required: newRequired }).eq('id', id);
+    const { error } = await db.from('form_questions').update({ required: newRequired }).eq('id', id);
     
     if (!error) {
       setQuestions(questions.map(item => item.id === id ? { ...item, required: newRequired } : item));
@@ -145,7 +146,7 @@ export default function FormularioPage() {
       }))
     };
 
-    const { error } = await supabase.from('form_submissions').insert([newSubmission]);
+    const { error } = await db.from('form_submissions').insert([newSubmission]);
 
     if (!error) {
       setShowSuccess(true);
@@ -156,10 +157,11 @@ export default function FormularioPage() {
 
   return (
     <div className="formulario-page animate-fade-in">
-      <header className="page-header-centered">
-        <h1>Herramientas de Captación</h1>
-        <p>Comparte tu formulario personalizado y gestiona tus links estratégicos para atraer nuevos viajeros.</p>
-      </header>
+      <PageHeader
+        section="Formularios"
+        title="Herramientas de Captación"
+        subtitle="Comparte tu formulario personalizado y gestiona tus links estratégicos para atraer nuevos viajeros."
+      />
 
       {loading ? (
         <div className="p-5 text-center">
@@ -251,30 +253,32 @@ export default function FormularioPage() {
 
       {showPreview && (
         <div className="modal-overlay animate-fade-in" style={{ zIndex: 3000 }}>
-          <div className="modal-content glass-card animate-scale-in" style={{ maxWidth: '600px', width: '100%', padding: 0, borderRadius: '24px', overflow: 'hidden' }}>
-            <div style={{ padding: '1.25rem 1.5rem', background: 'var(--color-primary)', color: 'white', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700, color: 'white', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <Eye size={18} /> Vista Previa del Cliente
-                </h3>
+          <div className="modal-content-pro">
+            <div className="modal-header-pro">
+              <div className="header-left">
+                <div className="header-icon"><Eye size={20} /></div>
+                <div className="header-text">
+                  <h3>Vista previa del cliente</h3>
+                  <p>Así ve el formulario tu viajero</p>
+                </div>
               </div>
-              <button onClick={() => { setShowPreview(false); setShowSuccess(false); setTriedToSubmit(false); setPreviewValues({}); }} style={{ background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '50%', padding: '6px', cursor: 'pointer', color: 'white' }}>
+              <button onClick={() => { setShowPreview(false); setShowSuccess(false); setTriedToSubmit(false); setPreviewValues({}); }} className="close-modal-btn" aria-label="Cerrar">
                 <X size={18} />
               </button>
             </div>
             
-            <div className="card-body preview-body" style={{ maxHeight: '70vh', overflowY: 'auto' }}>
+            <div className="modal-body-pro preview-body">
               <div className="preview-form">
                 <div className="preview-header text-center mb-4">
-                  <h3 style={{ fontFamily: "'Outfit', sans-serif", fontWeight: 700, fontSize: '1.8rem', color: '#1F3A4D', marginBottom: '0.5rem' }}>Planifiquemos tu viaje</h3>
-                  <p style={{ color: '#64748b', fontSize: '1rem', fontFamily: "'Outfit', sans-serif" }}>Completa estos datos para comenzar a planificar tu aventura.</p>
+                  <h3 style={{ fontFamily: "'Inter', sans-serif", fontWeight: 700, fontSize: '1.8rem', color: '#1F3A4D', marginBottom: '0.5rem' }}>Planifiquemos tu viaje</h3>
+                  <p style={{ color: '#5A7181', fontSize: '1rem', fontFamily: "'Inter', sans-serif" }}>Completa estos datos para comenzar a planificar tu aventura.</p>
                 </div>
 
                 {questions.length > 0 && currentPreviewIndex < questions.length ? (
                   <div className="quiz-wizard animate-fade-in">
-                    <div className="wizard-progress" style={{ textAlign: 'center', marginBottom: '1.5rem', color: '#64748b', fontSize: '0.9rem', fontWeight: 600 }}>
+                    <div className="wizard-progress" style={{ textAlign: 'center', marginBottom: '1.5rem', color: '#5A7181', fontSize: '0.9rem', fontWeight: 600 }}>
                       Paso {currentPreviewIndex + 1} de {questions.length}
-                      <div style={{ background: '#f1f5f9', height: '6px', borderRadius: '3px', marginTop: '0.5rem', overflow: 'hidden' }}>
+                      <div style={{ background: '#F3EEE7', height: '6px', borderRadius: '3px', marginTop: '0.5rem', overflow: 'hidden' }}>
                         <div style={{ background: 'var(--color-primary)', height: '100%', width: `${((currentPreviewIndex + 1) / questions.length) * 100}%`, transition: 'width 0.3s' }}></div>
                       </div>
                     </div>

@@ -140,7 +140,7 @@
 
 /* PREVIEW STYLES */
 .preview-body {
-  background-color: #f8f9fa;
+  background-color: #F8F5F0;
   border-radius: var(--radius-md);
   padding: 2rem !important;
 }
@@ -221,7 +221,7 @@
   border-radius: var(--radius-sm);
   font-family: var(--font-main);
   outline: none;
-  background-color: #f8f9fa;
+  background-color: #F8F5F0;
   color: var(--color-primary);
   font-weight: 500;
 }

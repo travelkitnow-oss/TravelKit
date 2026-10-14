@@ -22,7 +22,7 @@ import {
 import { es } from 'date-fns/locale';
 import emailjs from '@emailjs/browser';
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, X, Check, CheckCircle, User, Phone, Mail } from 'lucide-react';
-import { supabase } from '../lib/supabase';
+import { db } from '../lib/db';
 import './Calendar.css';
 
 const TIME_SLOTS = [
@@ -59,7 +59,7 @@ export default function Calendar({ isDashboard = false, onDateSelect, selectedDa
   }, [showForm]);
 
   const fetchFormQuestions = async () => {
-    const { data, error } = await supabase.from('form_questions').select('*').order('id');
+    const { data, error } = await db.from('form_questions').select('*').order('id');
     if (error) {
       console.error('Error fetching questions:', error);
       // Fallback
@@ -123,7 +123,7 @@ export default function Calendar({ isDashboard = false, onDateSelect, selectedDa
       }))
     };
 
-    const { error } = await supabase.from('form_submissions').insert([newSubmission]);
+    const { error } = await db.from('form_submissions').insert([newSubmission]);
 
     if (error) {
       alert('Error al enviar formulario');
@@ -285,8 +285,8 @@ export default function Calendar({ isDashboard = false, onDateSelect, selectedDa
             ) : (
               <div className="public-form">
                 <div className="text-center mb-5">
-                  <h2 style={{ fontFamily: "'Outfit', sans-serif", fontWeight: 700, fontSize: '1.8rem', color: '#1F3A4D', marginBottom: '0.5rem' }}>Planifiquemos tu viaje</h2>
-                  <p className="text-secondary" style={{ fontFamily: "'Outfit', sans-serif" }}>Solicitando reserva para el {selectedDate ? format(selectedDate, 'dd/MM/yyyy') : ''} a las {selectedTime}</p>
+                  <h2 style={{ fontFamily: "'Inter', sans-serif", fontWeight: 700, fontSize: '1.8rem', color: '#1F3A4D', marginBottom: '0.5rem' }}>Planifiquemos tu viaje</h2>
+                  <p className="text-secondary" style={{ fontFamily: "'Inter', sans-serif" }}>Solicitando reserva para el {selectedDate ? format(selectedDate, 'dd/MM/yyyy') : ''} a las {selectedTime}</p>
                 </div>
 
                 {formQuestions.length > 0 && currentFormIndex < formQuestions.length ? (
@@ -309,7 +309,7 @@ export default function Calendar({ isDashboard = false, onDateSelect, selectedDa
 
                       return (
                         <div key={q.id} className="preview-field text-center">
-                          <label style={{ fontSize: '1.3rem', marginBottom: '1.5rem', display: 'block', fontWeight: 600, color: '#1F3A4D', fontFamily: "'Outfit', sans-serif" }}>
+                          <label style={{ fontSize: '1.3rem', marginBottom: '1.5rem', display: 'block', fontWeight: 600, color: '#1F3A4D', fontFamily: "'Inter', sans-serif" }}>
                             {q.text} {q.required && <span className="text-danger">*</span>}
                           </label>
 
@@ -320,7 +320,7 @@ export default function Calendar({ isDashboard = false, onDateSelect, selectedDa
                                 type="text" 
                                 placeholder="Tu respuesta..." 
                                 className="form-input" 
-                                style={{ ...valStyle, textAlign: 'center', padding: '14px 1rem 14px 3rem', minHeight: '52px', height: 'auto', borderRadius: '10px', fontFamily: "'Outfit', sans-serif", fontSize: '1.05rem', width: '100%' }}
+                                style={{ ...valStyle, textAlign: 'center', padding: '14px 1rem 14px 3rem', minHeight: '52px', height: 'auto', borderRadius: '10px', fontFamily: "'Inter', sans-serif", fontSize: '1.05rem', width: '100%' }}
                                 value={formValues[q.id] || ''}
                                 onChange={e => setFormValues({...formValues, [q.id]: e.target.value})}
                               />
@@ -334,7 +334,7 @@ export default function Calendar({ isDashboard = false, onDateSelect, selectedDa
                                 type="tel" 
                                 placeholder="11 1234-5678" 
                                 className="form-input" 
-                                style={{ ...valStyle, textAlign: 'center', padding: '14px 1rem 14px 3rem', minHeight: '52px', height: 'auto', borderRadius: '10px', fontFamily: "'Outfit', sans-serif", fontSize: '1.05rem', width: '100%' }}
+                                style={{ ...valStyle, textAlign: 'center', padding: '14px 1rem 14px 3rem', minHeight: '52px', height: 'auto', borderRadius: '10px', fontFamily: "'Inter', sans-serif", fontSize: '1.05rem', width: '100%' }}
                                 value={formValues[q.id] || ''}
                                 onChange={e => setFormValues({...formValues, [q.id]: formatPhoneFixed(e.target.value)})}
                               />
@@ -349,7 +349,7 @@ export default function Calendar({ isDashboard = false, onDateSelect, selectedDa
                                   type="text" 
                                   placeholder="mail" 
                                   className="form-input"
-                                  style={{ ...valStyle, textAlign: 'center', padding: '14px 1rem 14px 3rem', minHeight: '52px', height: 'auto', borderRadius: '10px', fontFamily: "'Outfit', sans-serif", fontSize: '1.05rem', width: '100%' }}
+                                  style={{ ...valStyle, textAlign: 'center', padding: '14px 1rem 14px 3rem', minHeight: '52px', height: 'auto', borderRadius: '10px', fontFamily: "'Inter', sans-serif", fontSize: '1.05rem', width: '100%' }}
                                   value={emailPrefix}
                                   onChange={e => setEmailPrefix(e.target.value.replace(/@/g, ''))}
                                 />
@@ -358,7 +358,7 @@ export default function Calendar({ isDashboard = false, onDateSelect, selectedDa
                                 className="form-input"
                                 value={emailDomain}
                                 onChange={e => setEmailDomain(e.target.value)}
-                                style={{ textAlign: 'center', minHeight: '52px', height: 'auto', padding: '14px', borderRadius: '10px', backgroundColor: '#f8f9fa', fontFamily: "'Outfit', sans-serif", fontSize: '1.05rem', width: '100%' }}
+                                style={{ textAlign: 'center', minHeight: '52px', height: 'auto', padding: '14px', borderRadius: '10px', backgroundColor: '#f8f9fa', fontFamily: "'Inter', sans-serif", fontSize: '1.05rem', width: '100%' }}
                               >
                                 <option value="@gmail.com">@gmail.com</option>
                                 <option value="@outlook.com">@outlook.com</option>
@@ -372,7 +372,7 @@ export default function Calendar({ isDashboard = false, onDateSelect, selectedDa
                             <textarea 
                               placeholder="Escribe aquí tus detalles..." 
                               className="form-input" 
-                              style={{ ...valStyle, maxWidth: '400px', margin: '0 auto', display: 'block', padding: '1.25rem', borderRadius: '10px', resize: 'vertical', fontFamily: "'Outfit', sans-serif", fontSize: '1.05rem', width: '100%' }}
+                              style={{ ...valStyle, maxWidth: '400px', margin: '0 auto', display: 'block', padding: '1.25rem', borderRadius: '10px', resize: 'vertical', fontFamily: "'Inter', sans-serif", fontSize: '1.05rem', width: '100%' }}
                               rows={4}
                               value={formValues[q.id] || ''}
                               onChange={e => setFormValues({...formValues, [q.id]: e.target.value})}
@@ -384,7 +384,7 @@ export default function Calendar({ isDashboard = false, onDateSelect, selectedDa
                               className="btn btn-primary w-100 mt-5" 
                               onClick={() => setCurrentFormIndex(prev => prev + 1)}
                               disabled={q.required && !isFilled}
-                              style={{ padding: '1rem', fontSize: '1.1rem', borderRadius: '12px', boxShadow: '0 4px 15px rgba(31, 58, 77, 0.25)', fontFamily: "'Outfit', sans-serif", fontWeight: 600, letterSpacing: '0.5px', opacity: (q.required && !isFilled) ? 0.6 : 1 }}
+                              style={{ padding: '1rem', fontSize: '1.1rem', borderRadius: '12px', boxShadow: '0 4px 15px rgba(31, 58, 77, 0.25)', fontFamily: "'Inter', sans-serif", fontWeight: 600, letterSpacing: '0.5px', opacity: (q.required && !isFilled) ? 0.6 : 1 }}
                             >
                               Siguiente
                             </button>
@@ -394,7 +394,7 @@ export default function Calendar({ isDashboard = false, onDateSelect, selectedDa
                               type="button"
                               onClick={handleSubmitForm}
                               disabled={isSubmitting || (q.required && !isFilled)}
-                              style={{ padding: '1rem', fontSize: '1.1rem', borderRadius: '12px', boxShadow: '0 4px 15px rgba(31, 58, 77, 0.25)', fontFamily: "'Outfit', sans-serif", fontWeight: 600, letterSpacing: '0.5px', opacity: (isSubmitting || (q.required && !isFilled)) ? 0.6 : 1 }}
+                              style={{ padding: '1rem', fontSize: '1.1rem', borderRadius: '12px', boxShadow: '0 4px 15px rgba(31, 58, 77, 0.25)', fontFamily: "'Inter', sans-serif", fontWeight: 600, letterSpacing: '0.5px', opacity: (isSubmitting || (q.required && !isFilled)) ? 0.6 : 1 }}
                             >
                               {isSubmitting ? 'Enviando...' : 'Enviar formulario'}
                             </button>

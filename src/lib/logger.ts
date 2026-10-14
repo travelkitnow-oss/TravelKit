@@ -1,4 +1,4 @@
-import { supabase } from './supabase';
+import { db } from './db';
 
 type LogLevel = 'info' | 'warn' | 'error' | 'success';
 
@@ -54,51 +54,57 @@ class Logger {
     this.interceptConsole();
     this.interceptFetch();
     this.setupRealtimeSubscription();
-    this.checkSupabaseConnection();
+    this.checkDatabaseConnection();
   }
 
-  private async checkSupabaseConnection() {
+  private async checkDatabaseConnection() {
     try {
       // Intentar una consulta muy ligera para verificar que la conexión funciona.
       // Usamos limit(1) a una tabla que sepamos que existe, o simplemente dejamos que el ping devuelva la conexión
-      const { error } = await supabase.from('system_logs').select('id').limit(1);
+      const { error } = await db.from('system_logs').select('id').limit(1);
       
       if (!error) {
-        this.success('System', '✅ Conexión a Supabase establecida correctamente. Base de datos operativa.');
+        this.success('System', '✅ Conexión a la base de datos (Neon) establecida correctamente. Base de datos operativa.');
       } else {
-        this.error('System', '❌ Fallo en la conexión a Supabase', error);
+        this.error('System', '❌ Fallo en la conexión a la base de datos', error);
       }
     } catch (err: any) {
-      this.error('System', '❌ Error crítico conectando a Supabase', { message: err.message });
+      this.error('System', '❌ Error crítico conectando a la base de datos', { message: err.message });
     }
   }
 
   private interceptFetch() {
     const originalFetch = window.fetch;
+    // Lee tabla y acción del cuerpo de una llamada a /api/db
+    const describe = (args: Parameters<typeof fetch>) => {
+      const url = typeof args[0] === 'string' ? args[0] : (args[0] instanceof Request ? args[0].url : String(args[0]));
+      if (!url.includes('/api/db')) return null;
+      try {
+        const body = JSON.parse(String(args[1]?.body || '{}'));
+        if (body.table === 'system_logs') return null; // no registrar los propios logs
+        return { url, table: String(body.table), action: String(body.action || 'select').toUpperCase() };
+      } catch {
+        return null;
+      }
+    };
+
     window.fetch = async (...args) => {
       const startTime = performance.now();
+      const info = describe(args);
       try {
         const response = await originalFetch(...args);
-        const url = typeof args[0] === 'string' ? args[0] : (args[0] instanceof Request ? args[0].url : String(args[0]));
-        
-        // Only log Supabase API calls (and ignore our own system_logs inserts)
-        if (url.includes('/rest/v1/') && !url.includes('system_logs')) {
-          const table = url.split('/rest/v1/')[1].split('?')[0];
-          const method = (args[1]?.method || 'GET').toUpperCase();
+        if (info) {
           const duration = Math.round(performance.now() - startTime);
-          
           if (response.ok) {
-            this.addLogInternal('success', 'Database', `${method} en tabla '${table}' (${duration}ms)`, { url, status: response.status }, false);
+            this.addLogInternal('success', 'Database', `${info.action} en tabla '${info.table}' (${duration}ms)`, { url: info.url, status: response.status }, false);
           } else {
-            this.addLogInternal('error', 'Database', `Error ${method} en tabla '${table}'`, { url, status: response.status }, false);
+            this.addLogInternal('error', 'Database', `Error ${info.action} en tabla '${info.table}'`, { url: info.url, status: response.status }, false);
           }
         }
         return response;
       } catch (error: any) {
-        const url = typeof args[0] === 'string' ? args[0] : (args[0] instanceof Request ? args[0].url : String(args[0]));
-        if (url.includes('/rest/v1/') && !url.includes('system_logs')) {
-           const table = url.split('/rest/v1/')[1].split('?')[0];
-           this.addLogInternal('error', 'Database', `Fallo de red en tabla '${table}'`, { url, error: error.message }, false);
+        if (info) {
+          this.addLogInternal('error', 'Database', `Fallo de red en tabla '${info.table}'`, { url: info.url, error: error.message }, false);
         }
         throw error;
       }
@@ -106,43 +112,36 @@ class Logger {
   }
 
   private setupRealtimeSubscription() {
-    // Prevent Vite HMR from trying to add listeners to an already subscribed channel
-    const existingChannel = supabase.getChannels().find(c => c.topic === 'realtime:system_logs_changes');
-    if (existingChannel) {
-      supabase.removeChannel(existingChannel);
-    }
+    // Neon no tiene canales en tiempo real: mientras la consola de logs esté abierta,
+    // se consultan los registros nuevos cada 15 segundos.
+    const w = window as unknown as { __tkLogPoll?: number };
+    if (w.__tkLogPoll) window.clearInterval(w.__tkLogPoll); // evita duplicados con HMR
+    w.__tkLogPoll = window.setInterval(async () => {
+      if (this.listeners.length === 0) return;
+      const { data, error } = await db
+        .from('system_logs')
+        .select('*')
+        .order('timestamp', { ascending: false })
+        .limit(50);
+      if (error || !data) return;
 
-    supabase
-      .channel('system_logs_changes')
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'system_logs' },
-        (payload) => {
-          const newLog = payload.new;
-          
-          // Check if we already have this log (to avoid duplicates from our own inserts)
-          const exists = this.logs.some(l => l.id === newLog.id);
-          if (!exists) {
-            const entry: LogEntry = {
-              id: newLog.id,
-              timestamp: newLog.timestamp,
-              level: newLog.level as LogLevel,
-              category: newLog.category,
-              message: newLog.message,
-              details: newLog.details
-            };
-            this.logs.unshift(entry);
-            
-            if (this.logs.length > this.maxLogs) {
-              this.logs = this.logs.slice(0, this.maxLogs);
-            }
-            
-            this.saveToLocalStorage();
-            this.notifyListeners();
-          }
-        }
-      )
-      .subscribe();
+      const known = new Set(this.logs.map(l => l.id));
+      const fresh: LogEntry[] = data
+        .filter((row: any) => !known.has(row.id))
+        .map((row: any) => ({
+          id: row.id,
+          timestamp: row.timestamp,
+          level: row.level as LogLevel,
+          category: row.category,
+          message: row.message,
+          details: row.details
+        }));
+      if (!fresh.length) return;
+
+      this.logs = [...fresh, ...this.logs].slice(0, this.maxLogs);
+      this.saveToLocalStorage();
+      this.notifyListeners();
+    }, 15000);
   }
 
   private interceptConsole() {
@@ -240,34 +239,34 @@ class Logger {
       (originalConsole[consoleMethod as keyof typeof originalConsole] as any)(`[${category}] ${message}`, details || '');
     }
 
-    // FIRE AND FORGET: Push to Supabase so it's visible globally across browsers
+    // FIRE AND FORGET: Push to the database so it's visible globally across browsers
     // We don't await this so it doesn't block the UI
-    supabase.from('system_logs').insert([{
+    db.from('system_logs').insert([{
       level,
       category,
       message,
       details: details ? JSON.parse(JSON.stringify(details)) : null // Ensure valid JSON
     }]).then(({ error }) => {
       if (error) {
-        originalConsole.error('Error syncing log to Supabase:', error);
+        originalConsole.error('Error guardando log en la base:', error);
       }
     });
   }
 
-  public async fetchLogsFromSupabase() {
-    const { data, error } = await supabase
+  public async fetchRemoteLogs() {
+    const { data, error } = await db
       .from('system_logs')
       .select('*')
       .order('timestamp', { ascending: false })
       .limit(500);
 
     if (error) {
-      originalConsole.error('Error fetching logs from Supabase:', error);
+      originalConsole.error('Error leyendo logs de la base:', error);
       return;
     }
 
     if (data) {
-      // Map Supabase format to local format
+      // Formato de la base -> formato local
       this.logs = data.map(row => ({
         id: row.id,
         timestamp: row.timestamp,
@@ -280,12 +279,12 @@ class Logger {
     }
   }
 
-  public async clearSupabaseLogs() {
+  public async clearRemoteLogs() {
     this.logs = [];
     this.notifyListeners();
-    const { error } = await supabase.from('system_logs').delete().neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all
+    const { error } = await db.from('system_logs').delete().neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all
     if (error) {
-      originalConsole.error('Error clearing logs in Supabase:', error);
+      originalConsole.error('Error borrando logs de la base:', error);
     }
   }
 

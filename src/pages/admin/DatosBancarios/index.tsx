@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Save, Landmark, CreditCard, User } from 'lucide-react';
-import { supabase } from '../../../lib/supabase';
+import { db } from '../../../lib/db';
 import './DatosBancarios.css';
 
+import PageHeader from '../../../components/PageHeader/PageHeader';
 export default function DatosBancariosPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -19,7 +20,7 @@ export default function DatosBancariosPage() {
 
   async function fetchBankData() {
     setLoading(true);
-    const { data: settings } = await supabase
+    const { data: settings } = await db
       .from('site_settings')
       .select('key, value')
       .in('key', ['bank_name', 'bank_cbu', 'bank_alias', 'bank_holder']);
@@ -47,7 +48,7 @@ export default function DatosBancariosPage() {
     ];
 
     for (const update of updates) {
-      await supabase
+      await db
         .from('site_settings')
         .upsert({ key: update.key, value: update.value }, { onConflict: 'key' });
     }
@@ -58,10 +59,11 @@ export default function DatosBancariosPage() {
 
   return (
     <div className="datos-bancarios-page animate-fade-in">
-      <header className="page-header-centered">
-        <h1>Datos Bancarios</h1>
-        <p>Configura los datos de transferencia que verán tus clientes para realizar los pagos.</p>
-      </header>
+      <PageHeader
+        section="Monetización"
+        title="Datos Bancarios"
+        subtitle="Configura los datos de transferencia que verán tus clientes para realizar los pagos."
+      />
 
       {loading ? (
         <div className="p-5 text-center">

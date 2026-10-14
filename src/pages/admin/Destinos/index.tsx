@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '../../../lib/supabase';
-import { Plus, Edit2, Trash2, Image as ImageIcon, Eye, EyeOff, Upload, X } from 'lucide-react';
+import { db } from '../../../lib/db';
+import { Plus, Edit2, Trash2, Image as ImageIcon, Eye, EyeOff, Upload, X, MapPin } from 'lucide-react';
 import ReactQuill from 'react-quill-new';
 import { logger } from '../../../lib/logger';
 import 'react-quill-new/dist/quill.snow.css';
 import './Destinos.css';
 
+import PageHeader from '../../../components/PageHeader/PageHeader';
 interface Destination {
   id: string;
   title: string;
@@ -27,7 +28,7 @@ export default function DestinosPage() {
       const fileName = `${Math.random().toString(36).substring(2)}_${Date.now()}.${fileExt}`;
       const filePath = fileName;
 
-      const { error: uploadError } = await supabase.storage
+      const { error: uploadError } = await db.storage
         .from('destinations')
         .upload(filePath, file);
 
@@ -36,7 +37,7 @@ export default function DestinosPage() {
         throw uploadError;
       }
 
-      const { data: { publicUrl } } = supabase.storage
+      const { data: { publicUrl } } = db.storage
         .from('destinations')
         .getPublicUrl(filePath);
 
@@ -69,7 +70,7 @@ export default function DestinosPage() {
 
   const fetchDestinations = async () => {
     setLoading(true);
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from('client_destinations')
       .select('*')
       .order('created_at', { ascending: false });
@@ -121,7 +122,7 @@ export default function DestinosPage() {
     }
 
     if (editingId) {
-      const { error } = await supabase
+      const { error } = await db
         .from('client_destinations')
         .update(formData)
         .eq('id', editingId);
@@ -136,7 +137,7 @@ export default function DestinosPage() {
         handleCloseModal();
       }
     } else {
-      const { data, error } = await supabase
+      const { data, error } = await db
         .from('client_destinations')
         .insert([formData])
         .select();
@@ -154,7 +155,7 @@ export default function DestinosPage() {
   };
 
   const toggleStatus = async (id: string, currentStatus: boolean) => {
-    const { error } = await supabase
+    const { error } = await db
       .from('client_destinations')
       .update({ is_active: !currentStatus })
       .eq('id', id);
@@ -169,7 +170,7 @@ export default function DestinosPage() {
   const handleDelete = async (id: string) => {
     if (!window.confirm('¿Estás seguro de eliminar este destino? Esta acción no se puede deshacer.')) return;
     
-    const { error } = await supabase
+    const { error } = await db
       .from('client_destinations')
       .delete()
       .eq('id', id);
@@ -185,16 +186,17 @@ export default function DestinosPage() {
 
   return (
     <div className="destinos-admin-page animate-fade-in">
-      <header className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
-        <div>
-          <h1 style={{ fontSize: '2.5rem', fontFamily: "'Playfair Display', serif", fontWeight: 900, color: 'var(--color-primary)', margin: '0 0 0.5rem 0' }}>Recomendaciones de Destinos</h1>
-          <p style={{ color: '#64748b', fontSize: '1.1rem', margin: 0 }}>Carga imágenes y descripciones para inspirar a tus futuros clientes.</p>
-        </div>
-        <button className="btn btn-primary" onClick={() => handleOpenModal()}>
-          <Plus size={20} />
-          Nuevo Destino
-        </button>
-      </header>
+      <PageHeader
+        section="Página principal"
+        title="Recomendaciones de Destinos"
+        subtitle="Carga imágenes y descripciones para inspirar a tus futuros clientes."
+        actions={
+          <button className="btn btn-primary" onClick={() => handleOpenModal()}>
+            <Plus size={18} />
+            Nuevo Destino
+          </button>
+        }
+      />
 
       {loading ? (
         <div className="loading-state-premium">
@@ -219,7 +221,7 @@ export default function DestinosPage() {
               <div className="destino-image-wrapper">
                 <img src={destino.image_url} alt={destino.title} onError={(e) => (e.currentTarget.src = 'https://images.unsplash.com/photo-1488646953014-85cb44e25828?auto=format&fit=crop&q=80&w=600')} />
                 <div className="destino-actions">
-                  <button onClick={() => toggleStatus(destino.id, destino.is_active)} className="action-btn status-btn" title={destino.is_active ? 'Ocultar de la web' : 'Mostrar en la web'} style={{ color: destino.is_active ? '#10b981' : '#64748b' }}>
+                  <button onClick={() => toggleStatus(destino.id, destino.is_active)} className="action-btn status-btn" title={destino.is_active ? 'Ocultar de la web' : 'Mostrar en la web'} style={{ color: destino.is_active ? '#10b981' : '#5A7181' }}>
                     {destino.is_active ? <Eye size={18} /> : <EyeOff size={18} />}
                   </button>
                   <button onClick={() => handleOpenModal(destino)} className="action-btn edit-btn" title="Editar">
@@ -232,7 +234,7 @@ export default function DestinosPage() {
               </div>
               <div className="destino-info">
                 <h3>{destino.title}</h3>
-                <div dangerouslySetInnerHTML={{ __html: destino.description }} style={{ fontSize: '0.9rem', color: '#64748b', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }} />
+                <div dangerouslySetInnerHTML={{ __html: destino.description }} style={{ fontSize: '0.9rem', color: '#5A7181', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }} />
                 <div className="destino-status">
                   <span className={`status-badge ${destino.is_active ? 'active' : 'inactive'}`}>
                     {destino.is_active ? 'Público' : 'Oculto'}
@@ -247,10 +249,18 @@ export default function DestinosPage() {
       {/* Modal Formulario */}
       {isModalOpen && (
         <div className="modal-overlay animate-fade-in" onClick={handleCloseModal}>
-          <div className="modal-content-pro animate-scale-in" onClick={e => e.stopPropagation()}>
-            <div className="modal-header">
-              <h2>{editingId ? 'Editar Destino' : 'Nuevo Destino Recomendado'}</h2>
-              <button className="close-btn" onClick={handleCloseModal}><X size={24} /></button>
+          <div className="modal-content-pro modal-lg" onClick={e => e.stopPropagation()}>
+            <div className="modal-header-pro">
+              <div className="header-left">
+                <div className="header-icon"><MapPin size={20} /></div>
+                <div className="header-text">
+                  <h3>{editingId ? 'Editar destino' : 'Nuevo destino recomendado'}</h3>
+                  <p>Se muestra en la página principal</p>
+                </div>
+              </div>
+              <button onClick={handleCloseModal} className="close-modal-btn" aria-label="Cerrar">
+                <X size={18} />
+              </button>
             </div>
             
             <form id="destination-form" onSubmit={handleSubmit} className="modal-form">
@@ -268,7 +278,7 @@ export default function DestinosPage() {
               
               <div className="form-group-destino">
                 <label>Descripción *</label>
-                <div style={{ backgroundColor: 'white', borderRadius: '8px', border: '1px solid #e2e8f0', marginBottom: '2.5rem' }}>
+                <div style={{ backgroundColor: 'white', borderRadius: '8px', border: '1px solid #E7E1D8', marginBottom: '2.5rem' }}>
                   <ReactQuill 
                     theme="snow"
                     value={formData.description}
@@ -282,7 +292,7 @@ export default function DestinosPage() {
                 <label>Imagen Principal (Portada) *</label>
                 
                 {formData.image_url ? (
-                  <div style={{ position: 'relative', borderRadius: '16px', overflow: 'hidden', height: '200px', border: '1px solid #e2e8f0', boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1)' }}>
+                  <div style={{ position: 'relative', borderRadius: '16px', overflow: 'hidden', height: '200px', border: '1px solid #E7E1D8', boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1)' }}>
                     <img src={formData.image_url} alt="Portada" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                     <button 
                       type="button" 
@@ -295,16 +305,16 @@ export default function DestinosPage() {
                     </button>
                   </div>
                 ) : (
-                  <label style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '3.5rem 2rem', borderRadius: '20px', background: 'linear-gradient(145deg, #ffffff, #f8fafc)', border: '1px solid #e2e8f0', boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.03)', cursor: 'pointer', transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)', textTransform: 'none', letterSpacing: 'normal' }}
+                  <label style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '3.5rem 2rem', borderRadius: '16px', background: 'linear-gradient(145deg, #ffffff, #F8F5F0)', border: '1px solid #E7E1D8', boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.03)', cursor: 'pointer', transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)', textTransform: 'none', letterSpacing: 'normal' }}
                          onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 15px 35px -5px rgba(31, 58, 77, 0.1)'; e.currentTarget.style.borderColor = '#C89B5A'; }}
-                         onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = '0 10px 25px -5px rgba(0, 0, 0, 0.03)'; e.currentTarget.style.borderColor = '#e2e8f0'; }}>
+                         onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = '0 10px 25px -5px rgba(0, 0, 0, 0.03)'; e.currentTarget.style.borderColor = '#E7E1D8'; }}>
                     <div style={{ background: 'white', padding: '1rem', borderRadius: '50%', boxShadow: '0 4px 15px rgba(0,0,0,0.06)', marginBottom: '1.2rem' }}>
                       <ImageIcon size={32} color="var(--color-primary)" />
                     </div>
-                    <span style={{ fontFamily: "'Outfit', sans-serif", fontSize: '1.15rem', fontWeight: 700, color: '#1F3A4D', marginBottom: '0.4rem' }}>
+                    <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '1.15rem', fontWeight: 700, color: '#1F3A4D', marginBottom: '0.4rem' }}>
                       {isUploading ? 'Subiendo...' : 'Subir imagen de portada'}
                     </span>
-                    <span style={{ fontSize: '0.9rem', color: '#64748b', fontWeight: 500 }}>
+                    <span style={{ fontSize: '0.9rem', color: '#5A7181', fontWeight: 500 }}>
                       Haz clic para seleccionar un archivo
                     </span>
                     <input 
@@ -323,7 +333,7 @@ export default function DestinosPage() {
                 )}
                 
                 <div style={{ position: 'relative', marginTop: '1rem' }}>
-                  <div style={{ position: 'absolute', top: '50%', left: '1rem', transform: 'translateY(-50%)', color: '#94a3b8' }}>
+                  <div style={{ position: 'absolute', top: '50%', left: '1rem', transform: 'translateY(-50%)', color: '#8FA2AF' }}>
                     <Upload size={18} />
                   </div>
                   <input 
@@ -332,7 +342,7 @@ export default function DestinosPage() {
                     value={formData.image_url}
                     onChange={e => setFormData({...formData, image_url: e.target.value})}
                     className="pro-input"
-                    style={{ paddingLeft: '3rem', background: '#f8fafc', border: '1px solid #e2e8f0' }}
+                    style={{ paddingLeft: '3rem', background: '#F8F5F0', border: '1px solid #E7E1D8' }}
                   />
                 </div>
               </div>
@@ -342,7 +352,7 @@ export default function DestinosPage() {
                 
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '1rem', marginTop: '0.5rem' }}>
                   {formData.images.map((url, idx) => (
-                    <div key={idx} style={{ position: 'relative', borderRadius: '16px', overflow: 'hidden', height: '160px', border: '1px solid #e2e8f0', background: 'white', boxShadow: '0 4px 10px rgba(0,0,0,0.03)' }}>
+                    <div key={idx} style={{ position: 'relative', borderRadius: '16px', overflow: 'hidden', height: '160px', border: '1px solid #E7E1D8', background: 'white', boxShadow: '0 4px 10px rgba(0,0,0,0.03)' }}>
                       {url ? (
                         <>
                           <img src={url} alt={`Galería ${idx + 1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={(e) => (e.currentTarget.src = 'https://images.unsplash.com/photo-1488646953014-85cb44e25828?auto=format&fit=crop&q=80&w=300')} />
@@ -360,7 +370,7 @@ export default function DestinosPage() {
                           </button>
                         </>
                       ) : (
-                        <div style={{ padding: '0.8rem', height: '100%', display: 'flex', flexDirection: 'column', gap: '0.5rem', background: '#f8fafc' }}>
+                        <div style={{ padding: '0.8rem', height: '100%', display: 'flex', flexDirection: 'column', gap: '0.5rem', background: '#F8F5F0' }}>
                           <input 
                             type="url" 
                             value={url}
@@ -371,10 +381,10 @@ export default function DestinosPage() {
                             }}
                             placeholder="Pegar URL..."
                             className="pro-input"
-                            style={{ padding: '0.6rem', fontSize: '0.85rem', background: 'white', border: '1px solid #e2e8f0', borderRadius: '8px' }}
+                            style={{ padding: '0.6rem', fontSize: '0.85rem', background: 'white', border: '1px solid #E7E1D8', borderRadius: '8px' }}
                           />
                           <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <span style={{ fontSize: '0.85rem', color: '#94a3b8', fontWeight: 600 }}>o sube archivo</span>
+                            <span style={{ fontSize: '0.85rem', color: '#8FA2AF', fontWeight: 600 }}>o sube archivo</span>
                           </div>
                           <label style={{ position: 'absolute', top: '50px', left: 0, right: 0, bottom: 0, cursor: 'pointer' }}>
                             <input 
@@ -410,27 +420,27 @@ export default function DestinosPage() {
                       gap: '0.8rem', 
                       height: '160px',
                       borderRadius: '16px', 
-                      background: 'linear-gradient(145deg, #ffffff, #f8fafc)', 
-                      border: '1px solid #e2e8f0',
+                      background: 'linear-gradient(145deg, #ffffff, #F8F5F0)', 
+                      border: '1px solid #E7E1D8',
                       color: 'var(--color-primary)', 
                       cursor: 'pointer', 
                       transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                       boxShadow: '0 4px 10px rgba(0,0,0,0.03)'
                     }}
                     onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.borderColor = '#C89B5A'; e.currentTarget.style.boxShadow = '0 10px 20px rgba(31, 58, 77, 0.08)'; }}
-                    onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.boxShadow = '0 4px 10px rgba(0,0,0,0.03)'; }}
+                    onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.borderColor = '#E7E1D8'; e.currentTarget.style.boxShadow = '0 4px 10px rgba(0,0,0,0.03)'; }}
                   >
-                    <div style={{ background: '#f8fafc', padding: '0.7rem', borderRadius: '50%', boxShadow: '0 2px 8px rgba(0,0,0,0.05)', border: '1px solid #e2e8f0' }}>
+                    <div style={{ background: '#F8F5F0', padding: '0.7rem', borderRadius: '50%', boxShadow: '0 2px 8px rgba(0,0,0,0.05)', border: '1px solid #E7E1D8' }}>
                       <Plus size={20} color="var(--color-primary)" />
                     </div>
-                    <span style={{ fontFamily: "'Outfit', sans-serif", fontSize: '0.95rem', fontWeight: 600 }}>Agregar Imagen</span>
+                    <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '0.95rem', fontWeight: 600 }}>Agregar Imagen</span>
                   </button>
                 </div>
               </div>
             </form>
 
-            <div className="form-actions">
-              <button type="button" className="btn btn-outline" onClick={handleCloseModal}>Cancelar</button>
+            <div className="modal-footer-pro">
+              <button type="button" onClick={handleCloseModal} className="btn btn-outline">Cancelar</button>
               <button type="submit" form="destination-form" className="btn btn-primary">
                 {editingId ? 'Guardar Cambios' : 'Crear Destino'}
               </button>

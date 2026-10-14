@@ -11,15 +11,16 @@ import {
   ChevronRight, 
   Check, 
   X,
-  Clock,
-  Search
+  Clock
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { supabase } from '../../../lib/supabase';
+import { db } from '../../../lib/db';
 import ConfirmationModal from '../../../components/ConfirmationModal/ConfirmationModal';
 import './Consultas.css';
 
+import PageHeader from '../../../components/PageHeader/PageHeader';
+import SearchBar from '../../../components/SearchBar/SearchBar';
 interface Submission {
   id: string;
   name: string;
@@ -51,7 +52,7 @@ export default function ConsultasPage() {
 
   async function fetchSubmissions() {
     setLoading(true);
-    const { data, error } = await supabase.from('form_submissions').select('*').order('created_at', { ascending: false });
+    const { data, error } = await db.from('form_submissions').select('*').order('created_at', { ascending: false });
     if (!error) setSubmissions(data || []);
     setLoading(false);
   }
@@ -61,7 +62,7 @@ export default function ConsultasPage() {
   }, []);
 
   const updateStatus = async (id: string, newStatus: Submission['status']) => {
-    const { error } = await supabase.from('form_submissions').update({ status: newStatus }).eq('id', id);
+    const { error } = await db.from('form_submissions').update({ status: newStatus }).eq('id', id);
     if (!error) {
       setSubmissions(prev => prev.map(s => s.id === id ? { ...s, status: newStatus } : s));
       setSelectedSubmission(prev => prev?.id === id ? { ...prev, status: newStatus } : prev);
@@ -81,7 +82,7 @@ export default function ConsultasPage() {
       await updateStatus(sub.id, 'aceptado');
 
       // 2. Create reservation in admin_meetings WITHOUT client_id
-      const { error: meetingError } = await supabase.from('admin_meetings').insert([{
+      const { error: meetingError } = await db.from('admin_meetings').insert([{
         client_name: sub.name,
         client_id: null, // NO CLIENT YET
         destination: sub.answers.find(a => a.questionText.toLowerCase().includes('destino'))?.answer || 'Por definir',
@@ -109,7 +110,7 @@ export default function ConsultasPage() {
       message: 'Esta acción eliminará la consulta permanentemente del sistema.',
       type: 'danger',
       onConfirm: async () => {
-        const { error } = await supabase.from('form_submissions').delete().eq('id', id);
+        const { error } = await db.from('form_submissions').delete().eq('id', id);
         if (!error) {
           setSubmissions(submissions.filter(s => s.id !== id));
           if (selectedSubmission?.id === id) setSelectedSubmission(null);
@@ -130,10 +131,11 @@ export default function ConsultasPage() {
 
   return (
     <div className="consultas-page animate-fade-in">
-      <header className="page-header-centered">
-        <h1>Centro de Consultas</h1>
-        <p>Gestiona las solicitudes entrantes, agenda sesiones y contacta a tus potenciales viajeros.</p>
-      </header>
+      <PageHeader
+        section="Gestión"
+        title="Centro de Consultas"
+        subtitle="Gestiona las solicitudes entrantes, agenda sesiones y contacta a tus potenciales viajeros."
+      />
       
       <div className="filter-pills-container">
         <div className="filter-pills">
@@ -155,15 +157,7 @@ export default function ConsultasPage() {
       <div className="inbox-grid">
         <div className="submissions-list">
           <div className="card-header border-bottom">
-            <div className="search-bar-modern">
-              <Search size={18} />
-              <input 
-                type="text" 
-                placeholder="Buscar por nombre o email..." 
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
+            <SearchBar placeholder="Buscar por nombre o email..." value={searchTerm} onChange={setSearchTerm} />
           </div>
           <div className="list-items custom-scrollbar">
             {loading ? (

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '../../../lib/supabase';
+import { db } from '../../../lib/db';
 import { MapPin, CheckCircle2 } from 'lucide-react';
 import './EncuestaViaje.css';
 
@@ -26,7 +26,7 @@ export default function EncuestaViajePage() {
   }, []);
 
   const fetchQuestions = async () => {
-    const { data, error } = await supabase.from('viaje_ideal_questions').select('*').order('created_at');
+    const { data, error } = await db.from('viaje_ideal_questions').select('*').order('created_at');
     
     if (error || !data || data.length === 0) {
       // Fallback si no hay tabla o está vacía (como en el admin)

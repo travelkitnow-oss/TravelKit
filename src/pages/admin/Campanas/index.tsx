@@ -1,13 +1,13 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import emailjs from '@emailjs/browser';
-import { supabase } from '../../../lib/supabase';
+import { db } from '../../../lib/db';
 import { logger } from '../../../lib/logger';
 import { useSiteSettings } from '../../../hooks/useSiteSettings';
 import {
   Mail,
   Megaphone,
   Users,
-  Search,
+  
   Save,
   Send,
   Calendar,
@@ -16,13 +16,16 @@ import {
   Loader2,
   Trash2,
   AlertCircle,
-  Image as ImageIcon
+  Image as ImageIcon,
+  X
 } from 'lucide-react';
 import ReactQuill, { Quill } from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
 import ResizeImage from 'quill-resize-image';
 import './Campanas.css';
 
+import PageHeader from '../../../components/PageHeader/PageHeader';
+import SearchBar from '../../../components/SearchBar/SearchBar';
 Quill.register('modules/resizeImage', ResizeImage);
 
 const EMAILJS_SERVICE_ID = 'service_yy59l1c';
@@ -155,7 +158,7 @@ export default function CampanasPage() {
 
   const fetchClients = async () => {
     setLoadingClients(true);
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from('clients')
       .select('*')
       .order('name', { ascending: true });
@@ -172,12 +175,12 @@ export default function CampanasPage() {
   };
 
   const fetchTemplates = async () => {
-    const { data } = await supabase.from('email_templates').select('*').order('created_at', { ascending: false });
+    const { data } = await db.from('email_templates').select('*').order('created_at', { ascending: false });
     if (data) setTemplates(data);
   };
 
   const fetchSchedules = async () => {
-    const { data } = await supabase.from('email_schedules').select('*').order('created_at', { ascending: false });
+    const { data } = await db.from('email_schedules').select('*').order('created_at', { ascending: false });
     if (data) setSchedules(data);
   };
 
@@ -185,7 +188,7 @@ export default function CampanasPage() {
     if (!templateName.trim()) { showNotice('error', 'Escribí un nombre para la plantilla.'); return; }
     if (!emailTitle.trim() || !emailBody.trim()) { showNotice('error', 'El asunto y cuerpo no pueden estar vacíos.'); return; }
     setIsSavingTemplate(true);
-    const { error } = await supabase.from('email_templates').insert([{ name: templateName.trim(), subject: emailTitle, body: emailBody }]);
+    const { error } = await db.from('email_templates').insert([{ name: templateName.trim(), subject: emailTitle, body: emailBody }]);
     setIsSavingTemplate(false);
     if (error) { showNotice('error', 'Error al guardar plantilla.'); return; }
     showNotice('success', `Plantilla "${templateName}" guardada.`);
@@ -201,7 +204,7 @@ export default function CampanasPage() {
   };
 
   const handleDeleteTemplate = async (id: string) => {
-    await supabase.from('email_templates').delete().eq('id', id);
+    await db.from('email_templates').delete().eq('id', id);
     fetchTemplates();
   };
 
@@ -220,7 +223,7 @@ export default function CampanasPage() {
     const name = emailTitle.slice(0, 50) || 'Envío programado';
     const cron_type = buildCronLabel();
     setIsSavingSchedule(true);
-    const { error } = await supabase.from('email_schedules').insert([{ name, subject: emailTitle, body: emailBody, cron_type, active: true }]);
+    const { error } = await db.from('email_schedules').insert([{ name, subject: emailTitle, body: emailBody, cron_type, active: true }]);
     setIsSavingSchedule(false);
     if (error) { showNotice('error', 'Error al guardar envío programado.'); return; }
     showNotice('success', 'Envío programado guardado y activado.');
@@ -228,12 +231,12 @@ export default function CampanasPage() {
   };
 
   const handleToggleSchedule = async (id: string, current: boolean) => {
-    await supabase.from('email_schedules').update({ active: !current }).eq('id', id);
+    await db.from('email_schedules').update({ active: !current }).eq('id', id);
     fetchSchedules();
   };
 
   const handleDeleteSchedule = async (id: string) => {
-    await supabase.from('email_schedules').delete().eq('id', id);
+    await db.from('email_schedules').delete().eq('id', id);
     fetchSchedules();
   };
 
@@ -378,7 +381,7 @@ export default function CampanasPage() {
         { key: 'popup_ad_image', value: popupImage }
       ];
 
-      const { error } = await supabase.from('site_settings').upsert(updates);
+      const { error } = await db.from('site_settings').upsert(updates);
       if (error) throw error;
 
       logger.success('Publicidad', `Popup web ${popupEnabled ? 'habilitado' : 'deshabilitado'} y actualizado`, {
@@ -406,10 +409,11 @@ export default function CampanasPage() {
 
   return (
     <div className="publicidad-page animate-fade-in">
-      <header className="page-header-centered">
-        <h1>Centro de Publicidad y Campañas</h1>
-        <p>Promociona nuevos destinos, gestiona envíos masivos por correo y configura ventanas emergentes para tus visitantes.</p>
-      </header>
+      <PageHeader
+        section="Gestión"
+        title="Centro de Publicidad y Campañas"
+        subtitle="Promociona nuevos destinos, gestiona envíos masivos por correo y configura ventanas emergentes para tus visitantes."
+      />
 
       {alert && (
         <div className={`alert-floating alert-${alert.type} animate-scale-in`}>
@@ -451,15 +455,7 @@ export default function CampanasPage() {
                       ? <><CheckCircle size={14} /> {selectedClients.size} seleccionado{selectedClients.size !== 1 ? 's' : ''}</>
                       : 'Ninguno seleccionado'}
                   </div>
-                  <div className="search-input-wrapper">
-                    <Search size={14} />
-                    <input
-                      type="text"
-                      placeholder="Buscar..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                    />
-                  </div>
+                  <SearchBar size="sm" placeholder="Buscar..." value={searchQuery} onChange={setSearchQuery} />
                   <label className="checkbox-container select-all-label">
                     <input type="checkbox" checked={isAllSelected} onChange={handleToggleSelectAll} />
                     <span className="checkmark"></span>
@@ -752,19 +748,31 @@ export default function CampanasPage() {
       {/* Save template modal */}
       {showSaveTemplateModal && (
         <div className="modal-overlay" style={{ zIndex: 1500 }} onClick={() => setShowSaveTemplateModal(false)}>
-          <div className="glass-card animate-scale-in" style={{ maxWidth: '420px', width: '90%', padding: '2rem', borderRadius: '20px', background: 'white' }} onClick={e => e.stopPropagation()}>
-            <h3 style={{ fontWeight: 700, color: 'var(--color-primary)', marginBottom: '0.5rem' }}>Guardar Plantilla</h3>
-            <p className="text-secondary text-sm mb-4">Dale un nombre para identificarla fácilmente.</p>
+          <div className="modal-content-pro modal-sm" onClick={e => e.stopPropagation()}>
+            <div className="modal-header-pro">
+              <div className="header-left">
+                <div className="header-icon"><Save size={20} /></div>
+                <div className="header-text">
+                  <h3>Guardar plantilla</h3>
+                  <p>Dale un nombre para identificarla fácilmente</p>
+                </div>
+              </div>
+              <button type="button" onClick={() => setShowSaveTemplateModal(false)} className="close-modal-btn" aria-label="Cerrar">
+                <X size={18} />
+              </button>
+            </div>
+            <div className="modal-body-pro">
             <input
               type="text"
-              className="form-input mb-4"
+              className="form-input"
               placeholder="Ej: Promo Europa Julio, Newsletter Mensual..."
               value={templateName}
               onChange={e => setTemplateName(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && handleSaveTemplate()}
               autoFocus
             />
-            <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
+            </div>
+            <div className="modal-footer-pro">
               <button className="btn btn-outline" onClick={() => setShowSaveTemplateModal(false)}>Cancelar</button>
               <button className="btn btn-primary" onClick={handleSaveTemplate} disabled={isSavingTemplate}>
                 <Save size={16} />

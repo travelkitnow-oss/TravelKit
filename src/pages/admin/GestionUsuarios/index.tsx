@@ -5,15 +5,17 @@ import {
   Key, 
   X, 
   Save, 
-  Search,
+  
   ShieldCheck,
   Lock,
   Eye,
   EyeOff
 } from 'lucide-react';
-import { supabase } from '../../../lib/supabase';
+import { db } from '../../../lib/db';
 import './GestionUsuarios.css';
 
+import PageHeader from '../../../components/PageHeader/PageHeader';
+import SearchBar from '../../../components/SearchBar/SearchBar';
 interface UserProfile {
   id: string;
   email: string;
@@ -43,7 +45,7 @@ export default function GestionUsuariosPage() {
 
   const fetchProfiles = async () => {
     setLoading(true);
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from('client_profiles')
       .select('*, clients(name)')
       .order('created_at', { ascending: false });
@@ -59,7 +61,7 @@ export default function GestionUsuariosPage() {
   const handleDelete = async (id: string) => {
     if (!window.confirm('¿Estás seguro de eliminar el acceso de este usuario? No podrá volver a ingresar al portal.')) return;
     
-    const { error } = await supabase.from('client_profiles').delete().eq('id', id);
+    const { error } = await db.from('client_profiles').delete().eq('id', id);
     if (error) {
       alert('Error al eliminar: ' + error.message);
     } else {
@@ -91,23 +93,16 @@ export default function GestionUsuariosPage() {
 
   return (
     <div className="gestion-usuarios-page animate-fade-in">
-      <header className="page-header-centered">
-        <h1>Gestión de Usuarios</h1>
-        <p>Controla los accesos al portal de clientes, actualiza credenciales y gestiona permisos.</p>
-      </header>
+      <PageHeader
+        section="Gestión"
+        title="Gestión de Usuarios"
+        subtitle="Controla los accesos al portal de clientes, actualiza credenciales y gestiona permisos."
+      />
 
       <div className="glass-card">
         <div className="card-header border-bottom">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
-            <div className="search-bar-premium">
-              <Search size={18} />
-              <input 
-                type="text" 
-                placeholder="Buscar por nombre o email..." 
-                value={searchTerm}
-                onChange={e => setSearchTerm(e.target.value)}
-              />
-            </div>
+            <SearchBar className="search-grow" placeholder="Buscar por nombre o email..." value={searchTerm} onChange={setSearchTerm} />
             <div className="user-stats">
               <Users size={16} />
               <span>{profiles.length} Usuarios Activos</span>
@@ -171,12 +166,21 @@ export default function GestionUsuariosPage() {
 
       {editingProfile && (
         <div className="modal-overlay animate-fade-in" style={{ zIndex: 1400 }}>
-          <div className="modal-content glass-card animate-scale-in" style={{ maxWidth: '450px', padding: '2.5rem' }}>
-            <div className="modal-header">
-              <h3>Actualizar Clave</h3>
-              <button onClick={() => setEditingProfile(null)} className="close-modal-btn"><X size={20} /></button>
+          <div className="modal-content-pro modal-sm">
+            <div className="modal-header-pro">
+              <div className="header-left">
+                <div className="header-icon"><Lock size={20} /></div>
+                <div className="header-text">
+                  <h3>Actualizar clave</h3>
+                  <p>Cambiá la contraseña de acceso al portal</p>
+                </div>
+              </div>
+              <button onClick={() => setEditingProfile(null)} className="close-modal-btn" aria-label="Cerrar">
+                <X size={18} />
+              </button>
             </div>
 
+            <div className="modal-body-pro">
             <p className="text-secondary text-sm mb-4">Cambiando la clave de <strong>{editingProfile.clients.name}</strong></p>
 
             <div className="form-group mb-4">
@@ -199,7 +203,7 @@ export default function GestionUsuariosPage() {
                       background: 'none', 
                       border: 'none', 
                       cursor: 'pointer', 
-                      color: '#64748b',
+                      color: '#5A7181',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
@@ -233,7 +237,7 @@ export default function GestionUsuariosPage() {
                     background: 'none', 
                     border: 'none', 
                     cursor: 'pointer', 
-                    color: '#64748b',
+                    color: '#5A7181',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -247,9 +251,10 @@ export default function GestionUsuariosPage() {
               {passwordError && <p className="text-danger text-xs mt-1">{passwordError}</p>}
             </div>
 
-            <div style={{ display: 'flex', gap: '1rem', marginTop: '2rem' }}>
-              <button className="btn btn-outline w-100" onClick={() => setEditingProfile(null)}>Cancelar</button>
-              <button className="btn btn-primary w-100" onClick={handleUpdatePassword}>
+            </div>
+            <div className="modal-footer-pro">
+              <button className="btn btn-outline" onClick={() => setEditingProfile(null)}>Cancelar</button>
+              <button className="btn btn-primary" onClick={handleUpdatePassword}>
                 <Save size={18} /> Actualizar
               </button>
             </div>

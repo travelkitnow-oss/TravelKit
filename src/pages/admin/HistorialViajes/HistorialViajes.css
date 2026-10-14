@@ -41,7 +41,7 @@
   margin: 0;
   font-size: 1.6rem;
   color: #1f3a4d;
-  font-weight: 800;
+  font-weight: 700;
   font-family: 'Montserrat', 'Playfair Display', serif; /* Cambiada tipografía */
   letter-spacing: -0.01em;
 }
@@ -49,7 +49,7 @@
 .header-title p {
   margin: 0;
   font-size: 0.8rem;
-  color: #64748b;
+  color: #5A7181;
   font-weight: 500;
 }
 
@@ -59,10 +59,10 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  background: #f8fafc;
+  background: #F8F5F0;
   padding: 0.5rem 1rem;
   border-radius: 10px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid #E7E1D8;
 }
 
 .search-box-premium input {
@@ -97,7 +97,7 @@
   padding: 0.85rem 1rem;
   cursor: pointer;
   background: white;
-  border: 1px solid #f1f5f9;
+  border: 1px solid #F3EEE7;
   border-radius: 12px;
   transition: all 0.2s ease;
 }
@@ -109,7 +109,7 @@
 
 .status-badge {
   font-size: 0.6rem;
-  font-weight: 900;
+  font-weight: 700;
   color: #059669;
   background: #ecfdf5;
   padding: 0.15rem 0.4rem;
@@ -118,7 +118,7 @@
 
 .item-date {
   font-size: 0.7rem;
-  color: #94a3b8;
+  color: #8FA2AF;
 }
 
 .item-header {
@@ -139,7 +139,7 @@
   align-items: center;
   gap: 0.4rem;
   font-size: 0.75rem;
-  color: #64748b;
+  color: #5A7181;
   margin-bottom: 0.2rem;
 }
 
@@ -148,7 +148,7 @@
   align-items: center;
   gap: 0.4rem;
   font-size: 0.7rem;
-  color: #94a3b8;
+  color: #8FA2AF;
   margin-bottom: 0.75rem;
 }
 
@@ -156,7 +156,7 @@
   background: none;
   border: none;
   color: #c89b5a;
-  font-weight: 800;
+  font-weight: 700;
   display: flex;
   align-items: center;
   gap: 0.2rem;
@@ -208,13 +208,13 @@
   align-items: center;
   justify-content: center;
   font-size: 1.25rem;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .trip-detail-hero-text h2 {
   margin: 0;
   font-size: 1.4rem;
-  font-weight: 800;
+  font-weight: 700;
   color: white !important; /* Garantizada visibilidad del nombre */
   letter-spacing: -0.01em;
 }
@@ -230,7 +230,7 @@
   padding: 0.35rem 0.85rem;
   border-radius: 6px;
   font-size: 0.6rem;
-  font-weight: 900;
+  font-weight: 700;
   border: 1px solid rgba(255,255,255,0.15);
 }
 
@@ -253,12 +253,12 @@
   align-items: center;
   gap: 0.5rem;
   color: #1f3a4d;
-  font-weight: 900;
+  font-weight: 700;
   font-size: 0.75rem;
   letter-spacing: 0.05em;
   margin-bottom: 0.75rem;
   padding-bottom: 0.4rem;
-  border-bottom: 1px solid #f1f5f9;
+  border-bottom: 1px solid #F3EEE7;
 }
 
 /* SUMMARY INFO - COMPACTED */
@@ -269,17 +269,17 @@
 }
 
 .info-box {
-  background: #f8fafc;
+  background: #F8F5F0;
   padding: 0.75rem 1rem;
   border-radius: 10px;
-  border: 1px solid #edf2f7;
+  border: 1px solid #F3EEE7;
 }
 
 .info-box label {
   display: block;
   font-size: 0.6rem;
-  color: #94a3b8;
-  font-weight: 800;
+  color: #8FA2AF;
+  font-weight: 700;
   margin-bottom: 0.15rem;
   text-transform: uppercase;
 }
@@ -297,14 +297,14 @@
   align-items: center;
   gap: 0.75rem;
   padding: 0.5rem 0.85rem;
-  background: #f8fafc;
+  background: #F8F5F0;
   border-radius: 8px;
-  border-left: 3px solid #e2e8f0;
+  border-left: 3px solid #E7E1D8;
   margin-bottom: 0.4rem;
 }
 
 .mini-time {
-  font-weight: 800;
+  font-weight: 700;
   color: #1f3a4d;
   font-size: 0.75rem;
   min-width: 45px;
@@ -319,29 +319,29 @@
 
 .mini-type {
   font-size: 0.55rem;
-  font-weight: 900;
+  font-weight: 700;
   padding: 0.1rem 0.35rem;
   border-radius: 3px;
   background: white;
-  border: 1px solid #e2e8f0;
+  border: 1px solid #E7E1D8;
 }
 
 .mini-item.hotel { border-left-color: #10b981; }
-.mini-item.transport { border-left-color: #3b82f6; }
+.mini-item.transport { border-left-color: #3E6A87; }
 .mini-item.excursion { border-left-color: #f97316; }
 
 /* BILLING LIST */
 .billing-mini-list {
-  background: #f8fafc;
+  background: #F8F5F0;
   border-radius: 12px;
-  border: 1px solid #edf2f7;
+  border: 1px solid #F3EEE7;
 }
 
 .billing-mini-row {
   display: flex;
   justify-content: space-between;
   padding: 0.6rem 1rem;
-  border-bottom: 1px solid #edf2f7;
+  border-bottom: 1px solid #F3EEE7;
 }
 
 .billing-mini-row:last-child {
@@ -350,12 +350,12 @@
 
 .billing-mini-row span:first-child {
   font-weight: 600;
-  color: #64748b;
+  color: #5A7181;
   font-size: 0.8rem;
 }
 
 .price-text {
-  font-weight: 800;
+  font-weight: 700;
   color: #059669;
   font-size: 0.95rem;
 }

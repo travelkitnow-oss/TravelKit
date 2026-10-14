@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect } from 'react';
 import { 
-  Search, 
+  
   ChevronRight, 
   Plane, 
   Hotel, 
@@ -13,10 +13,12 @@ import {
   Trash2
 } from 'lucide-react';
 import jsPDF from 'jspdf';
-import { supabase } from '../../../lib/supabase';
+import { db } from '../../../lib/db';
 import logo from '../../../assets/logo.jpg';
 import './Liquidacion.css';
 
+import PageHeader from '../../../components/PageHeader/PageHeader';
+import SearchBar from '../../../components/SearchBar/SearchBar';
 interface Client {
   id: string;
   name: string;
@@ -60,7 +62,7 @@ export default function LiquidacionPage() {
   }, [selectedClientId]);
 
   const fetchClients = async () => {
-    const { data } = await supabase
+    const { data } = await db
       .from('clients')
       .select('*')
       .neq('source', 'agenda_session_only')
@@ -72,7 +74,7 @@ export default function LiquidacionPage() {
     e.stopPropagation();
     if (!window.confirm(`¿Estás seguro de eliminar permanentemente a ${clientName} y toda su liquidación? Esta acción no se puede deshacer.`)) return;
     
-    const { error } = await supabase.from('clients').delete().eq('id', clientId);
+    const { error } = await db.from('clients').delete().eq('id', clientId);
     if (error) {
       alert('Error al eliminar cliente: ' + error.message);
     } else {
@@ -85,7 +87,7 @@ export default function LiquidacionPage() {
     setLoadingData(true);
     
     // 1. Fetch Tickets
-    const { data: tickets } = await supabase
+    const { data: tickets } = await db
       .from('tickets')
       .select('amount')
       .eq('client_id', clientId);
@@ -93,7 +95,7 @@ export default function LiquidacionPage() {
     const ticketsTotal = (tickets || []).reduce((sum, t) => sum + (t.amount || 0), 0);
 
     // 2. Fetch Scheduled Items for the client
-    const { data: scheduled } = await supabase
+    const { data: scheduled } = await db
       .from('scheduled_items')
       .select('*')
       .eq('client_id', clientId);
@@ -101,7 +103,7 @@ export default function LiquidacionPage() {
     // 3. Fetch Catalog Items to get prices
     const itemIds = (scheduled || []).map(s => s.item_id).filter(id => !!id);
     const { data: catalogItems } = itemIds.length > 0 
-      ? await supabase.from('catalog_items').select('id, cost_usd').in('id', itemIds)
+      ? await db.from('catalog_items').select('id, cost_usd').in('id', itemIds)
       : { data: [] };
 
     // Create a price map for quick lookup
@@ -111,14 +113,14 @@ export default function LiquidacionPage() {
     });
 
     // 4. Fetch Billing Tasks
-    const { data: billing } = await supabase
+    const { data: billing } = await db
       .from('client_billing')
       .select('tasks')
       .eq('client_id', clientId)
       .maybeSingle();
     
     // 5. Fetch Service Fee IDs (Lucia's fees) to exclude them
-    const { data: serviceFees } = await supabase.from('services').select('name');
+    const { data: serviceFees } = await db.from('services').select('name');
     const luciaFeeNames = (serviceFees || []).map(s => s.name.toLowerCase());
 
     const billingTasks: TaskItem[] = billing?.tasks || [];
@@ -319,18 +321,15 @@ export default function LiquidacionPage() {
 
   return (
     <div className="liquidacion-page animate-fade-in">
+      <PageHeader
+        section="Monetización"
+        title="Liquidación"
+        subtitle="Generá el comprobante de servicios de cada cliente y exportalo en PDF."
+      />
       <div className="liq-main-grid">
         {/* Sidebar: Client Selection */}
         <aside className="liq-sidebar">
-          <div className="search-box-premium">
-            <Search size={20} />
-            <input 
-              type="text" 
-              placeholder="Buscar cliente..." 
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
+          <SearchBar placeholder="Buscar cliente..." value={searchTerm} onChange={setSearchTerm} />
 
           <div className="clients-list-premium">
             {filteredClients.map(client => (

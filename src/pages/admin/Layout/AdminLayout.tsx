@@ -3,6 +3,7 @@ import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { Menu } from 'lucide-react';
 import Sidebar from '../../../components/Sidebar/Sidebar';
 import './AdminLayout.css';
+import './AdminUI.css';
 
 export default function AdminLayout() {
   const [userEmail, setUserEmail] = useState<string>('Lucía');
