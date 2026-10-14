@@ -260,3 +260,16 @@ CREATE INDEX IF NOT EXISTS idx_catalog_items_folder ON catalog_items(folder_id);
 CREATE INDEX IF NOT EXISTS idx_travel_history_client ON travel_history(client_id);
 CREATE INDEX IF NOT EXISTS idx_client_reviews_client ON client_reviews(client_id);
 CREATE INDEX IF NOT EXISTS idx_system_logs_timestamp ON system_logs(timestamp DESC);
+
+-- ─── Viaje Ideal v2: preguntas tipadas y fichas de viajero ────
+ALTER TABLE viaje_ideal_questions ADD COLUMN IF NOT EXISTS key text;               -- identificador estable (feeling, budget, ...)
+ALTER TABLE viaje_ideal_questions ADD COLUMN IF NOT EXISTS type text DEFAULT 'single'; -- single | multi | text
+ALTER TABLE viaje_ideal_questions ADD COLUMN IF NOT EXISTS max_select integer;    -- límite para multi
+ALTER TABLE viaje_ideal_questions ADD COLUMN IF NOT EXISTS helper text;           -- texto de ayuda bajo la pregunta
+ALTER TABLE viaje_ideal_questions ADD COLUMN IF NOT EXISTS required boolean DEFAULT true;
+ALTER TABLE viaje_ideal_questions ADD COLUMN IF NOT EXISTS sort_order integer DEFAULT 0;
+
+ALTER TABLE viaje_ideal_submissions ADD COLUMN IF NOT EXISTS email text;
+ALTER TABLE viaje_ideal_submissions ADD COLUMN IF NOT EXISTS phone text;
+ALTER TABLE viaje_ideal_submissions ADD COLUMN IF NOT EXISTS status text DEFAULT 'nuevo'; -- nuevo | contactado | sesion_agendada
+ALTER TABLE viaje_ideal_submissions ADD COLUMN IF NOT EXISTS agent_notes text;

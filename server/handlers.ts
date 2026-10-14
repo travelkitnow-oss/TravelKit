@@ -216,13 +216,21 @@ export interface DbRequest {
   returning?: boolean;
 }
 
+/** Ejecuta la consulta; si el esquema cacheado quedó viejo (tabla/columna nueva), lo relee y reintenta una vez. */
 async function runQuery(req: DbRequest) {
-  let schema = await loadSchema();
-  if (!schema.has(req.table)) {
-    // El esquema pudo cambiar (p. ej. se corrió db:setup después de cachearlo): releerlo una vez
-    schemaCache = null;
-    schema = await loadSchema();
+  try {
+    return await runQueryOnce(req);
+  } catch (err) {
+    if (err instanceof QueryError && (err.code === '42P01' || err.code === '42703')) {
+      schemaCache = null;
+      return runQueryOnce(req);
+    }
+    throw err;
   }
+}
+
+async function runQueryOnce(req: DbRequest) {
+  const schema = await loadSchema();
   const info = getTable(schema, req.table);
   const table = ident(req.table);
   const params: unknown[] = [];

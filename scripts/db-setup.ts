@@ -22,6 +22,7 @@ const schema = readFileSync(new URL('../db/schema.sql', import.meta.url), 'utf8'
 // La API HTTP de Neon ejecuta una sentencia por llamada: separamos por ';' de fin de línea
 const statements = schema
   .split('\n')
+  .map((line) => line.replace(/\s--.*$/, '')) // comentarios al final de la línea
   .filter((line) => !line.trim().startsWith('--'))
   .join('\n')
   .split(/;\s*(?:\n|$)/)

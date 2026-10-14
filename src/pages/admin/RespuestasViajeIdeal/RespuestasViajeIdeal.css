@@ -1,338 +1,503 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;900&display=swap');
+/* Fichas de Viaje Ideal (vista del agente) */
 
-.respuestas-viaje-page {
-  font-family: 'Inter', sans-serif;
-  padding: 2.5rem;
-  max-width: 1400px;
-  margin: 0 auto;
-  background: transparent;
-  min-height: 100vh;
+.rvi-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
 }
 
-/* Header Styles */
-.respuestas-viaje-page .dashboard-header {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  text-align: center;
-  margin-bottom: 3rem !important; /* Espacio moderado */
-}
-
-.respuestas-viaje-page .header-info.centered {
+.rvi-stat {
   display: flex;
   flex-direction: column;
-  align-items: center;
+  gap: 0.25rem;
+  padding: 1.1rem 1.25rem;
+  background: var(--color-white);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
 }
 
-.respuestas-viaje-page .header-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  background: rgba(31, 58, 77, 0.05);
-  color: var(--color-primary);
-  padding: 0.4rem 0.8rem;
-  border-radius: 100px;
-  font-size: 0.75rem;
-  font-weight: 700;
+.rvi-stat span {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
-  margin-bottom: 0.75rem;
+  color: var(--text-secondary);
 }
 
-.respuestas-viaje-page .display-title {
-  font-size: 2.75rem;
-  font-weight: 700;
-  color: #1F3A4D;
-  margin: 0;
-  letter-spacing: -1.5px;
+.rvi-stat strong {
+  font-family: var(--font-serif);
+  font-size: 1.8rem;
+  font-weight: 600;
+  color: var(--color-primary);
   line-height: 1.1;
 }
 
-.respuestas-viaje-page .subtitle {
-  color: #5A7181;
-  font-size: 1.1rem;
-  margin-top: 0.5rem;
+.rvi-stat strong.rvi-stat-text {
+  font-size: 1.25rem;
 }
 
-/* Stats Row */
-.respuestas-viaje-page .stats-row {
+.rvi-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0.75rem;
+  padding: 3.5rem 2rem;
+  color: var(--color-accent-dark);
+}
+
+.rvi-empty h3 {
+  font-family: var(--font-serif);
+  font-size: 1.4rem;
+  color: var(--color-primary);
+}
+
+.rvi-empty p {
+  max-width: 420px;
+  color: var(--text-secondary);
+}
+
+/* ─── Layout lista + ficha ─── */
+.rvi-layout {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 1.5rem;
-  margin-bottom: 3rem !important; /* Espacio moderado */
+  grid-template-columns: 340px minmax(0, 1fr);
+  gap: 1.25rem;
+  align-items: start;
 }
 
-.respuestas-viaje-page .premium-stat-card {
-  background: white;
-  padding: 1.75rem;
-  border-radius: 16px;
+.rvi-list {
+  position: sticky;
+  top: 1rem;
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.04);
-  border: 1px solid #F3EEE7;
+  flex-direction: column;
+  max-height: calc(100vh - 2rem);
 }
 
-.respuestas-viaje-page .stat-label {
-  display: block;
-  font-size: 0.85rem;
-  font-weight: 700;
-  color: #5A7181;
-  text-transform: uppercase;
-  letter-spacing: 1px;
+.rvi-list-tools {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1rem;
+  border-bottom: 1px solid var(--color-border);
 }
 
-.respuestas-viaje-page .stat-number {
-  display: block;
-  font-size: 2.25rem;
-  font-weight: 700;
-  color: #1F3A4D;
-  margin: 0.25rem 0;
+.rvi-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
 }
 
-.respuestas-viaje-page .stat-trend {
+.rvi-filters button {
+  padding: 0.35rem 0.7rem;
+  border-radius: var(--radius-full);
   font-size: 0.8rem;
-  font-weight: 700;
+  font-weight: 500;
+  color: var(--text-secondary);
+  border: 1px solid var(--color-border);
+  background: var(--color-white);
+  transition: background-color var(--transition-fast), color var(--transition-fast);
 }
 
-.respuestas-viaje-page .stat-trend.positive { color: #10b981; }
-.respuestas-viaje-page .stat-trend.neutral { color: #5A7181; }
-
-.respuestas-viaje-page .stat-icon-wrapper {
-  width: 56px;
-  height: 56px;
-  border-radius: 16px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.rvi-filters button:hover {
+  color: var(--color-primary);
 }
 
-.respuestas-viaje-page .stat-icon-wrapper.blue { background: rgba(31, 58, 77, 0.08); color: var(--color-primary); }
-.respuestas-viaje-page .stat-icon-wrapper.green { background: rgba(16, 185, 129, 0.08); color: #10b981; }
-.respuestas-viaje-page .stat-icon-wrapper.gold { background: rgba(245, 158, 11, 0.08); color: #f59e0b; }
-
-/* Table Section */
-.respuestas-viaje-page .main-dashboard-card {
-  background: white;
-  border-radius: 16px;
-  overflow: hidden;
-  border: 1px solid #F3EEE7;
-}
-
-.respuestas-viaje-page .card-toolbar {
-  padding: 1.5rem 2.5rem;
-  border-bottom: 1px solid #F3EEE7;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background: #fafafa;
-}
-
-.respuestas-viaje-page .search-container {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  background: white;
-  border: 1px solid #E7E1D8;
-  padding: 0 1.25rem;
-  border-radius: 14px;
-  width: 450px;
-  transition: all 0.2s;
-}
-
-.respuestas-viaje-page .search-container:focus-within {
+.rvi-filters button.active {
+  background: var(--color-primary);
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 4px rgba(31, 58, 77, 0.05);
+  color: var(--color-white);
 }
 
-.respuestas-viaje-page .search-container input {
-  border: none;
-  background: transparent;
-  padding: 0.8rem 0;
-  font-size: 0.95rem;
-  width: 100%;
-  outline: none;
+.rvi-list ul {
+  list-style: none;
+  overflow-y: auto;
+  padding: 0.5rem;
 }
 
-.respuestas-viaje-page .result-pill {
+.rvi-list-empty {
+  padding: 1.5rem 1rem;
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.rvi-row {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  background: white;
-  padding: 0.5rem 1rem;
-  border-radius: 100px;
-  border: 1px solid #E7E1D8;
-  font-size: 0.85rem;
-  font-weight: 700;
-  color: #4F6878;
-}
-
-.respuestas-viaje-page .pulse-dot {
-  width: 8px;
-  height: 8px;
-  background: #10b981;
-  border-radius: 50%;
-  animation: pulse 2s infinite;
-}
-
-@keyframes pulse {
-  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
-  70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
-  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
-}
-
-.respuestas-viaje-page .dashboard-table {
   width: 100%;
-  border-collapse: collapse;
-}
-
-.respuestas-viaje-page .dashboard-table th {
+  padding: 0.7rem 0.75rem;
+  border-radius: var(--radius-md);
   text-align: left;
-  padding: 1.25rem 2.5rem;
-  background: #F8F5F0;
-  font-size: 0.75rem;
-  font-weight: 700;
-  color: #5A7181;
-  text-transform: uppercase;
-  letter-spacing: 1px;
+  border: 1px solid transparent;
+  transition: background-color var(--transition-fast), border-color var(--transition-fast);
 }
 
-.respuestas-viaje-page .dashboard-table td {
-  padding: 1.5rem 2.5rem;
-  border-bottom: 1px solid #F3EEE7;
-}
-
-.respuestas-viaje-page .dashboard-table tr:hover {
+.rvi-row:hover {
   background: #F8F5F0;
 }
 
-/* User Column */
-.respuestas-viaje-page .user-info-group {
-  display: flex;
-  align-items: center;
-  gap: 1.25rem;
+.rvi-row.active {
+  background: rgba(200, 155, 90, 0.1);
+  border-color: rgba(200, 155, 90, 0.4);
 }
 
-.respuestas-viaje-page .user-initials {
-  width: 48px;
-  height: 48px;
-  background: linear-gradient(135deg, var(--color-primary), #427aa1);
-  color: white;
-  border-radius: 14px;
+.rvi-avatar {
+  flex-shrink: 0;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: 700;
-  font-size: 1.1rem;
-  box-shadow: 0 4px 10px rgba(31, 58, 77, 0.2);
+  background: var(--color-primary);
+  color: var(--color-accent);
+  font-family: var(--font-serif);
+  font-weight: 600;
 }
 
-.respuestas-viaje-page .user-details {
+.rvi-row-text {
+  flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
 }
 
-.respuestas-viaje-page .user-name {
-  font-size: 1.05rem;
-  font-weight: 700;
-  color: #1F3A4D;
-}
-
-.respuestas-viaje-page .user-id {
-  font-size: 0.75rem;
-  font-weight: 700;
-  color: #8FA2AF;
-  letter-spacing: 0.5px;
-}
-
-/* Badges */
-.respuestas-viaje-page .segment-badge-premium {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  background: #F3EEE7;
-  color: #4F6878;
-  padding: 0.5rem 1rem;
-  border-radius: 10px;
-  font-weight: 700;
-  font-size: 0.85rem;
-}
-
-/* Action Buttons */
-.respuestas-viaje-page .btn-action-view {
-  background: #F3EEE7;
-  border: none;
-  padding: 0.6rem 1.25rem;
-  border-radius: 10px;
-  color: #1F3A4D;
-  font-weight: 700;
-  font-size: 0.85rem;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.respuestas-viaje-page .btn-action-view:hover {
-  background: var(--color-primary);
-  color: white;
-  transform: translateX(-4px);
-}
-
-.respuestas-viaje-page .date-group {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  color: #5A7181;
+.rvi-row-text strong {
+  font-size: 0.92rem;
   font-weight: 600;
+  color: var(--color-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rvi-row-text span {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.rvi-status {
+  flex-shrink: 0;
+  padding: 0.15rem 0.55rem;
+  border-radius: var(--radius-full);
+  font-size: 0.7rem;
+  font-weight: 600;
+  background: #F3EEE7;
+  color: var(--text-secondary);
+}
+
+.rvi-status.nuevo {
+  background: rgba(200, 155, 90, 0.16);
+  color: var(--color-accent-dark);
+}
+
+.rvi-status.sesion_agendada {
+  background: #E8F5EE;
+  color: var(--color-success);
+}
+
+/* ─── Ficha ─── */
+.rvi-detail {
+  padding: 1.75rem 2rem 2rem;
+}
+
+.rvi-detail-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 4rem 2rem;
+  color: var(--text-secondary);
+}
+
+.rvi-detail-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1.25rem;
+  flex-wrap: wrap;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.rvi-detail-head h2 {
+  font-family: var(--font-serif);
+  font-size: 1.75rem;
+  font-weight: 600;
+  color: var(--color-primary);
+}
+
+.rvi-date {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin-top: 0.15rem;
+}
+
+.rvi-contact {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-top: 0.6rem;
+}
+
+.rvi-contact a {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-primary);
+  border-bottom: 1px solid rgba(200, 155, 90, 0.5);
+}
+
+.rvi-contact a:hover {
+  color: var(--color-accent-dark);
+}
+
+.rvi-head-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  align-items: center;
+}
+
+.rvi-status-select {
+  width: auto !important;
+  min-width: 170px;
+}
+
+.rvi-profile {
+  margin: 1.5rem 0 0;
+  padding: 1.5rem;
+  border-radius: var(--radius-lg);
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-deep) 100%);
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.rvi-profile-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-accent);
+}
+
+.rvi-profile h3 {
+  font-family: var(--font-serif);
+  font-size: 1.75rem;
+  font-weight: 600;
+  color: var(--color-white);
+  margin: 0.3rem 0 0.15rem;
+}
+
+.rvi-profile-secondary {
+  font-style: italic;
+  color: var(--color-accent);
+  margin-bottom: 0.5rem;
+}
+
+.rvi-profile p {
+  max-width: 620px;
+  line-height: 1.6;
+}
+
+.rvi-section {
+  margin-top: 1.75rem;
+}
+
+.rvi-section h4 {
+  font-family: var(--font-main);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  margin-bottom: 0.75rem;
+}
+
+.rvi-chips {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 0.6rem;
+}
+
+.rvi-chips > div {
+  padding: 0.75rem 0.9rem;
+  border-radius: var(--radius-md);
+  background: #F8F5F0;
+  border: 1px solid var(--color-border);
+}
+
+.rvi-chips dt {
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  margin-bottom: 0.15rem;
+}
+
+.rvi-chips dd {
+  font-size: 0.92rem;
+  font-weight: 500;
+  color: var(--color-primary);
+  line-height: 1.4;
+}
+
+.rvi-alerts {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.rvi-alerts li {
+  display: flex;
+  gap: 0.6rem;
+  align-items: flex-start;
+  padding: 0.75rem 0.9rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.9rem;
+  line-height: 1.5;
+  background: #EEF3F6;
+  border: 1px solid rgba(31, 58, 77, 0.12);
+  color: var(--color-primary);
+}
+
+.rvi-alerts li svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.rvi-alerts li.warning {
+  background: #FDF6EC;
+  border-color: rgba(200, 155, 90, 0.45);
+}
+
+.rvi-alerts li.warning svg {
+  color: #B7791F;
+}
+
+.rvi-quote {
+  display: flex;
+  gap: 0.75rem;
+  padding: 1.1rem 1.25rem;
+  border-left: 3px solid var(--color-accent);
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+  background: #FBF9F6;
+  font-family: var(--font-serif);
+  font-size: 1.05rem;
+  font-style: italic;
+  line-height: 1.6;
+  color: var(--color-primary);
+}
+
+.rvi-quote svg {
+  flex-shrink: 0;
+  color: var(--color-accent);
+  margin-top: 4px;
+}
+
+.rvi-all summary {
+  cursor: pointer;
+  list-style: none;
+}
+
+.rvi-all summary::-webkit-details-marker {
+  display: none;
+}
+
+.rvi-all summary h4 {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0;
+}
+
+.rvi-all summary h4::after {
+  content: '▾';
+  font-size: 0.85rem;
+  transition: transform var(--transition-fast);
+}
+
+.rvi-all[open] summary h4::after {
+  transform: rotate(180deg);
+}
+
+.rvi-all ol {
+  list-style: none;
+  margin-top: 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.rvi-all li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 1rem;
+  padding: 0.75rem 1rem;
   font-size: 0.9rem;
 }
 
-.respuestas-viaje-page .loading-state, .respuestas-viaje-page .empty-state {
-  padding: 5rem !important;
-  text-align: center;
+.rvi-all li + li {
+  border-top: 1px solid var(--color-border);
 }
 
-/* ─── MOBILE ≤ 768px ─── */
-@media (max-width: 768px) {
-  /* Página: padding reducido para no desbordar */
-  .respuestas-viaje-page {
-    padding: 0;
+.rvi-all li span {
+  color: var(--text-secondary);
+}
+
+.rvi-all li strong {
+  font-weight: 500;
+  color: var(--color-primary);
+}
+
+.rvi-legacy {
+  margin-top: 1.5rem;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+.rvi-notes {
+  resize: vertical;
+  min-height: 90px;
+}
+
+.rvi-notes-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 0.5rem;
+}
+
+@media (max-width: 1100px) {
+  .rvi-layout {
+    grid-template-columns: 1fr;
   }
 
-  /* Stats: 2 columnas en vez de 3 */
-  .respuestas-viaje-page .stats-row {
-    grid-template-columns: 1fr 1fr;
-    gap: 0.75rem;
-    margin-bottom: 1.5rem !important;
+  .rvi-list {
+    position: static;
+    max-height: 420px;
+  }
+}
+
+@media (max-width: 640px) {
+  .rvi-stats {
+    grid-template-columns: 1fr;
   }
 
-  /* Stat card: más compacta */
-  .respuestas-viaje-page .premium-stat-card {
-    padding: 1rem;
-    border-radius: 16px;
+  .rvi-detail {
+    padding: 1.25rem;
   }
 
-  /* Toolbar: apilar búsqueda y filtros */
-  .respuestas-viaje-page .card-toolbar {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 0.75rem;
-    padding: 1rem;
-  }
-
-  /* Search: ancho completo */
-  .respuestas-viaje-page .search-container {
-    width: 100%;
-  }
-
-  /* Tabla: scroll horizontal */
-  .respuestas-viaje-page .main-dashboard-card {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-  }
-  .respuestas-viaje-page .dashboard-table {
-    min-width: 420px;
+  .rvi-all li {
+    grid-template-columns: 1fr;
+    gap: 0.25rem;
   }
 }

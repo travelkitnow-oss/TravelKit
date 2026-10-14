@@ -238,7 +238,7 @@ export default function Sidebar({ userEmail, handleLogout }: SidebarProps) {
               className={({ isActive }) => `nav-item sub-item ${isActive ? 'active' : ''}`}
             >
               <MessageSquare size={18} />
-              Respuestas Ideal
+              Fichas de viajeros
             </NavLink>
           </div>
         </div>

@@ -1,0 +1,589 @@
+/* ═══════════════════════════════════════
+   Historial de Viajes v2
+   (HistorialViajes.css se mantiene porque otras páginas usan algunas de sus clases)
+═══════════════════════════════════════ */
+
+/* Anula el contenedor viejo: altura fija, fondo gris y flex que aplastaba el encabezado */
+.historial-admin-page {
+  display: block;
+  height: auto;
+  min-height: 0;
+  background: transparent;
+  font-family: var(--font-main);
+}
+
+.hv-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.hv-stat {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  padding: 1.1rem 1.25rem;
+  background: var(--color-white);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+}
+
+.hv-stat > svg {
+  flex-shrink: 0;
+  box-sizing: content-box;
+  padding: 10px;
+  border-radius: var(--radius-md);
+  background: var(--color-primary);
+  color: var(--color-accent);
+}
+
+.hv-stat div {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.hv-stat span {
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.hv-stat strong {
+  font-family: var(--font-serif);
+  font-size: 1.55rem;
+  font-weight: 600;
+  color: var(--color-primary);
+  line-height: 1.15;
+}
+
+.hv-stat strong.hv-stat-text {
+  font-size: 1.1rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.hv-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0.75rem;
+  padding: 3.5rem 2rem;
+  color: var(--color-accent-dark);
+}
+
+.hv-empty h3 {
+  font-family: var(--font-serif);
+  font-size: 1.4rem;
+  color: var(--color-primary);
+}
+
+.hv-empty p {
+  max-width: 440px;
+  color: var(--text-secondary);
+}
+
+/* ─── Layout ─── */
+.hv-layout {
+  display: grid;
+  grid-template-columns: 330px minmax(0, 1fr);
+  gap: 1.25rem;
+  align-items: start;
+}
+
+.hv-list {
+  position: sticky;
+  top: 1rem;
+  max-height: calc(100vh - 2rem);
+  overflow-y: auto;
+  padding: 0.75rem;
+}
+
+.hv-list-empty {
+  padding: 1.5rem 1rem;
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.hv-group + .hv-group {
+  margin-top: 0.75rem;
+}
+
+.hv-group-title {
+  padding: 0.5rem 0.75rem 0.35rem;
+  font-family: var(--font-serif);
+  font-size: 1rem;
+  font-style: italic;
+  font-weight: 500;
+  color: var(--color-accent-dark);
+}
+
+.hv-trip {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.8rem;
+  width: 100%;
+  padding: 0.8rem 0.75rem;
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+  text-align: left;
+  transition: background-color var(--transition-fast), border-color var(--transition-fast);
+}
+
+.hv-trip:hover {
+  background: #F8F5F0;
+}
+
+.hv-trip.active {
+  background: rgba(200, 155, 90, 0.1);
+  border-color: rgba(200, 155, 90, 0.4);
+}
+
+.hv-trip-icon {
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #F3EEE7;
+  color: var(--color-primary);
+}
+
+.hv-trip.active .hv-trip-icon {
+  background: var(--color-primary);
+  color: var(--color-accent);
+}
+
+.hv-trip-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 0.1rem;
+}
+
+.hv-trip-text strong {
+  font-family: var(--font-serif);
+  font-size: 1.02rem;
+  font-weight: 600;
+  color: var(--color-primary);
+}
+
+.hv-trip-text span {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+}
+
+.hv-trip-text .hv-trip-dates {
+  font-size: 0.76rem;
+  color: #8FA2AF;
+}
+
+/* ─── Detalle ─── */
+.hv-detail {
+  overflow: hidden;
+}
+
+.hv-detail-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 4rem 2rem;
+  color: var(--text-secondary);
+}
+
+.hv-hero {
+  position: relative;
+  padding: 1.75rem 2rem;
+  background:
+    radial-gradient(120% 140% at 100% 0%, rgba(200, 155, 90, 0.22) 0%, transparent 55%),
+    linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-deep) 100%);
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.hv-hero-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.hv-archived {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.7rem;
+  border-radius: var(--radius-full);
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-accent);
+}
+
+.hv-delete {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  color: rgba(255, 255, 255, 0.6);
+  transition: background-color var(--transition-fast), color var(--transition-fast);
+}
+
+.hv-delete:hover {
+  background: rgba(239, 68, 68, 0.2);
+  color: #fecaca;
+}
+
+.hv-hero h2 {
+  font-family: var(--font-serif);
+  font-size: clamp(1.9rem, 3.4vw, 2.6rem);
+  font-weight: 600;
+  line-height: 1.1;
+  color: var(--color-white);
+}
+
+.hv-hero-client {
+  margin-top: 0.35rem;
+  font-size: 1rem;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.hv-hero-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-top: 1.25rem;
+}
+
+.hv-hero-facts span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.4rem 0.8rem;
+  border-radius: var(--radius-full);
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  font-size: 0.85rem;
+  color: var(--color-white);
+}
+
+.hv-hero-facts svg {
+  color: var(--color-accent);
+}
+
+.hv-body {
+  padding: 0.5rem 2rem 2rem;
+}
+
+.hv-section {
+  margin-top: 1.75rem;
+}
+
+.hv-section h4 {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin-bottom: 0.9rem;
+  font-family: var(--font-main);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.hv-section h4 svg {
+  color: var(--color-accent-dark);
+}
+
+.hv-empty-hint {
+  font-size: 0.9rem;
+  color: #8FA2AF;
+  font-style: italic;
+}
+
+/* Vuelos */
+.hv-flights {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 0.75rem;
+}
+
+.hv-flight {
+  padding: 1rem 1.1rem;
+  border-radius: var(--radius-md);
+  background: #F8F5F0;
+  border: 1px solid var(--color-border);
+}
+
+.hv-flight-label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-accent-dark);
+}
+
+.hv-flight-route {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.hv-flight-route > svg {
+  flex-shrink: 0;
+  color: var(--color-secondary);
+}
+
+.hv-flight-route div {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.hv-flight-route div:last-child {
+  text-align: right;
+}
+
+.hv-flight-route strong {
+  font-family: var(--font-serif);
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--color-primary);
+}
+
+.hv-flight-route span {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+}
+
+/* Itinerario */
+.hv-timeline {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+}
+
+.hv-day {
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr);
+  gap: 1rem;
+  position: relative;
+  padding-bottom: 1rem;
+}
+
+.hv-day:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  left: 27px;
+  top: 52px;
+  bottom: 0;
+  width: 1px;
+  background: var(--color-border-strong);
+}
+
+.hv-day-label {
+  width: 56px;
+  height: 52px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-md);
+  background: var(--color-white);
+  border: 1px solid var(--color-border-strong);
+  line-height: 1.05;
+}
+
+.hv-day-label strong {
+  font-family: var(--font-serif);
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: var(--color-primary);
+}
+
+.hv-day-label span {
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-accent-dark);
+}
+
+.hv-day ul {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.hv-event {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.75rem 0.9rem;
+  border-radius: var(--radius-md);
+  background: var(--color-white);
+  border: 1px solid var(--color-border);
+}
+
+.hv-event-icon {
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #F3EEE7;
+  color: var(--color-primary);
+}
+
+.hv-event.hotel .hv-event-icon { background: #E8F0F5; }
+.hv-event.excursion .hv-event-icon { background: rgba(200, 155, 90, 0.16); color: var(--color-accent-dark); }
+
+.hv-event-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.hv-event-text strong {
+  font-size: 0.93rem;
+  font-weight: 600;
+  color: var(--color-primary);
+}
+
+.hv-event-text span {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+/* Servicios y pagos */
+.hv-money {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.hv-money div {
+  display: flex;
+  flex-direction: column;
+  padding: 0.9rem 1rem;
+  border-radius: var(--radius-md);
+  background: #F8F5F0;
+  border: 1px solid var(--color-border);
+}
+
+.hv-money span {
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.hv-money strong {
+  font-family: var(--font-serif);
+  font-size: 1.35rem;
+  font-weight: 600;
+  color: var(--color-primary);
+}
+
+.hv-money strong.ok { color: var(--color-success); }
+.hv-money strong.due { color: #B7791F; }
+
+.hv-table {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.hv-table .num {
+  text-align: right;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.hv-table td.neg {
+  color: var(--color-success);
+}
+
+.hv-pill {
+  display: inline-block;
+  padding: 0.15rem 0.6rem;
+  border-radius: var(--radius-full);
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.hv-pill.paid { background: #E8F5EE; color: var(--color-success); }
+.hv-pill.pending { background: #FDF3E3; color: #B7791F; }
+.hv-pill.payment { background: #EEF3F6; color: var(--color-primary); }
+
+/* Notas */
+.hv-notes {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.hv-notes li {
+  padding: 0.85rem 1rem;
+  border-left: 3px solid var(--color-accent);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  background: #FBF9F6;
+}
+
+.hv-notes p {
+  font-size: 0.92rem;
+  line-height: 1.55;
+  color: var(--color-primary);
+}
+
+.hv-notes span {
+  font-size: 0.75rem;
+  color: #8FA2AF;
+}
+
+.hv-archived-at {
+  margin-top: 2rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--color-border);
+  font-size: 0.8rem;
+  color: #8FA2AF;
+  text-align: right;
+}
+
+@media (max-width: 1200px) {
+  .hv-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 1100px) {
+  .hv-layout { grid-template-columns: 1fr; }
+  .hv-list { position: static; max-height: 380px; }
+}
+
+@media (max-width: 640px) {
+  .hv-stats { grid-template-columns: 1fr; }
+  .hv-hero, .hv-body { padding-left: 1.25rem; padding-right: 1.25rem; }
+  .hv-money { grid-template-columns: 1fr; }
+}

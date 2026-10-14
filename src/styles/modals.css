@@ -222,7 +222,7 @@ body:has(.modal-overlay),
 }
 
 /* Etiquetas de formularios dentro de popups: mismo estilo en todos */
-.modal-overlay .modal-body-pro label {
+.modal-overlay .modal-body-pro label:not(.tkw-label) {
   display: block;
   font-family: var(--font-main) !important;
   font-size: 0.8rem !important;

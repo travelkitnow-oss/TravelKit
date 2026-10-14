@@ -1,143 +1,82 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { Link, useOutletContext } from 'react-router-dom';
+import { CalendarDays } from 'lucide-react';
 import { db } from '../../../lib/db';
-import { MapPin, CheckCircle2 } from 'lucide-react';
+import { toStoredAnswers, type VIAnswers, type VIQuestion, type VIResult } from '../../../lib/viajeIdeal';
+import PageHeader from '../../../components/PageHeader/PageHeader';
+import ViajeIdealSurvey from '../../../components/ViajeIdealSurvey/ViajeIdealSurvey';
 import './EncuestaViaje.css';
 
-interface Option {
-  id: string;
-  text: string;
-  points: Record<string, number>;
-}
-
-interface Question {
-  id: string;
-  text: string;
-  options: Option[];
-}
-
 export default function EncuestaViajePage() {
-  const [questions, setQuestions] = useState<Question[]>([]);
-  const [showPreview, setShowPreview] = useState(false);
-  const [answers, setAnswers] = useState<Record<string, string>>({});
-  const [result, setResult] = useState<string | null>(null);
+  const { clientId } = useOutletContext<{ clientId: string }>();
+  const [questions, setQuestions] = useState<VIQuestion[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
 
   useEffect(() => {
-    fetchQuestions();
+    const load = async () => {
+      const { data, error } = await db
+        .from('viaje_ideal_questions')
+        .select('*')
+        .order('sort_order', { ascending: true })
+        .order('created_at', { ascending: true });
+      if (error) setLoadError(true);
+      else setQuestions((data || []) as VIQuestion[]);
+      setLoading(false);
+    };
+    load();
   }, []);
 
-  const fetchQuestions = async () => {
-    const { data, error } = await db.from('viaje_ideal_questions').select('*').order('created_at');
-    
-    if (error || !data || data.length === 0) {
-      // Fallback si no hay tabla o está vacía (como en el admin)
-      setQuestions([
-        {
-          id: '1',
-          text: '¿Qué tipo de clima prefieres?',
-          options: [
-            { id: '1a', text: 'Cálido y soleado', points: { 'Playa': 10, 'Desierto': 8, 'Ciudad': 2 } },
-            { id: '1b', text: 'Frío y nieve', points: { 'Montaña': 10, 'Ski': 10, 'Aventura': 5 } },
-            { id: '1c', text: 'Templado', points: { 'Ciudad': 10, 'Europa': 8, 'Campo': 5 } }
-          ]
-        }
-      ]);
-    } else {
-      setQuestions(data);
-    }
-  };
+  const saveSubmission = async (answers: VIAnswers, result: VIResult) => {
+    // Datos de contacto del cliente para la ficha del agente
+    const { data: client } = await db.from('clients').select('name, email, phone').eq('id', clientId).maybeSingle();
+    const stored = localStorage.getItem('travelkit_client');
+    const fallbackName = stored ? JSON.parse(stored).name : 'Viajero';
 
-  const calculateResult = () => {
-    const totals: Record<string, number> = {};
-    
-    questions.forEach(q => {
-      const selectedOptionId = answers[q.id];
-      if (selectedOptionId) {
-        const option = q.options.find(o => o.id === selectedOptionId);
-        if (option && option.points) {
-          Object.entries(option.points).forEach(([category, pts]) => {
-            totals[category] = (totals[category] || 0) + pts;
-          });
-        }
-      }
-    });
-
-    if (Object.keys(totals).length === 0) {
-      setResult('No hay suficientes datos para decidir.');
-      return;
-    }
-
-    const best = Object.entries(totals).sort((a, b) => b[1] - a[1])[0];
-    setResult(best[0]);
+    const { error } = await db.from('viaje_ideal_submissions').insert([{
+      client_id: clientId || null,
+      client_name: client?.name || fallbackName,
+      email: client?.email || null,
+      phone: client?.phone || null,
+      answers: toStoredAnswers(questions, answers),
+      result: {
+        profile: result.profile?.key || null,
+        profile_name: result.profile?.name || null,
+        secondary: result.secondary?.key || null,
+        secondary_name: result.secondary?.name || null,
+        scores: result.scores,
+      },
+      status: 'nuevo',
+    }]);
+    return !error;
   };
 
   return (
     <div className="encuesta-cliente-page animate-fade-in">
-      <header className="page-header-centered" style={{ marginBottom: '3rem' }}>
-        <h1 className="display-title">Encuesta de Viaje</h1>
-        <p className="subtitle">Descubre tu destino ideal respondiendo estas breves preguntas.</p>
-      </header>
+      <PageHeader
+        section="Mi viaje"
+        title="Encuesta de Viaje Ideal"
+        subtitle="Contanos cómo te gusta viajar y preparamos propuestas a tu medida."
+      />
 
       <div className="encuesta-card">
-        {!showPreview ? (
-          <div className="start-test text-center p-5">
-            <div style={{ display: 'inline-flex', background: '#f0f7ff', padding: '1.5rem', borderRadius: '50%', marginBottom: '1.5rem', color: 'var(--color-primary)' }}>
-              <MapPin size={48} />
-            </div>
-            <h2 style={{ fontSize: '2rem', color: 'var(--color-primary)', fontWeight: 900, marginBottom: '1rem' }}>Encuentra tu Viaje Ideal</h2>
-            <p style={{ color: '#64748b', fontSize: '1.1rem', maxWidth: '400px', margin: '0 auto 2rem' }}>
-              Nuestro algoritmo analizará tus preferencias para sugerirte el lugar perfecto para tus próximas vacaciones.
-            </p>
-            <button className="btn btn-primary" style={{ padding: '1rem 3rem', fontSize: '1.1rem', borderRadius: '100px' }} onClick={() => setShowPreview(true)}>
-              Comenzar Encuesta
-            </button>
+        {loading ? (
+          <div className="loading-state-premium">
+            <div className="loader-premium"></div>
+            <p>Cargando encuesta...</p>
           </div>
+        ) : loadError ? (
+          <p className="encuesta-error">No pudimos cargar la encuesta. Probá recargar la página en unos minutos.</p>
         ) : (
-          <div className="quiz-container animate-fade-in">
-            {!result ? (
-              <>
-                {questions.map((q) => (
-                  <div key={q.id} className="quiz-question">
-                    <h4>{q.text}</h4>
-                    <div className="quiz-options">
-                      {q.options.map(opt => (
-                        <button 
-                          key={opt.id}
-                          className={`quiz-opt-btn ${answers[q.id] === opt.id ? 'selected' : ''}`}
-                          onClick={() => setAnswers({ ...answers, [q.id]: opt.id })}
-                        >
-                          <span>{opt.text}</span>
-                          {answers[q.id] === opt.id && <CheckCircle2 size={20} />}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-                <button 
-                  className="btn btn-primary w-100" 
-                  onClick={calculateResult}
-                  disabled={Object.keys(answers).length < questions.length}
-                >
-                  Ver mi resultado ideal
-                </button>
-              </>
-            ) : (
-              <div className="result-card animate-scale-in">
-                <div className="confetti">🎉</div>
-                <h3 style={{ fontSize: '1.5rem', color: '#64748b' }}>¡Tu destino perfecto es!</h3>
-                <div className="result-name">{result}</div>
-                <p style={{ color: '#64748b', fontSize: '1.1rem', marginBottom: '2.5rem' }}>
-                  Basado en tus preferencias exclusivas, este lugar tiene todo lo que buscas. ¡Comunícate con tu asesor para empezar a planearlo!
-                </p>
-                <button 
-                  className="btn btn-outline" 
-                  style={{ borderRadius: '100px', padding: '0.75rem 2rem' }}
-                  onClick={() => { setResult(null); setAnswers({}); setShowPreview(false); }}
-                >
-                  Volver a empezar
-                </button>
-              </div>
-            )}
-          </div>
+          <ViajeIdealSurvey
+            questions={questions}
+            onComplete={saveSubmission}
+            cta={
+              <Link to="/portal/agenda" className="btn btn-primary">
+                <CalendarDays size={16} /> Ver mi agenda de viaje
+              </Link>
+            }
+          />
         )}
       </div>
     </div>

@@ -1,0 +1,323 @@
+/* Formulario paso a paso (reserva del cliente y vista previa del admin) */
+.tkw {
+  display: flex;
+  flex-direction: column;
+  gap: 1.75rem;
+}
+
+.tkw-intro {
+  text-align: center;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.tkw-intro h3 {
+  font-family: var(--font-serif);
+  font-size: 1.75rem;
+  font-weight: 600;
+  color: var(--color-primary);
+  margin-bottom: 0.4rem;
+}
+
+.tkw-intro p {
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+}
+
+/* ─── Progreso ─── */
+.tkw-progress-head {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.6rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.tkw-progress-head span:last-child {
+  color: var(--color-accent-dark);
+}
+
+.tkw-segments {
+  display: flex;
+  gap: 6px;
+}
+
+.tkw-segments span {
+  flex: 1;
+  height: 5px;
+  border-radius: 3px;
+  background: #EDE6DC;
+  transition: background-color 0.35s ease;
+}
+
+.tkw-segments span.done {
+  background: var(--color-primary);
+}
+
+.tkw-segments span.current {
+  background: var(--color-accent);
+}
+
+/* ─── Pregunta ─── */
+.tkw-question {
+  animation: tkwIn 0.35s var(--ease-out) both;
+}
+
+@keyframes tkwIn {
+  from { opacity: 0; transform: translateX(14px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.tkw-label {
+  display: flex !important;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem !important;
+  font-family: var(--font-serif) !important;
+  font-size: 1.45rem !important;
+  font-weight: 600 !important;
+  line-height: 1.3 !important;
+  letter-spacing: -0.01em !important;
+  text-transform: none !important;
+  color: var(--color-primary) !important;
+}
+
+.tkw-tag {
+  flex-shrink: 0;
+  margin-top: 0.35rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: var(--radius-full);
+  background: #F3EEE7;
+  font-family: var(--font-main);
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.tkw-tag.required {
+  background: rgba(200, 155, 90, 0.14);
+  color: var(--color-accent-dark);
+}
+
+/* ─── Campos ─── */
+.tkw-field {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: 56px;
+  padding: 0 1rem;
+  background: var(--color-white);
+  border: 1.5px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.tkw-field:focus-within {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 4px rgba(200, 155, 90, 0.16);
+}
+
+.tkw-field.is-filled {
+  border-color: rgba(31, 58, 77, 0.35);
+}
+
+.tkw-field.is-error,
+.tkw-email.is-error .tkw-field {
+  border-color: var(--color-danger);
+  box-shadow: 0 0 0 4px rgba(220, 38, 38, 0.1);
+}
+
+.tkw-icon {
+  flex-shrink: 0;
+  color: var(--color-secondary);
+}
+
+.tkw-field:focus-within .tkw-icon {
+  color: var(--color-accent-dark);
+}
+
+.tkw-ok {
+  flex-shrink: 0;
+  color: var(--color-success);
+}
+
+.tkw-field input,
+.tkw-field textarea {
+  flex: 1;
+  min-width: 0;
+  border: none !important;
+  outline: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  font-family: var(--font-main) !important;
+  font-size: 1.05rem !important;
+  color: var(--color-primary) !important;
+  text-align: left !important;
+}
+
+.tkw-field input::placeholder,
+.tkw-field textarea::placeholder {
+  color: #9AAAB6;
+}
+
+.tkw-field-area {
+  align-items: stretch;
+  padding: 0.9rem 1rem;
+}
+
+.tkw-field-area textarea {
+  resize: vertical;
+  min-height: 110px;
+  line-height: 1.6;
+}
+
+/* Email: usuario + dominio en una sola línea */
+.tkw-email {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.6rem;
+}
+
+.tkw-email select {
+  min-height: 56px;
+  padding: 0 2.25rem 0 1rem;
+  border: 1.5px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background: #F8F5F0 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%231F3A4D' stroke-width='2.5'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") no-repeat right 0.9rem center;
+  font-family: var(--font-main);
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--color-primary);
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+}
+
+.tkw-email select:focus {
+  outline: none;
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 4px rgba(200, 155, 90, 0.16);
+}
+
+.tkw-hint {
+  margin-top: 0.6rem;
+  font-size: 0.82rem;
+  color: #8FA2AF;
+}
+
+.tkw-hint.error {
+  color: var(--color-danger);
+  font-weight: 500;
+}
+
+.tkw-submit-error {
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-sm);
+  background: #FEF2F2;
+  border: 1px solid rgba(220, 38, 38, 0.25);
+  color: var(--color-danger);
+  font-size: 0.875rem;
+}
+
+/* ─── Acciones ─── */
+.tkw-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--color-border);
+}
+
+.tkw-actions .btn {
+  min-height: 48px;
+}
+
+.tkw-next {
+  min-width: 170px;
+}
+
+/* ─── Éxito ─── */
+.tkw-success {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0.9rem;
+  padding: 1.5rem 0.5rem 0.5rem;
+}
+
+.tkw-success-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-primary);
+  color: var(--color-accent);
+  box-shadow: 0 0 0 8px rgba(200, 155, 90, 0.15);
+  margin-bottom: 0.5rem;
+}
+
+.tkw-success h3 {
+  font-family: var(--font-serif);
+  font-size: 1.6rem;
+  font-weight: 600;
+  color: var(--color-primary);
+}
+
+.tkw-success p {
+  max-width: 380px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin-bottom: 0.75rem;
+}
+
+.tkw-empty {
+  text-align: center;
+  color: var(--text-secondary);
+  padding: 2rem 0;
+}
+
+/* Etiqueta de contexto (fecha y hora elegidas) */
+.tkw-context {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-weight: 600;
+  color: var(--color-primary);
+}
+
+@media (max-width: 640px) {
+  .tkw-label {
+    font-size: 1.25rem !important;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+
+  .tkw-tag {
+    margin-top: 0;
+  }
+
+  .tkw-email {
+    grid-template-columns: 1fr;
+  }
+
+  .tkw-next {
+    min-width: 0;
+    flex: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tkw-question { animation: none; }
+}

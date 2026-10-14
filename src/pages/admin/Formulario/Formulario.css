@@ -138,90 +138,21 @@
   cursor: pointer;
 }
 
-/* PREVIEW STYLES */
-.preview-body {
-  background-color: #F8F5F0;
-  border-radius: var(--radius-md);
-  padding: 2rem !important;
-}
-
-.preview-form {
-  background-color: var(--color-white);
-  padding: 2.5rem;
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-sm);
-  border-top: 6px solid var(--color-accent);
-}
-
-.preview-header {
-  margin-bottom: 2rem;
-}
-
-.preview-header h3 {
-  font-size: 1.75rem;
-  margin-bottom: 0.5rem;
-}
-
-.preview-header p {
-  color: var(--color-secondary);
-  font-size: 0.9rem;
-}
-
-.preview-field {
-  margin-bottom: 1.5rem;
-}
-
-.preview-field label {
-  display: block;
-  font-weight: 500;
-  margin-bottom: 0.5rem;
-  color: var(--color-primary);
-}
-
-.preview-input {
-  width: 100%;
-  padding: 0.75rem 1rem;
-  border: 1px solid var(--color-tertiary);
-  border-radius: var(--radius-sm);
-  font-family: var(--font-main);
-  outline: none;
-  transition: all var(--transition-fast);
-}
-
-.preview-input.textarea {
-  resize: vertical;
-}
-
-.input-with-icon {
-  position: relative;
-}
-
-.input-with-icon svg {
-  position: absolute;
-  left: 1rem;
-  top: 50%;
-  transform: translateY(-50%);
-  color: var(--color-secondary);
-}
-
-.input-with-icon .preview-input {
-  padding-left: 2.75rem;
-}
-
-.email-input-group {
+/* Vista previa: nota superior (el formulario usa TripFormWizard) */
+.preview-note {
   display: flex;
-  flex-direction: column;
+  align-items: center;
   gap: 0.5rem;
+  margin: 0 0 1.5rem;
+  padding: 0.7rem 0.9rem;
+  border-radius: var(--radius-sm);
+  background: #EEF3F6;
+  border: 1px solid rgba(31, 58, 77, 0.12);
+  color: var(--text-secondary);
+  font-size: 0.85rem;
 }
 
-.preview-select {
-  width: 100%;
-  padding: 0.75rem 1rem;
-  border: 1px solid var(--color-tertiary);
-  border-radius: var(--radius-sm);
-  font-family: var(--font-main);
-  outline: none;
-  background-color: #F8F5F0;
+.preview-note svg {
+  flex-shrink: 0;
   color: var(--color-primary);
-  font-weight: 500;
 }
