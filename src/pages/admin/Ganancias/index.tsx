@@ -5,7 +5,8 @@ import {
   TrendingUp, 
   Users, 
   Calendar, 
-  ChevronRight, 
+  Wallet,
+  Trash2,
   ArrowUpRight, 
   ArrowDownRight,
   PieChart,
@@ -19,6 +20,7 @@ import { db } from '../../../lib/db';
 import './Ganancias.css';
 
 import PageHeader from '../../../components/PageHeader/PageHeader';
+import TableEmpty from '../../../components/TableEmpty/TableEmpty';
 export default function GananciasPage() {
   const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState('este-mes');
@@ -393,49 +395,56 @@ export default function GananciasPage() {
             </div>
           </div>
 
-          <div className="glass-card transactions-card mt-4">
-            <div className="card-header border-bottom">
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <h3>Actividad Reciente (Pagos Confirmados)</h3>
-                <button className="btn-link">Ver todas <ChevronRight size={16} /></button>
+          <div className="glass-card mt-4">
+            <div className="tk-table-head">
+              <div className="tk-table-title">
+                <h3>Actividad reciente</h3>
+                <p>Pagos confirmados de tus clientes.</p>
+              </div>
+              <div className="tk-table-tools">
+                <span className="tk-count"><strong>{recentTransactions.length}</strong> {recentTransactions.length === 1 ? 'pago' : 'pagos'}</span>
               </div>
             </div>
-            <div className="card-body p-0">
-              <table className="transactions-table">
+            <div className="tk-table-wrap">
+              <table className="tk-table">
                 <thead>
                   <tr>
                     <th>Cliente</th>
                     <th>Servicio</th>
                     <th>Fecha</th>
-                    <th>Monto Cobrado</th>
+                    <th className="tk-num">Monto cobrado</th>
                     <th>Estado</th>
-                    <th>Acciones</th>
+                    <th className="tk-right">Acciones</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {recentTransactions.map(tx => (
+                  {recentTransactions.length === 0 ? (
+                    <TableEmpty
+                      colSpan={6}
+                      icon={<Wallet size={26} />}
+                      title="Todavía no hay pagos confirmados"
+                      text="Cuando confirmes el cobro de un servicio, va a aparecer acá."
+                    />
+                  ) : recentTransactions.map(tx => (
                     <tr key={tx.id}>
                       <td>
-                        <div className="td-client">
-                          <div className="client-avatar-sm">{tx.client.charAt(0)}</div>
-                          {tx.client}
+                        <div className="tk-cell-main">
+                          <span className="tk-avatar">{tx.client.charAt(0)}</span>
+                          <div className="tk-cell-text"><strong>{tx.client}</strong></div>
                         </div>
                       </td>
                       <td>{tx.service}</td>
                       <td>{tx.date}</td>
-                      <td className="fw-bold">{tx.amount}</td>
+                      <td className="tk-num"><span className="tk-amount">{tx.amount}</span></td>
                       <td>
-                        <span className={`status-pill ${tx.status}`}>{tx.status}</span>
+                        <span className={`tk-badge ${/pag|confirm|complet/i.test(tx.status) ? 'success' : /pend/i.test(tx.status) ? 'warning' : 'info'}`}>{tx.status.charAt(0).toUpperCase() + tx.status.slice(1)}</span>
                       </td>
                       <td>
-                        <button 
-                          className="btn-icon-sm" 
-                          style={{ color: '#ef4444', background: 'rgba(239, 68, 68, 0.1)', border: 'none', borderRadius: '6px', padding: '4px', cursor: 'pointer' }}
-                          onClick={() => handleDeleteActivity(tx)}
-                          title="Eliminar registro"
-                        >
-                          <X size={14} />
-                        </button>
+                        <div className="tk-actions">
+                          <button className="tk-icon-btn danger" onClick={() => handleDeleteActivity(tx)} title="Eliminar registro" aria-label="Eliminar registro">
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}

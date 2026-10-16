@@ -62,46 +62,6 @@
   letter-spacing: -0.01em;
 }
 
-/* ─── Tablas ─── */
-.admin-content table {
-  width: 100%;
-  border-collapse: separate;
-  border-spacing: 0;
-  font-size: 0.9rem;
-}
-
-.admin-content table thead th {
-  background: #F8F5F0;
-  color: var(--text-secondary);
-  font-size: 0.72rem;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  text-align: left;
-  padding: 0.85rem 1.25rem;
-  border-bottom: 1px solid var(--color-border);
-  white-space: nowrap;
-}
-
-.admin-content table tbody td {
-  padding: 1rem 1.25rem;
-  border-bottom: 1px solid var(--color-border);
-  color: var(--color-primary);
-  vertical-align: middle;
-}
-
-.admin-content table tbody tr {
-  transition: background-color var(--transition-fast);
-}
-
-.admin-content table tbody tr:hover {
-  background-color: rgba(200, 155, 90, 0.05);
-}
-
-.admin-content table tbody tr:last-child td {
-  border-bottom: none;
-}
-
 /* ─── Pestañas y filtros tipo píldora ─── */
 .admin-content .tabs-container,
 .admin-content .filter-pills {

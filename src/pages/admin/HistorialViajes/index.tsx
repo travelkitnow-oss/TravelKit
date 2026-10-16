@@ -324,9 +324,10 @@ function TripDetail({ trip, onDelete }: { trip: Trip; onDelete: () => void }) {
                 <div><span>Cobrado</span><strong className="ok">{money(collected)}</strong></div>
                 <div><span>Saldo pendiente</span><strong className={balance > 0 ? 'due' : 'ok'}>{money(balance)}</strong></div>
               </div>
-              <table className="hv-table">
+              <div className="tk-table-wrap hv-table-wrap">
+              <table className="tk-table">
                 <thead>
-                  <tr><th>Concepto</th><th>Fecha</th><th>Estado</th><th className="num">Importe</th></tr>
+                  <tr><th>Concepto</th><th>Fecha</th><th>Estado</th><th className="tk-num">Importe</th></tr>
                 </thead>
                 <tbody>
                   {tasks.map((t, i) => {
@@ -337,16 +338,17 @@ function TripDetail({ trip, onDelete }: { trip: Trip; onDelete: () => void }) {
                         <td>{t.name || (isPayment ? 'Pago recibido' : 'Servicio')}</td>
                         <td>{fmt(t.date, 'dd/MM/yyyy') || '—'}</td>
                         <td>
-                          <span className={`hv-pill ${isPayment ? 'payment' : paid ? 'paid' : 'pending'}`}>
+                          <span className={`tk-badge ${isPayment ? 'info' : paid ? 'success' : 'warning'}`}>
                             {isPayment ? 'Pago' : paid ? 'Pagado' : 'Pendiente'}
                           </span>
                         </td>
-                        <td className={`num ${isPayment ? 'neg' : ''}`}>{isPayment ? '−' : ''}{money(Math.abs(Number(t.price) || 0))}</td>
+                        <td className={`tk-num tk-strong ${isPayment ? 'hv-neg' : ''}`}>{isPayment ? '−' : ''}{money(Math.abs(Number(t.price) || 0))}</td>
                       </tr>
                     );
                   })}
                 </tbody>
               </table>
+              </div>
             </>
           )}
         </section>

@@ -5,6 +5,7 @@ import { db } from '../../../lib/db';
 import './Costos.css';
 
 import PageHeader from '../../../components/PageHeader/PageHeader';
+import TableEmpty from '../../../components/TableEmpty/TableEmpty';
 interface ServiceItem {
   id: string;
   name: string;
@@ -98,109 +99,98 @@ export default function CostosPage() {
       </div>
 
       <div className="glass-card">
-        <div className="card-header border-bottom" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h3 style={{ margin: 0 }}>Listado de Tarifas</h3>
-          <button className="btn btn-primary btn-sm" onClick={() => setShowAddModal(true)}>
-            <Plus size={18} /> Nueva Tarea/Costo
-          </button>
-        </div>
-        
-        {loading ? (
-          <div className="p-5 text-center">
-            <div className="loader-premium"></div>
-            <p className="mt-3">Cargando tarifas...</p>
+        <div className="tk-table-head">
+          <div className="tk-table-title">
+            <h3>Listado de tarifas</h3>
+            <p>Los servicios que podés sumar a la cuenta de cada cliente.</p>
           </div>
-        ) : (
-          <table className="costos-table">
+          <div className="tk-table-tools">
+            <span className="tk-count"><strong>{services.length}</strong> {services.length === 1 ? 'servicio' : 'servicios'}</span>
+            <button className="btn btn-primary" onClick={() => setShowAddModal(true)}>
+              <Plus size={18} /> Nuevo servicio
+            </button>
+          </div>
+        </div>
+
+        <div className="tk-table-wrap">
+          <table className="tk-table">
             <thead>
               <tr>
-                <th>Nombre de la Tarea / Servicio</th>
-                <th>Precio</th>
-                <th style={{ textAlign: 'right' }}>Acciones</th>
+                <th>Servicio</th>
+                <th className="tk-num">Precio</th>
+                <th className="tk-right">Acciones</th>
               </tr>
             </thead>
             <tbody>
-              {services.length > 0 ? (
+              {loading ? (
+                <TableEmpty colSpan={3} loading title="Cargando tarifas…" />
+              ) : services.length === 0 ? (
+                <TableEmpty
+                  colSpan={3}
+                  icon={<Package size={26} />}
+                  title="Todavía no hay servicios"
+                  text="Definí tus asesorías y servicios con su precio para usarlos en las tareas de cada cliente."
+                  action={<button className="btn btn-outline btn-sm" onClick={() => setShowAddModal(true)}><Plus size={16} /> Cargar mi primer servicio</button>}
+                />
+              ) : (
                 services.map(service => (
-                  <tr key={service.id} className="costos-row">
+                  <tr key={service.id}>
                     <td>
                       {editingService?.id === service.id ? (
-                        <div className="edit-input-wrapper">
-                          <Package size={18} className="text-secondary" />
-                          <input 
-                            type="text" 
-                            className="form-input-sm"
+                        <div className="tk-inline-input">
+                          <input
+                            type="text"
+                            aria-label="Nombre del servicio"
                             value={editingService.name}
-                            onChange={e => setEditingService({...editingService, name: e.target.value})}
+                            onChange={e => setEditingService({ ...editingService, name: e.target.value })}
                           />
                         </div>
                       ) : (
-                        <div className="service-info-cell">
-                          <div className="service-icon-bg">
-                            {service.name.toLowerCase().includes('sesi') ? <Briefcase size={18} /> : <Ticket size={18} />}
-                          </div>
-                          <span className="service-name">{service.name}</span>
+                        <div className="tk-cell-main">
+                          <span className="tk-avatar square">
+                            {service.name.toLowerCase().includes('sesi') ? <Briefcase size={16} /> : <Ticket size={16} />}
+                          </span>
+                          <div className="tk-cell-text"><strong>{service.name}</strong></div>
                         </div>
+                      )}
+                    </td>
+                    <td className="tk-num">
+                      {editingService?.id === service.id ? (
+                        <div className="tk-inline-input" style={{ justifyContent: 'flex-end' }}>
+                          <span className="tk-prefix">$</span>
+                          <input
+                            type="number"
+                            aria-label="Precio"
+                            style={{ maxWidth: 140, textAlign: 'right' }}
+                            value={editingService.price}
+                            onChange={e => setEditingService({ ...editingService, price: parseFloat(e.target.value) })}
+                          />
+                        </div>
+                      ) : (
+                        <span className="tk-amount">${service.price.toLocaleString('es-AR')}</span>
                       )}
                     </td>
                     <td>
-                      {editingService?.id === service.id ? (
-                        <div className="edit-input-wrapper">
-                          <span className="currency-prefix">$</span>
-                          <input 
-                            type="number" 
-                            className="form-input-sm price-input"
-                            style={{ fontWeight: 'bold' }}
-                            value={editingService.price}
-                            onChange={e => setEditingService({...editingService, price: parseFloat(e.target.value)})}
-                          />
-                        </div>
-                      ) : (
-                        <div className="price-badge">
-                          <DollarSign size={14} />
-                          <span>{service.price.toLocaleString('es-AR')}</span>
-                        </div>
-                      )}
-                    </td>
-                    <td style={{ textAlign: 'right' }}>
-                      <div className="actions-cell">
+                      <div className="tk-actions">
                         {editingService?.id === service.id ? (
-                          <div style={{ display: 'flex', gap: '0.5rem' }}>
-                            <button className="btn btn-primary btn-xs" onClick={handleUpdateService} title="Guardar">
-                              <Check size={14} />
-                            </button>
-                            <button className="btn btn-outline btn-xs" onClick={() => setEditingService(null)} title="Cancelar">
-                              <X size={14} />
-                            </button>
-                          </div>
+                          <>
+                            <button className="tk-icon-btn success" onClick={handleUpdateService} title="Guardar" aria-label="Guardar"><Check size={16} /></button>
+                            <button className="tk-icon-btn" onClick={() => setEditingService(null)} title="Cancelar" aria-label="Cancelar"><X size={16} /></button>
+                          </>
                         ) : (
-                          <div className="action-buttons-row">
-                            <button className="action-btn edit" onClick={() => setEditingService(service)} title="Editar">
-                              <Edit2 size={16} />
-                            </button>
-                            <button className="action-btn delete" onClick={() => setIsDeleting(service.id)} title="Eliminar">
-                              <Trash2 size={16} />
-                            </button>
-                          </div>
+                          <>
+                            <button className="tk-icon-btn" onClick={() => setEditingService(service)} title="Editar" aria-label="Editar"><Edit2 size={16} /></button>
+                            <button className="tk-icon-btn danger" onClick={() => setIsDeleting(service.id)} title="Eliminar" aria-label="Eliminar"><Trash2 size={16} /></button>
+                          </>
                         )}
                       </div>
                     </td>
                   </tr>
                 ))
-              ) : (
-                <tr>
-                  <td colSpan={3}>
-                    <div className="empty-state-container">
-                      <Package size={48} />
-                      <p>No se encontraron servicios definidos.</p>
-                      <button className="btn btn-outline btn-sm" onClick={() => setShowAddModal(true)}>Cargar mi primer servicio</button>
-                    </div>
-                  </td>
-                </tr>
               )}
             </tbody>
           </table>
-        )}
+        </div>
       </div>
 
       {showAddModal && (

@@ -19,6 +19,7 @@ import ConfirmationModal from '../../../components/ConfirmationModal/Confirmatio
 import './Clientes.css';
 
 import PageHeader from '../../../components/PageHeader/PageHeader';
+import TableEmpty from '../../../components/TableEmpty/TableEmpty';
 interface Client {
   id: string;
   name: string;
@@ -218,118 +219,91 @@ export default function ClientesPage() {
       />
 
       <div className="glass-card">
-        <div className="card-header border-bottom">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div>
-              <h3>Lista de Clientes</h3>
-              <p className="text-secondary text-sm">Gestiona la base de datos de tus viajeros.</p>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-              <div className="client-count-badge">
-                {clients.length} Clientes
-              </div>
-              <button className="btn btn-primary" onClick={() => setShowAddModal(true)}>
-                <Plus size={18} />
-                Nuevo Cliente
-              </button>
-            </div>
+        <div className="tk-table-head">
+          <div className="tk-table-title">
+            <h3>Lista de clientes</h3>
+            <p>Gestioná la base de datos de tus viajeros.</p>
+          </div>
+          <div className="tk-table-tools">
+            <span className="tk-count"><strong>{clients.length}</strong> {clients.length === 1 ? 'cliente' : 'clientes'}</span>
+            <button className="btn btn-primary" onClick={() => setShowAddModal(true)}>
+              <Plus size={18} /> Nuevo cliente
+            </button>
           </div>
         </div>
 
-        <div className="card-body p-0">
-          <div className="table-responsive">
-            <table className="clientes-table">
-              <thead>
-                <tr>
-                  <th>Nombre</th>
-                  <th>Contacto</th>
-                  <th>Origen</th>
-                  <th style={{ textAlign: 'center' }}>Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                {loading ? (
-                  <tr>
-                    <td colSpan={4} className="empty-table-cell">
-                      <div className="empty-state py-5">
-                        <p>Cargando clientes...</p>
+        <div className="tk-table-wrap">
+          <table className="tk-table">
+            <thead>
+              <tr>
+                <th>Nombre</th>
+                <th>Contacto</th>
+                <th>Origen</th>
+                <th className="tk-right">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              {loading ? (
+                <TableEmpty colSpan={4} loading title="Cargando clientes…" />
+              ) : clients.length === 0 ? (
+                <TableEmpty
+                  colSpan={4}
+                  icon={<Users size={26} />}
+                  title="Todavía no hay clientes"
+                  text="Cargá tu primer viajero o se agregan solos cuando alguien agenda una sesión."
+                  action={<button className="btn btn-outline btn-sm" onClick={() => setShowAddModal(true)}><Plus size={16} /> Agregar cliente</button>}
+                />
+              ) : (
+                clients.map(client => (
+                  <tr key={client.id}>
+                    <td>
+                      <div className="tk-cell-main">
+                        <span className="tk-avatar">{client.name.charAt(0)}</span>
+                        <div className="tk-cell-text">
+                          <strong>{client.name}</strong>
+                          <span className="tk-sub">Alta {client.created_at ? new Date(client.created_at).toLocaleDateString('es-AR') : '—'}</span>
+                        </div>
+                      </div>
+                    </td>
+                    <td>
+                      <div className="tk-lines">
+                        <span><Mail size={14} /> {client.email || <em className="tk-muted">Sin mail</em>}</span>
+                        <span><Phone size={14} /> {client.phone || <em className="tk-muted">Sin teléfono</em>}</span>
+                      </div>
+                    </td>
+                    <td>
+                      <span className={`tk-badge ${client.source === 'agenda' ? 'accent' : 'info'}`}>
+                        {client.source === 'agenda' ? 'Desde la agenda' : 'Carga manual'}
+                      </span>
+                    </td>
+                    <td>
+                      <div className="tk-actions">
+                        <button
+                          className={`tk-icon-btn ${existingUserIds.has(client.id) ? 'success' : ''}`}
+                          title={existingUserIds.has(client.id) ? 'Ya tiene acceso al portal' : 'Habilitar acceso al portal'}
+                          aria-label={existingUserIds.has(client.id) ? 'Ya tiene acceso al portal' : 'Habilitar acceso al portal'}
+                          onClick={() => {
+                            if (existingUserIds.has(client.id)) return;
+                            setSelectedClientForUser(client);
+                            setShowCreateUserModal(true);
+                          }}
+                          disabled={existingUserIds.has(client.id)}
+                        >
+                          {existingUserIds.has(client.id) ? <ShieldCheck size={16} /> : <UserPlus size={16} />}
+                        </button>
+                        <button className="tk-icon-btn" title="Editar" aria-label="Editar" onClick={() => setEditingClient(client)}>
+                          <Edit2 size={16} />
+                        </button>
+                        <button className="tk-icon-btn danger" title="Eliminar" aria-label="Eliminar" onClick={() => deleteManualClient(client.id)}>
+                          <Trash2 size={16} />
+                        </button>
                       </div>
                     </td>
                   </tr>
-                ) : clients.length === 0 ? (
-                  <tr>
-                    <td colSpan={4} className="empty-table-cell">
-                      <div className="empty-state py-5">
-                        <Users size={48} className="text-tertiary mb-3" />
-                        <p>No se encontraron clientes.</p>
-                      </div>
-                    </td>
-                  </tr>
-                ) : (
-                  clients.map(client => (
-                    <tr key={client.id}>
-                      <td>
-                        <div className="client-name-cell">
-                          <div className="client-avatar">
-                            {client.name.charAt(0)}
-                          </div>
-                          <div>
-                            <div className="fw-bold">{client.name}</div>
-                            <span className="text-xs text-secondary">ID: {client.id.split('-')[1] || client.id.substring(0, 8)}</span>
-                          </div>
-                        </div>
-                      </td>
-                      <td>
-                        <div className="client-contact-cell">
-                          <div className="client-info-text">
-                            <Mail size={14} /> {client.email || 'Sin mail'}
-                          </div>
-                          <div className="client-info-text">
-                            <Phone size={14} /> {client.phone || 'Sin teléfono'}
-                          </div>
-                        </div>
-                      </td>
-                      <td>
-                        <span className={`source-badge ${client.source}`}>
-                          {client.source === 'agenda' ? 'Automático' : 'Manual'}
-                        </span>
-                      </td>
-                      <td>
-                        <div className="client-actions-cell" style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
-                          <button
-                            className={`btn-icon-sm ${existingUserIds.has(client.id) ? 'disabled' : 'text-primary'}`}
-                            title={existingUserIds.has(client.id) ? "Usuario ya creado" : "Crear Usuario Cliente"}
-                            onClick={() => {
-                              if (existingUserIds.has(client.id)) return;
-                              setSelectedClientForUser(client);
-                              setShowCreateUserModal(true);
-                            }}
-                            disabled={existingUserIds.has(client.id)}
-                          >
-                            {existingUserIds.has(client.id) ? <ShieldCheck size={16} /> : <UserPlus size={16} />}
-                          </button>
-                          <button
-                            className="btn-icon-sm"
-                            title="Editar"
-                            onClick={() => setEditingClient(client)}
-                          >
-                            <Edit2 size={16} />
-                          </button>
-                          <button
-                            className="btn-icon-sm text-danger"
-                            title="Eliminar"
-                            onClick={() => deleteManualClient(client.id)}
-                          >
-                            <Trash2 size={16} />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
+                ))
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
 

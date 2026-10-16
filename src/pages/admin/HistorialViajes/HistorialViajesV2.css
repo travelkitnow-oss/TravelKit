@@ -510,33 +510,18 @@
 .hv-money strong.ok { color: var(--color-success); }
 .hv-money strong.due { color: #B7791F; }
 
-.hv-table {
+.hv-table-wrap {
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
-  overflow: hidden;
 }
 
-.hv-table .num {
-  text-align: right;
-  white-space: nowrap;
-  font-variant-numeric: tabular-nums;
+.hv-table-wrap table.tk-table {
+  min-width: 520px;
 }
 
-.hv-table td.neg {
+.hv-neg {
   color: var(--color-success);
 }
-
-.hv-pill {
-  display: inline-block;
-  padding: 0.15rem 0.6rem;
-  border-radius: var(--radius-full);
-  font-size: 0.72rem;
-  font-weight: 600;
-}
-
-.hv-pill.paid { background: #E8F5EE; color: var(--color-success); }
-.hv-pill.pending { background: #FDF3E3; color: #B7791F; }
-.hv-pill.payment { background: #EEF3F6; color: var(--color-primary); }
 
 /* Notas */
 .hv-notes {

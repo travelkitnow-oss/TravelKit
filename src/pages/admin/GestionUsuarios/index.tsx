@@ -16,6 +16,7 @@ import './GestionUsuarios.css';
 
 import PageHeader from '../../../components/PageHeader/PageHeader';
 import SearchBar from '../../../components/SearchBar/SearchBar';
+import TableEmpty from '../../../components/TableEmpty/TableEmpty';
 interface UserProfile {
   id: string;
   email: string;
@@ -100,67 +101,76 @@ export default function GestionUsuariosPage() {
       />
 
       <div className="glass-card">
-        <div className="card-header border-bottom">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
-            <SearchBar className="search-grow" placeholder="Buscar por nombre o email..." value={searchTerm} onChange={setSearchTerm} />
-            <div className="user-stats">
-              <Users size={16} />
-              <span>{profiles.length} Usuarios Activos</span>
-            </div>
+        <div className="tk-table-head">
+          <div className="tk-table-title">
+            <h3>Accesos al portal</h3>
+            <p>Viajeros que pueden entrar a su portal de cliente.</p>
+          </div>
+          <div className="tk-table-tools">
+            <SearchBar size="sm" placeholder="Buscar por nombre o email..." value={searchTerm} onChange={setSearchTerm} />
+            <span className="tk-count"><strong>{profiles.length}</strong> {profiles.length === 1 ? 'usuario' : 'usuarios'}</span>
           </div>
         </div>
 
-        <div className="card-body p-0">
-          <div className="table-responsive">
-            <table className="gestion-table">
-              <thead>
-                <tr>
-                  <th>Viajero</th>
-                  <th>Usuario / Email</th>
-                  <th>Rol</th>
-                  <th>Fecha de Alta</th>
-                  <th>Última Conexión</th>
-                  <th>Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                {loading ? (
-                  <tr><td colSpan={5} className="text-center p-5">Cargando usuarios...</td></tr>
-                ) : filteredProfiles.length === 0 ? (
-                  <tr><td colSpan={5} className="text-center p-5">No se encontraron usuarios.</td></tr>
-                ) : (
-                  filteredProfiles.map(p => (
-                    <tr key={p.id}>
-                      <td><div className="fw-bold">{p.clients?.name}</div></td>
-                      <td>{p.email}</td>
-                      <td><span className="role-badge">{p.role}</span></td>
-                      <td>{new Date(p.created_at).toLocaleDateString()}</td>
-                      <td>
-                        {p.last_login ? (
-                          <div className="last-login-cell">
-                            <div>{new Date(p.last_login).toLocaleDateString()}</div>
-                            <div className="text-xs text-secondary">{new Date(p.last_login).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} hs</div>
-                          </div>
-                        ) : (
-                          <span className="text-xs text-secondary italic">Nunca</span>
-                        )}
-                      </td>
-                      <td>
-                        <div style={{ display: 'flex', gap: '0.5rem' }}>
-                          <button className="btn-icon-sm" title="Cambiar Contraseña" onClick={() => setEditingProfile(p)}>
-                            <Key size={16} />
-                          </button>
-                          <button className="btn-icon-sm text-danger" title="Eliminar Acceso" onClick={() => handleDelete(p.id)}>
-                            <Trash2 size={16} />
-                          </button>
+        <div className="tk-table-wrap">
+          <table className="tk-table">
+            <thead>
+              <tr>
+                <th>Viajero</th>
+                <th>Usuario / Email</th>
+                <th>Rol</th>
+                <th>Fecha de alta</th>
+                <th>Última conexión</th>
+                <th className="tk-right">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              {loading ? (
+                <TableEmpty colSpan={6} loading title="Cargando usuarios…" />
+              ) : filteredProfiles.length === 0 ? (
+                <TableEmpty
+                  colSpan={6}
+                  icon={<Users size={26} />}
+                  title={profiles.length ? 'Sin resultados' : 'Todavía no hay accesos'}
+                  text={profiles.length ? 'Probá con otro nombre o email.' : 'Habilitá el acceso al portal desde la lista de Clientes.'}
+                />
+              ) : (
+                filteredProfiles.map(p => (
+                  <tr key={p.id}>
+                    <td>
+                      <div className="tk-cell-main">
+                        <span className="tk-avatar">{(p.clients?.name || p.email || '?').charAt(0)}</span>
+                        <div className="tk-cell-text"><strong>{p.clients?.name || 'Sin nombre'}</strong></div>
+                      </div>
+                    </td>
+                    <td>{p.email}</td>
+                    <td><span className="tk-badge info">{p.role === 'cliente' ? 'Cliente' : p.role}</span></td>
+                    <td>{new Date(p.created_at).toLocaleDateString('es-AR')}</td>
+                    <td>
+                      {p.last_login ? (
+                        <div className="tk-cell-text">
+                          <span>{new Date(p.last_login).toLocaleDateString('es-AR')}</span>
+                          <span className="tk-sub">{new Date(p.last_login).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })} hs</span>
                         </div>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
+                      ) : (
+                        <span className="tk-badge warning">Nunca ingresó</span>
+                      )}
+                    </td>
+                    <td>
+                      <div className="tk-actions">
+                        <button className="tk-icon-btn" title="Cambiar contraseña" aria-label="Cambiar contraseña" onClick={() => setEditingProfile(p)}>
+                          <Key size={16} />
+                        </button>
+                        <button className="tk-icon-btn danger" title="Quitar acceso" aria-label="Quitar acceso" onClick={() => handleDelete(p.id)}>
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
 
