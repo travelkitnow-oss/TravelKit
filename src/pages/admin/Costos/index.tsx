@@ -55,6 +55,15 @@ export default function CostosPage() {
 
   const handleUpdateService = async () => {
     if (!editingService) return;
+    // El campo de precio puede quedar vacío mientras se edita (NaN): no se guarda hasta que sea válido
+    if (!editingService.name.trim()) {
+      alert('El servicio necesita un nombre.');
+      return;
+    }
+    if (!Number.isFinite(editingService.price) || editingService.price < 0) {
+      alert('Ingresá un precio válido.');
+      return;
+    }
     const { error } = await db
       .from('services')
       .update({ name: editingService.name, price: editingService.price })
@@ -105,7 +114,7 @@ export default function CostosPage() {
             <p>Los servicios que podés sumar a la cuenta de cada cliente.</p>
           </div>
           <div className="tk-table-tools">
-            <span className="tk-count"><strong>{services.length}</strong> {services.length === 1 ? 'servicio' : 'servicios'}</span>
+            {!loading && <span className="tk-count"><strong>{services.length}</strong> {services.length === 1 ? 'servicio' : 'servicios'}</span>}
             <button className="btn btn-primary" onClick={() => setShowAddModal(true)}>
               <Plus size={18} /> Nuevo servicio
             </button>
@@ -162,8 +171,8 @@ export default function CostosPage() {
                             type="number"
                             aria-label="Precio"
                             style={{ maxWidth: 140, textAlign: 'right' }}
-                            value={editingService.price}
-                            onChange={e => setEditingService({ ...editingService, price: parseFloat(e.target.value) })}
+                            value={Number.isFinite(editingService.price) ? editingService.price : ''}
+                            onChange={e => setEditingService({ ...editingService, price: e.target.value === '' ? NaN : parseFloat(e.target.value) })}
                           />
                         </div>
                       ) : (

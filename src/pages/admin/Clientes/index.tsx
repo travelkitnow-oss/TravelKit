@@ -225,7 +225,7 @@ export default function ClientesPage() {
             <p>Gestioná la base de datos de tus viajeros.</p>
           </div>
           <div className="tk-table-tools">
-            <span className="tk-count"><strong>{clients.length}</strong> {clients.length === 1 ? 'cliente' : 'clientes'}</span>
+            {!loading && <span className="tk-count"><strong>{clients.length}</strong> {clients.length === 1 ? 'cliente' : 'clientes'}</span>}
             <button className="btn btn-primary" onClick={() => setShowAddModal(true)}>
               <Plus size={18} /> Nuevo cliente
             </button>

@@ -87,9 +87,11 @@ export default function GestionUsuariosPage() {
     setConfirmPassword('');
   };
 
-  const filteredProfiles = profiles.filter(p => 
-    p.email.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    p.clients?.name.toLowerCase().includes(searchTerm.toLowerCase())
+  // email y nombre pueden venir vacíos (perfiles creados para clientes sin mail)
+  const term = searchTerm.trim().toLowerCase();
+  const filteredProfiles = profiles.filter(p =>
+    (p.email || '').toLowerCase().includes(term) ||
+    (p.clients?.name || '').toLowerCase().includes(term)
   );
 
   return (
@@ -108,7 +110,13 @@ export default function GestionUsuariosPage() {
           </div>
           <div className="tk-table-tools">
             <SearchBar size="sm" placeholder="Buscar por nombre o email..." value={searchTerm} onChange={setSearchTerm} />
-            <span className="tk-count"><strong>{profiles.length}</strong> {profiles.length === 1 ? 'usuario' : 'usuarios'}</span>
+            {!loading && (
+              <span className="tk-count">
+                {term
+                  ? <><strong>{filteredProfiles.length}</strong> de {profiles.length}</>
+                  : <><strong>{profiles.length}</strong> {profiles.length === 1 ? 'usuario' : 'usuarios'}</>}
+              </span>
+            )}
           </div>
         </div>
 
@@ -143,7 +151,7 @@ export default function GestionUsuariosPage() {
                         <div className="tk-cell-text"><strong>{p.clients?.name || 'Sin nombre'}</strong></div>
                       </div>
                     </td>
-                    <td>{p.email}</td>
+                    <td>{p.email || <em className="tk-muted">Sin email</em>}</td>
                     <td><span className="tk-badge info">{p.role === 'cliente' ? 'Cliente' : p.role}</span></td>
                     <td>{new Date(p.created_at).toLocaleDateString('es-AR')}</td>
                     <td>

@@ -437,7 +437,7 @@ export default function GananciasPage() {
                       <td>{tx.date}</td>
                       <td className="tk-num"><span className="tk-amount">{tx.amount}</span></td>
                       <td>
-                        <span className={`tk-badge ${/pag|confirm|complet/i.test(tx.status) ? 'success' : /pend/i.test(tx.status) ? 'warning' : 'info'}`}>{tx.status.charAt(0).toUpperCase() + tx.status.slice(1)}</span>
+                        <span className="tk-badge success">Pago confirmado</span>
                       </td>
                       <td>
                         <div className="tk-actions">
